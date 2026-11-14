@@ -85,7 +85,9 @@ if (archiveForm) {
       const responses = (payload.results || []).map(result => ({collection:result.collection, rows:parseVOTable(result.xml)}));
       const allRows = responses.flatMap(result => result.rows.map(row => ({...row, _collection:result.collection})));
       if (!allRows.length) {
-        setArchiveStatus("No matching public observations were returned for this position and radius. Try a larger radius or open the official IRSA explorer.", "success");
+        setArchiveStatus(payload.errors && payload.errors.length
+          ? "The archive search was incomplete: no rows came back from the responding collection, and another collection failed. Please retry in a moment."
+          : "No matching public observations were returned for this position and radius. Try a larger radius or open the official IRSA explorer.", payload.errors && payload.errors.length ? "error" : "success");
       } else {
         setArchiveStatus("Found " + allRows.length + " archive result(s). These are real archive records; open a data link to inspect a file." + (payload.errors && payload.errors.length ? " Note: one archive collection did not respond, so these results may be partial." : ""), "success");
         allRows.slice(0, 30).forEach((row, index) => {
@@ -233,13 +235,15 @@ if (timeForm) {
       fillDateSelect(dateB, discoveredDates, discoveredDates.length > 1 ? discoveredDates[discoveredDates.length - 1] : discoveredDates[0]);
       timeButton.disabled = discoveredDates.length < 2;
       if (discoveredDates.length >= 2) {
-        timeStatus.textContent = "Found " + records.length + " archive record(s) across " + discoveredDates.length + " distinct observation date(s). Choose two dates to compare.";
+        timeStatus.textContent = "Found " + records.length + " archive record(s) across " + discoveredDates.length + " distinct observation date(s). Choose two dates to compare." + (payload.errors && payload.errors.length ? " Some archive collections did not respond, so the date list may be incomplete." : "");
         timeStatus.className = "archive-status success";
       } else if (discoveredDates.length === 1) {
         timeStatus.textContent = "The archive returned observations on only one distinct date for this position. A date-to-date comparison needs at least two dates.";
         timeStatus.className = "archive-status";
       } else {
-        timeStatus.textContent = "No dated observations were returned for this position. Try a wider search radius or another sky position.";
+        timeStatus.textContent = payload.errors && payload.errors.length
+          ? "The date search was incomplete because an archive collection failed. Please retry before concluding there are no observations."
+          : "No dated observations were returned for this position. Try a wider search radius or another sky position.";
         timeStatus.className = "archive-status";
       }
     } catch (error) {
