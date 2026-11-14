@@ -741,19 +741,19 @@ if (timeForm) {
     const dpr=Math.min(window.devicePixelRatio||1,2), w=Math.max(320,Math.floor(rect.width*dpr)), h=Math.max(120,Math.floor(rect.height*dpr));
     canvas.width=w;canvas.height=h;
     const ctx=canvas.getContext("2d");ctx.clearRect(0,0,w,h);
-    ctx.strokeStyle="rgba(255,210,122,.15)";ctx.lineWidth=1;
-    for(let i=1;i<4;i++){const y=h*i/4;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
-    const values=Array.from({length:102},(_,i)=>{
-      const x=i/101;
-      return .18+.48*Math.exp(-Math.pow((x-.32)/.17,2))+.25*Math.exp(-Math.pow((x-.76)/.1,2))+.035*Math.sin(i*.42)+.02*Math.cos(i*.17);
-    });
-    ctx.beginPath();
-    values.forEach((v,i)=>{const x=i/(values.length-1)*w,y=h-(.08+v*.78)*h;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
-    ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.closePath();
-    const grad=ctx.createLinearGradient(0,0,0,h);grad.addColorStop(0,"rgba(255,190,80,.36)");grad.addColorStop(1,"rgba(255,190,80,0)");
-    ctx.fillStyle=grad;ctx.fill();
-    ctx.beginPath();values.forEach((v,i)=>{const x=i/101*w,y=h-(.08+v*.78)*h;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
-    ctx.strokeStyle="#ffd27a";ctx.lineWidth=2*dpr;ctx.stroke();
+    // Schematic only: equal-width markers communicate the channel count,
+    // not exact filter widths, throughput, or measured astrophysical flux.
+    const gap=Math.max(1,Math.round(2*dpr)), cell=(w-gap*101)/102;
+    for(let i=0;i<102;i++){
+      const t=i/101, hue=38-t*24, light=64+10*Math.sin(t*Math.PI);
+      ctx.fillStyle="hsl("+hue+" 88% "+light+"%)";
+      ctx.fillRect(i*(cell+gap),h*.12,Math.max(1,cell),h*.76);
+    }
+    ctx.strokeStyle="rgba(255,210,122,.24)";ctx.lineWidth=1*dpr;
+    [0,.25,.5,.75,1].forEach(t=>{const x=t*w;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();});
+    ctx.fillStyle="rgba(255,230,190,.75)";ctx.font=(10*dpr)+"px sans-serif";
+    ctx.textAlign="left";ctx.fillText("102 separate bands",4*dpr,h*.09);
+    ctx.textAlign="right";ctx.fillText("schematic",w-4*dpr,h*.98);
   }
   drawSpectrum();window.addEventListener("resize",drawSpectrum);
 
