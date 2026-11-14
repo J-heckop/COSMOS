@@ -415,22 +415,17 @@ if (timeForm) {
     }
     placeholder.hidden = false;
     placeholder.textContent = "Loading your selected SPHEREx image…";
-    status.textContent = "Retrieving FITS cutout from IRSA…";
+    status.textContent = "Retrieving the original full-resolution FITS product from IRSA…";
     try {
       const url = new URL("/api/spherex-image", window.location.origin);
-      url.search = new URLSearchParams({
-        url: row.access_url,
-        ra: String(ra),
-        dec: String(dec),
-        size: String(Math.min(0.2, Math.max(0.1, radius)))
-      }).toString();
-      const response = await fetch(url, {signal: AbortSignal.timeout(75000)});
+      url.search = new URLSearchParams({url: row.access_url}).toString();
+      const response = await fetch(url, {signal: AbortSignal.timeout(120000)});
       if (!response.ok) {
         const problem = await response.json().catch(() => ({}));
         throw new Error(problem.detail || problem.error || "Image request failed (HTTP " + response.status + ")");
       }
       const blob = await response.blob();
-      if (blob.size < 2880) throw new Error("The archive returned an empty FITS cutout.");
+      if (blob.size < 2880) throw new Error("The archive returned an empty FITS product.");
       await new Promise((resolve, reject) => {
         let settled = false;
         const finish = (fn, value) => { if (!settled) { settled = true; fn(value); } };
@@ -488,7 +483,7 @@ if (timeForm) {
                 }
                 context.putImageData(pixelsOut, 0, 0);
                 placeholder.hidden = true;
-                status.textContent = "Showing " + width + " × " + height + " pixel FITS cutout · " + timeSafeText(row.obs_id, "SPHEREx observation");
+                status.textContent = "Showing original FITS · " + width + " × " + height + " native pixels · " + timeSafeText(row.obs_id, "SPHEREx observation");
                 finish(resolve);
               } catch (error) { finish(reject, error); }
             });
