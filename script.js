@@ -539,7 +539,7 @@ if (timeForm) {
         ra:String(ra), dec:String(dec), radius:String(radius),
         start:String(dateToMJD(start)), end:String(dateToMJD(end, true))
       }).toString();
-      const response = await fetch(url);
+      const response = await fetch(url, {signal:AbortSignal.timeout(58000)});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive proxy failed");
       const resultSets = (payload.results || []).map(result => ({collection:result.collection, rows:timeParseVOTable(result.xml)}));
@@ -553,7 +553,7 @@ if (timeForm) {
     }
     try {
       const [a,b] = await Promise.all([queryWindow(aDate,aDate),queryWindow(bDate,bDate)]);
-      appendTimeRecords(outputA,a.map(x=>x.row),"DR1 / QR3");
+      appendTimeRecords(outputA,a.map(x=>x.row),"SPHEREx archive");
       appendTimeRecords(outputB,b.map(x=>x.row),"DR1 / QR3");
       // Keep the comparison fast: never download or parse FITS images during metadata search.
       // Users can request a preview with the individual "Preview image" button on any result.
