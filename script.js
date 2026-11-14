@@ -219,8 +219,8 @@ if (timeForm) {
     timeStatus.className = "archive-status";
     try {
       const url = new URL("/api/spherex", window.location.origin);
-      url.search = new URLSearchParams({ra:String(ra),dec:String(dec),radius:String(radius),maxrec:"100"}).toString();
-      const response = await fetch(url, {signal: AbortSignal.timeout(10000)});
+      url.search = new URLSearchParams({ra:String(ra),dec:String(dec),radius:String(radius),maxrec:"20"}).toString();
+      const response = await fetch(url, {signal: AbortSignal.timeout(28000)});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive query failed.");
       const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml));
