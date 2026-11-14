@@ -41,12 +41,13 @@
    <label class="text-xs text-slate-400">Search radius<select id="liveRadius" class="control block w-full mt-1"><option value="0.05">3 arcmin</option><option value="0.1" selected>6 arcmin</option><option value="0.25">15 arcmin</option><option value="0.5">30 arcmin</option></select></label>
   </div>
   <div class="flex flex-wrap items-center gap-2"><button id="liveSearch" class="action active text-sm">⌕ Search live observations</button><span id="liveStatus" class="text-xs text-slate-400" role="status" aria-live="polite">Choose a target and search the official IRSA archive.</span></div>
-  <div id="liveResults" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"></div>
   <div id="liveImagePanel" class="hide rounded-xl border border-slate-700 bg-slate-950 p-3">
-   <div class="flex flex-wrap justify-between gap-2"><b id="liveImageTitle" class="text-sm text-cyan-200">Selected SPHEREx observation</b><a id="liveOriginal" class="text-xs text-amber-300 underline" target="_blank" rel="noopener noreferrer">Open original FITS ↗</a></div>
+   <div class="flex flex-wrap justify-between gap-2"><b id="liveImageTitle" class="text-sm text-cyan-200">Selected SPHEREx observation</b><div class="flex items-center gap-3"><button id="liveRetry" type="button" class="text-xs text-cyan-200 underline">Retry preview</button><a id="liveOriginal" class="text-xs text-amber-300 underline" target="_blank" rel="noopener noreferrer">Open original FITS ↗</a></div></div>
    <div class="mt-3 bg-black rounded-lg min-h-48 grid place-items-center overflow-auto"><canvas id="liveFitsCanvas" class="max-w-full h-auto"></canvas><p id="liveImagePlaceholder" class="text-xs text-slate-400 p-6">Choose an observation to load its image.</p></div>
    <p id="liveImageStatus" class="text-xs text-slate-400 mt-2" aria-live="polite"></p>
   </div>
+  <div id="liveResults" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"></div>
+
   <p class="text-xs text-slate-500">Archive metadata and FITS previews are live IRSA data. The preview uses an automatic display stretch; it is not a calibrated change-detection result. Coverage depends on the selected coordinates and released data.</p>
  </section>
  <section class="lg:col-span-8 flex flex-col gap-3">
@@ -118,8 +119,8 @@
 (()=> {
  const $=id=>document.getElementById(id);
  const target=$('liveTarget'),ra=$('liveRA'),dec=$('liveDec'),radius=$('liveRadius'),search=$('liveSearch'),status=$('liveStatus'),results=$('liveResults');
- const panel=$('liveImagePanel'),canvas=$('liveFitsCanvas'),placeholder=$('liveImagePlaceholder'),imageStatus=$('liveImageStatus'),title=$('liveImageTitle'),original=$('liveOriginal');
- let rows=[];
+ const panel=$('liveImagePanel'),canvas=$('liveFitsCanvas'),placeholder=$('liveImagePlaceholder'),imageStatus=$('liveImageStatus'),title=$('liveImageTitle'),original=$('liveOriginal'),retry=$('liveRetry');
+ let rows=[],selectedRow=null,selectedButton=null;
  function parseVOTable(xmlText){
   const doc=new DOMParser().parseFromString(xmlText,'application/xml');
   if(doc.querySelector('parsererror'))throw new Error('IRSA returned an unreadable observation table.');
@@ -156,9 +157,12 @@
   }catch(error){status.textContent='Could not search the live archive: '+error.message}
   finally{search.disabled=false;search.textContent='⌕ Search live observations'}
  });
- async function loadImage(row,button){
-  if(!row.access_url){imageStatus.textContent='This record has no image URL.';return}
-  panel.classList.remove('hide');canvas.width=0;canvas.height=0;placeholder.classList.remove('hide');placeholder.textContent='Loading real SPHEREx FITS cutout…';imageStatus.textContent='Requesting a quick 0.1° cutout from IRSA…';title.textContent=(row.obs_id||'SPHEREx observation')+' · '+mjdDate(row.t_min);original.href=row.access_url;
+ retry.addEventListener('click',()=>{if(selectedRow)loadImage(selectedRow,selectedButton,true)});
+ async function loadImage(row,button,isRetry=false){
+  if(!row.access_url){status.textContent='This record has no FITS product URL.';return}
+  selectedRow=row;selectedButton=button;
+  panel.classList.remove('hide');
+  panel.scrollIntoView({behavior:'smooth',block:'start'});canvas.width=0;canvas.height=0;placeholder.classList.remove('hide');placeholder.textContent=isRetry?'Retrying real SPHEREx FITS preview…':'Loading real SPHEREx FITS cutout…';imageStatus.textContent=isRetry?'Retrying the IRSA image request…':'Requesting a quick 0.1° cutout from IRSA…';title.textContent=(row.obs_id||'SPHEREx observation')+' · '+mjdDate(row.t_min);original.href=row.access_url;
   button.disabled=true;button.textContent='Loading…';
   try{
    const url=new URL('/api/spherex-image',location.origin);url.search=new URLSearchParams({url:row.access_url,center:String(Number(ra.value))+','+String(Number(dec.value)),size:'0.1'}).toString();
@@ -185,7 +189,7 @@
     });
     setTimeout(()=>finish(reject,new Error('FITS parsing timed out.')),55000);
    });
-  }catch(error){placeholder.classList.remove('hide');placeholder.textContent='Preview unavailable. You can still open the original FITS product.';imageStatus.textContent=error.message}
+  }catch(error){placeholder.classList.remove('hide');placeholder.textContent='Preview unavailable. You can retry or open the original FITS product.';imageStatus.textContent=error.message+' If IRSA keeps returning 503, its image service may be temporarily unavailable.'}
   finally{button.disabled=false;button.textContent='Load real sky image'}
  }
 })();
