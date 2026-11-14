@@ -76,14 +76,12 @@ if (archiveForm) {
     setArchiveStatus("Querying NASA/IPAC IRSA for SPHEREx observations near " + ra + "°, " + dec + "°.");
 
     try {
-      const collections = ["spherex_dr1", "spherex_qr3"];
-      const responses = await Promise.all(collections.map(async collection => {
-        const url = new URL("https://irsa.ipac.caltech.edu/SIA");
-        url.search = new URLSearchParams({COLLECTION:collection, POS:"CIRCLE " + ra + " " + dec + " " + radius, RESPONSEFORMAT:"VOTABLE"}).toString();
-        const response = await fetch(url, {headers:{Accept:"application/x-votable+xml, application/xml, text/xml"}});
-        if (!response.ok) throw new Error("IRSA returned HTTP " + response.status);
-        return {collection, rows:timeParseVOTable(await response.text())};
-      }));
+      const proxyUrl = new URL("/api/spherex", window.location.origin);
+      proxyUrl.search = new URLSearchParams({ra:String(ra), dec:String(dec), radius:String(radius)}).toString();
+      const response = await fetch(proxyUrl);
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.detail || payload.error || "Archive proxy failed");
+      const responses = payload.results.map(result => ({collection:result.collection, rows:parseVOTable(result.xml)}));
       const allRows = responses.flatMap(result => result.rows.map(row => ({...row, _collection:result.collection})));
       if (!allRows.length) {
         setArchiveStatus("No matching public observations were returned for this position and radius. Try a larger radius or open the official IRSA explorer.", "success");
@@ -249,15 +247,15 @@ if (timeForm) {
     timeStatus.textContent = "Searching SPHEREx DR1 and QR3 for both time windows…";
     timeStatus.className = "archive-status";
     async function queryWindow(start, end) {
-      const collections = ["spherex_dr1", "spherex_qr3"];
-      const resultSets = await Promise.all(collections.map(async collection => {
-        const url = new URL("https://irsa.ipac.caltech.edu/SIA");
-        const params = {COLLECTION:collection, POS:"CIRCLE " + ra + " " + dec + " " + radius, TIME:dateToMJD(start) + "/" + dateToMJD(end, true), RESPONSEFORMAT:"VOTABLE"};
-        url.search = new URLSearchParams(params).toString();
-        const response = await fetch(url, {headers:{Accept:"application/x-votable+xml, application/xml, text/xml"}});
-        if (!response.ok) throw new Error("IRSA returned HTTP " + response.status);
-        return {collection, rows:timeParseVOTable(await response.text())};
-      }));
+      const url = new URL("/api/spherex", window.location.origin);
+      url.search = new URLSearchParams({
+        ra:String(ra), dec:String(dec), radius:String(radius),
+        start:String(dateToMJD(start)), end:String(dateToMJD(end, true))
+      }).toString();
+      const response = await fetch(url);
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.detail || payload.error || "Archive proxy failed");
+      const resultSets = payload.results.map(result => ({collection:result.collection, rows:timeParseVOTable(result.xml)}));
       return resultSets.flatMap(set => set.rows.map(row => ({row, collection:set.collection})));
     }
     try {
@@ -272,7 +270,7 @@ if (timeForm) {
       timeStatus.textContent = "Comparison complete: " + a.length + " observation(s) in Period A and " + b.length + " in Period B. Compare their dates and bands, then open the original FITS data to inspect each observation.";
       timeStatus.className = "archive-status success";
     } catch (error) {
-      timeStatus.textContent = "The browser could not read the archive response (" + error.message + "). Try the official SPHEREx Data Explorer, which supports position and timing constraints.";
+      timeStatus.textContent = "The archive proxy could not complete the request (" + error.message + "). Try the official SPHEREx Data Explorer, which supports position and timing constraints.";
       timeStatus.className = "archive-status error";
       const official = document.createElement("a");
       official.href = "https://irsa.ipac.caltech.edu/applications/spherex/";
