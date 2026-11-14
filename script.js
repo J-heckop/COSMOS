@@ -586,8 +586,9 @@ if (timeForm) {
   }
   function showPeriod(which) {
     blinkPeriod = which;
-    imageA.closest(".image-pane").classList.toggle("blink-muted", which !== "a");
-    imageB.closest(".image-pane").classList.toggle("blink-muted", which !== "b");
+    const panes = document.querySelector(".image-panes");
+    panes.classList.toggle("blink-show-a", which === "a");
+    panes.classList.toggle("blink-show-b", which === "b");
     blinkStatus.textContent = "Currently highlighting Period " + which.toUpperCase() + ".";
   }
   blinkA.addEventListener("click", () => showPeriod("a"));
