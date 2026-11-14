@@ -220,7 +220,27 @@
     results.append(more);
    }
    if(rows.length>1){lapsePanel.classList.remove('hide');lapsePlay.disabled=false;lapseStatus.textContent='Play the real FITS observations chronologically.'}
-  }catch(error){status.textContent='Could not search the live archive: '+error.message}
+  }catch(error){
+   status.replaceChildren();
+   const message=document.createElement('span');
+   message.textContent='COSMOS could not retrieve the archive automatically: '+error.message+' ';
+   const official=document.createElement('a');
+   const officialUrl=new URL('https://irsa.ipac.caltech.edu/applications/spherex/');
+   officialUrl.search=new URLSearchParams({
+    api:'spectral-images',
+    ra:String(r),
+    dec:String(d),
+    sr:(rad*60)+'m',
+    spatialRegionOperation:'intersects',
+    execute:''
+   }).toString();
+   official.href=officialUrl.toString();
+   official.target='_blank';
+   official.rel='noopener noreferrer';
+   official.className='inline-flex mt-2 rounded-lg border border-cyan-700 bg-cyan-950/60 px-3 py-2 text-sm text-cyan-200 underline';
+   official.textContent='Open this exact search in the official SPHEREx Data Explorer ↗';
+   status.append(message,official);
+  }
   finally{search.disabled=false;search.textContent='⌕ Search live observations'}
  });
  retry.addEventListener('click',()=>{if(selectedRow)loadImage(selectedRow,selectedButton,true)});
