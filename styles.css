@@ -22,3 +22,13 @@
 @media(max-width:760px){.time-machine-panel{padding:18px}.time-form{grid-template-columns:1fr}.time-side{grid-template-columns:1fr 1fr}.time-submit{width:100%}.time-results-grid{grid-template-columns:1fr}}
 
 .position-test-button{margin-top:12px;width:100%;min-height:42px;border:1px solid #a78bfa66;border-radius:10px;background:#171d35;color:#d9d3ff;font:600 12px "DM Sans";cursor:pointer}.position-test-button:disabled{opacity:.6;cursor:wait}#position-only-results{margin-top:10px}
+
+/* Keep the primary comparison prominent; troubleshooting stays tucked away. */
+.diagnostics-panel{margin-top:22px;padding:15px 17px;border:1px solid #8c83c044;border-radius:12px;background:#0b1124}
+.diagnostics-panel summary{cursor:pointer;color:#bdb3f5;font:600 12px "DM Sans";list-style:none}
+.diagnostics-panel summary::-webkit-details-marker{display:none}
+.diagnostics-panel summary::after{content:"＋";float:right;color:#9c8cff}
+.diagnostics-panel[open] summary::after{content:"−"}
+.diagnostics-panel .archive-status{margin-top:12px}
+.results-toggle{margin-top:9px;padding:10px 13px;border:1px solid #8c83c055;border-radius:9px;background:#171d35;color:#c9c0ff;font:600 11px "DM Sans";cursor:pointer}
+.archive-result[hidden]{display:none}
