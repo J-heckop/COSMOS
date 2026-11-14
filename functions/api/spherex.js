@@ -19,7 +19,7 @@ export async function onRequest({request}) {
   if(!Number.isFinite(ra)||ra<0||ra>360||!Number.isFinite(dec)||dec< -90||dec>90||!Number.isFinite(radius)||radius<=0||radius>1)
     return json({error:"Invalid sky position or search radius."},400);
   const parsed=Number.parseInt(q.get("maxrec")||"100",10);
-  const maxrec=Number.isFinite(parsed)?Math.min(5000,Math.max(1,parsed)):100;
+  const maxrec=Number.isFinite(parsed)?Math.min(150,Math.max(1,parsed)):100;
   const collection=String(q.get("collection")||"spherex_qr3").toLowerCase();
   if(!["spherex_qr3","spherex_dr1","both"].includes(collection))
     return json({error:"Choose DR1, QR3, or both SPHEREx collections."},400);
@@ -64,7 +64,7 @@ export async function onRequest({request}) {
       method:"POST",
       headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8","Accept":"application/x-votable+xml, application/xml, text/xml"},
       body:params.toString(),
-      signal:AbortSignal.timeout(22000)
+      signal:AbortSignal.timeout(27000)
     });
     const xml=await response.text();
     if(!response.ok) throw new Error("IRSA TAP returned HTTP "+response.status);
