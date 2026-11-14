@@ -82,7 +82,7 @@ if (archiveForm) {
         url.search = new URLSearchParams({COLLECTION:collection, POS:"CIRCLE " + ra + " " + dec + " " + radius, RESPONSEFORMAT:"VOTABLE"}).toString();
         const response = await fetch(url, {headers:{Accept:"application/x-votable+xml, application/xml, text/xml"}});
         if (!response.ok) throw new Error("IRSA returned HTTP " + response.status);
-        return {collection, rows:parseVOTable(await response.text())};
+        return {collection, rows:timeParseVOTable(await response.text())};
       }));
       const allRows = responses.flatMap(result => result.rows.map(row => ({...row, _collection:result.collection})));
       if (!allRows.length) {
@@ -96,7 +96,7 @@ if (archiveForm) {
           const title = document.createElement("strong");
           title.textContent = safeText(row.obs_id, "SPHEREx observation " + (index + 1));
           const meta = document.createElement("span");
-          const band = safeText(row.band, "Band not listed");
+          const band = timeSafeText(row.band, "Band not listed");
           const date = row.t_min ? " · MJD " + row.t_min : "";
           meta.textContent = row._collection.toUpperCase() + " · " + band + date;
           details.append(title, meta);
@@ -170,6 +170,18 @@ if (timeForm) {
   dateInputs[2].value = "2025-11-01";
   dateInputs[3].value = "2025-12-01";
 
+  function timeSafeText(value, fallback = "Not supplied") {
+    return value && value !== "null" && value !== "undefined" ? value : fallback;
+  }
+  function timeParseVOTable(xmlText) {
+    const doc = new DOMParser().parseFromString(xmlText, "application/xml");
+    if (doc.querySelector("parsererror")) throw new Error("The archive returned an unreadable table.");
+    const fields = [...doc.querySelectorAll("FIELD")].map(field => (field.getAttribute("name") || field.getAttribute("ID") || "").toLowerCase());
+    return [...doc.querySelectorAll("TABLEDATA TR")].map(row => {
+      const values = [...row.querySelectorAll("TD")].map(cell => cell.textContent.trim());
+      return Object.fromEntries(fields.map((field,index) => [field,values[index] || ""]));
+    });
+  }
   function dateToMJD(dateString, endOfDay = false) {
     const date = new Date(dateString + (endOfDay ? "T23:59:59Z" : "T00:00:00Z"));
     return date.getTime() / 86400000 + 40587;
@@ -191,7 +203,7 @@ if (timeForm) {
       item.className = "archive-result";
       const info = document.createElement("div");
       const name = document.createElement("strong");
-      name.textContent = safeText(row.obs_id, "Observation " + (index + 1));
+      name.textContent = timeSafeText(row.obs_id, "Observation " + (index + 1));
       const meta = document.createElement("span");
       const mjd = Number(row.t_min);
       const date = Number.isFinite(mjd) ? new Date((mjd - 40587) * 86400000).toISOString().slice(0,10) : "Date not listed";
@@ -255,7 +267,7 @@ if (timeForm) {
       // Replace generic collection labels with the actual release for each result row.
       [ [outputA,a], [outputB,b] ].forEach(([container,sets]) => {
         const links=[...container.querySelectorAll(".archive-result")];
-        links.forEach((item,index) => { const meta=item.querySelector("span"); if(meta && sets[index]) meta.textContent=sets[index].collection.toUpperCase()+" · "+safeText(sets[index].row.band,"Band not listed")+" · "+(Number.isFinite(Number(sets[index].row.t_min))?new Date((Number(sets[index].row.t_min)-40587)*86400000).toISOString().slice(0,10):"Date not listed"); });
+        links.forEach((item,index) => { const meta=item.querySelector("span"); if(meta && sets[index]) meta.textContent=sets[index].collection.toUpperCase()+" · "+timeSafeText(sets[index].row.band,"Band not listed")+" · "+(Number.isFinite(Number(sets[index].row.t_min))?new Date((Number(sets[index].row.t_min)-40587)*86400000).toISOString().slice(0,10):"Date not listed"); });
       });
       timeStatus.textContent = "Comparison complete: " + a.length + " observation(s) in Period A and " + b.length + " in Period B. Compare their dates and bands, then open the original FITS data to inspect each observation.";
       timeStatus.className = "archive-status success";
