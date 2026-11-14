@@ -36,6 +36,52 @@ document.querySelectorAll(".popular-searches [data-query]").forEach(button => bu
   document.querySelector("#object-grid").scrollIntoView({behavior:"smooth",block:"start"});
 }));
 /* Query the official IRSA SPHEREx Simple Image Access service (SIA2). */
+// Resolve a familiar astronomical object name into J2000 decimal-degree coordinates.
+(() => {
+  const input = document.querySelector("#object-name-input");
+  const button = document.querySelector("#resolve-object");
+  const raInput = document.querySelector("#ra-input");
+  const decInput = document.querySelector("#dec-input");
+  const status = document.querySelector("#archive-status");
+  if (!input || !button || !raInput || !decInput || !status) return;
+  async function resolveName() {
+    const name = input.value.trim();
+    if (!name) {
+      status.textContent = "Enter an object name first, such as Andromeda Galaxy or Orion Nebula.";
+      status.className = "archive-status error";
+      input.focus();
+      return;
+    }
+    button.disabled = true;
+    button.textContent = "Looking up…";
+    status.textContent = "Resolving the astronomical object name…";
+    status.className = "archive-status";
+    try {
+      const response = await fetch("/api/resolve-object?name=" + encodeURIComponent(name), {signal: AbortSignal.timeout(22000)});
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not resolve that object name.");
+      raInput.value = Number(result.ra).toFixed(6);
+      decInput.value = Number(result.dec).toFixed(6);
+      status.textContent = "Found " + result.name + " · RA " + Number(result.ra).toFixed(4) + "° · Dec " + Number(result.dec).toFixed(4) + "°. Coordinates filled in — choose a search radius and open the official explorer.";
+      status.className = "archive-status success";
+      raInput.dispatchEvent(new Event("input", {bubbles:true}));
+      decInput.dispatchEvent(new Event("input", {bubbles:true}));
+    } catch (error) {
+      status.textContent = error.name === "TimeoutError" || error.name === "AbortError"
+        ? "The object-name service is taking too long. Try again, or enter RA and Dec manually."
+        : error.message + " You can also enter RA and Dec manually.";
+      status.className = "archive-status error";
+    } finally {
+      button.disabled = false;
+      button.textContent = "Find coordinates";
+    }
+  }
+  button.addEventListener("click", resolveName);
+  input.addEventListener("keydown", event => {
+    if (event.key === "Enter") { event.preventDefault(); resolveName(); }
+  });
+})();
+ 
 const archiveForm = document.querySelector("#archive-form");
 if (archiveForm) {
   const statusBox = document.querySelector("#archive-status");
