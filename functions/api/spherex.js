@@ -96,12 +96,12 @@ export async function onRequest({request}) {
         signal:AbortSignal.timeout(15000)
       });
       if(!response.ok) {
-        const detail=(await response.text()).replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim().slice(0,300);
+        const detail=(await response.text()).replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,300);
         lastAsyncError="IRSA async returned HTTP "+response.status+(detail?": "+detail:"");
       } else {
         const jobUrl=response.url;
         const parsed=new URL(jobUrl,IRSA);
-        const match=parsed.pathname.match(/^\\/TAP\\/async\\/(\\d+)\\/?$/);
+        const match=parsed.pathname.match(/^\/TAP\/async\/(\d+)\/?$/);
         if(match){
           const jobId=match[1];
           const run=await fetch(IRSA+"/TAP/async/"+jobId+"/phase",{
@@ -132,7 +132,7 @@ export async function onRequest({request}) {
     if(!syncResponse.ok) throw new Error("IRSA async failed ("+lastAsyncError+"); sync fallback returned HTTP "+syncResponse.status+".");
     const queryError=errorFromXml(xml);
     if(queryError) throw new Error("IRSA query error: "+queryError);
-    if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\\b/i.test(xml)) throw new Error("IRSA returned an unexpected response. Async: "+lastAsyncError);
+    if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml)) throw new Error("IRSA returned an unexpected response. Async: "+lastAsyncError);
     return json({done:true,phase:"COMPLETED",results:[{collection:"spherex_tap_sync",period:null,xml}],source:"IRSA TAP sync fallback",band:requestedBand});
 
   }catch(error){
