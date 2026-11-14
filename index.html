@@ -60,7 +60,8 @@
         <form id="archive-form" class="coordinate-form">
           <label>Right ascension (RA)<input id="ra-input" type="number" min="0" max="360" step="any" placeholder="e.g. 10.6847" required><small>Degrees · 0 to 360</small></label>
           <label>Declination (Dec)<input id="dec-input" type="number" min="-90" max="90" step="any" placeholder="e.g. 41.2690" required><small>Degrees · −90 to +90</small></label>
-          <label>Search radius<select id="radius-input"><option value="0.05">3 arcmin</option><option value="0.1" selected>6 arcmin</option><option value="0.25">15 arcmin</option><option value="0.5">30 arcmin</option><option value="1">1 degree</option></select><small>Radius around your coordinates</small></label>
+          <label>SPHEREx data release<select id="collection-input"><option value="spherex_qr3" selected>QR3 · Latest survey release</option><option value="spherex_dr1">DR1 · Earlier survey data</option></select><small>Search one release at a time for faster results</small></label>
+          <label>Search radius<select id="radius-input"><option value="0.05" selected>3 arcmin</option><option value="0.1">6 arcmin</option><option value="0.25">15 arcmin</option><option value="0.5">30 arcmin</option><option value="1">1 degree</option></select><small>Radius around your coordinates</small></label>
           <button class="button primary archive-submit" id="archive-submit" type="submit">Search SPHEREx <span>→</span></button>
         </form>
         <div class="coordinate-example"><span>TRY AN EXAMPLE</span><button type="button" id="example-coords">Andromeda Galaxy · 10.6847°, 41.2690°</button></div>
@@ -192,6 +193,6 @@
   <footer><a class="brand" href="#"><span class="brand-mark">✳</span> COSMOS</a><span>Made for curious minds. Built around NASA SPHEREx.</span><span class="developer-credit">Developed by <strong>JAMES</strong></span><a href="https://www.nasa.gov/" target="_blank" rel="noreferrer">NASA ↗</a></footer>
   <script type="module" src="galaxy-bg.js"></script>
   <script src="vendor/fits.js"></script>
-  <script src="script.js?v=sia2-position-fix-20261114"></script>
+  <script src="script.js?v=single-release-cache-20261114"></script>
 </body>
 </html>
