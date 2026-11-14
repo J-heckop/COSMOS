@@ -83,7 +83,7 @@ if (archiveForm) {
     resultsBox.replaceChildren();
     submitButton.disabled = true;
     submitButton.textContent = "Searching archive…";
-    setArchiveStatus("Searching both SPHEREx collections at IRSA. This archive query can take up to 50 seconds.");
+    setArchiveStatus("Searching the selected SPHEREx release…");
 
     try {
       const proxyUrl = new URL("/api/spherex", window.location.origin);
@@ -267,8 +267,8 @@ if (timeForm) {
     timeStatus.className = "archive-status";
     try {
       const url = new URL("/api/spherex", window.location.origin);
-      url.search = new URLSearchParams({ra:String(ra),dec:String(dec),radius:String(radius),maxrec:"20"}).toString();
-      const response = await fetch(url, {signal: AbortSignal.timeout(50000)});
+      url.search = new URLSearchParams({ra:String(ra),dec:String(dec),radius:String(radius),collection:document.querySelector("#collection-input")?.value || "spherex_qr3",maxrec:"30"}).toString();
+      const response = await fetch(url, {signal: AbortSignal.timeout(23000)});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive query failed.");
       const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml));
@@ -311,7 +311,7 @@ if (timeForm) {
         timeStatus.className = "archive-status";
       }
     } catch (error) {
-      timeStatus.textContent = error.name === "TimeoutError" || error.name === "AbortError" ? "The SPHEREx archive did not respond within 10 seconds. Search stopped so you can retry; this is not a zero-observation result." : "Could not discover observation dates: " + error.message;
+      timeStatus.textContent = error.name === "TimeoutError" || error.name === "AbortError" ? "The SPHEREx archive is taking too long to respond. Try again in a moment; this is not a zero-observation result." : "Could not discover observation dates: " + error.message;
       timeStatus.className = "archive-status error";
     } finally {
       discoverButton.disabled = false;
@@ -517,12 +517,12 @@ if (timeForm) {
       positionTestButton.disabled = true;
       positionTestButton.textContent = "Checking position…";
       output.replaceChildren();
-      status.textContent = "Checking both SPHEREx collections without any date filter…";
+      status.textContent = "Checking the selected SPHEREx release without a date filter…";
       status.className = "archive-status";
       try {
         const url = new URL("/api/spherex", window.location.origin);
-        url.search = new URLSearchParams({ra:String(ra),dec:String(dec),radius:String(radius)}).toString();
-        const response = await fetch(url);
+        url.search = new URLSearchParams({ra:String(ra),dec:String(dec),radius:String(radius),collection:document.querySelector("#collection-input")?.value || "spherex_qr3",maxrec:"12"}).toString();
+        const response = await fetch(url,{signal:AbortSignal.timeout(23000)});
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.detail || payload.error || "Archive proxy failed");
         const sets = (payload.results || []).map(result => ({collection:result.collection,rows:parseVOTable(result.xml)}));
@@ -587,10 +587,11 @@ if (timeForm) {
         ra:String(ra), dec:String(dec), radius:String(radius),
         startA:String(dateToMJD(aDate)), endA:String(dateToMJD(aDate,true)),
         startB:String(dateToMJD(bDate)), endB:String(dateToMJD(bDate,true)),
-        maxrec:"300"
+        collection:document.querySelector("#collection-input")?.value || "spherex_qr3",
+        maxrec:"30"
       }).toString();
       timeStatus.textContent = "Running one combined archive query for both dates…";
-      const response = await fetch(url,{signal:AbortSignal.timeout(52000)});
+      const response = await fetch(url,{signal:AbortSignal.timeout(23000)});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive proxy failed");
       const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml).map(row=>({...row,_collection:result.collection})));
