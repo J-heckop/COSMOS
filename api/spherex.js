@@ -15,7 +15,7 @@ module.exports = async function handler(req, res) {
   if (!Number.isFinite(ra) || ra < 0 || ra > 360 || !Number.isFinite(dec) || dec < -90 || dec > 90 || !Number.isFinite(radius) || radius <= 0 || radius > 1) {
     return send(res, 400, { error: "Invalid sky position or search radius." });
   }
-  const n = Number.parseInt(q.maxrec || "100", 10);
+  const n = Number.parseInt(q.maxrec || "30", 10);
   const maxrec = Number.isFinite(n) ? Math.min(500, Math.max(1, n)) : 100;
   const size = Math.min(0.5, Math.max(0.03, radius * 2));
   const start = q.start === undefined ? null : Number(q.start);
@@ -36,7 +36,7 @@ module.exports = async function handler(req, res) {
       method:"POST",
       headers:{"Content-Type":"application/x-www-form-urlencoded","Accept":"application/x-votable+xml, application/xml, text/xml"},
       body,
-      signal:AbortSignal.timeout(45000)
+      signal:AbortSignal.timeout(55000)
     });
     const xml = await response.text();
     if (!response.ok) return send(res,502,{error:"IRSA TAP query failed.",detail:"HTTP "+response.status});
