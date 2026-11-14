@@ -19,9 +19,9 @@ async function queryCollection(collection,ra,dec,radius,range){
     RESPONSEFORMAT:"VOTABLE"
   });
   if(range) params.set("TIME",range.start+" "+range.end);
-  const hosts=["https://irsa.ipac.caltech.edu","https://irsawebops2.ipac.caltech.edu"];
+  const hosts=["https://irsa.ipac.caltech.edu"];
   let lastError="No response from IRSA";
-  // Try the primary archive, then IRSA's alternate image-server host.
+  // Use IRSA's documented SPHEREx SIA2 endpoint.
   for(const host of hosts){
     try{
       const response=await fetch(host+"/SIA?"+params.toString(),{
@@ -33,13 +33,13 @@ async function queryCollection(collection,ra,dec,radius,range){
         lastError=host+" returned HTTP "+response.status;
         continue;
       }
-      if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\\b/i.test(xml)){
+      if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml)){
         lastError=host+" returned a non-VOTable response";
         continue;
       }
-      const error=xml.match(/<INFO\\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\\s\\S]*?)<\\/INFO>/i);
+      const error=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
       if(error){
-        lastError=error[1].replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim().slice(0,400)||"IRSA rejected the image query";
+        lastError=error[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400)||"IRSA rejected the image query";
         continue;
       }
       return {collection,period:range?.label||null,xml,archiveHost:host};
