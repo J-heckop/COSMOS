@@ -55,7 +55,7 @@ module.exports = async function handler(req, res) {
       const startedAt = Date.now();
       const response = await fetch(url.toString(), {
         headers: { Accept: "application/x-votable+xml, application/xml, text/xml" },
-        signal: AbortSignal.timeout(18000)
+        signal: AbortSignal.timeout(8000)
       });
       if (!response.ok) throw new Error(`${collection} returned HTTP ${response.status}`);
       const xml = await response.text();
