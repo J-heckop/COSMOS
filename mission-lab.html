@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#070b14">
+<title>Mission Lab | COSMOS</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#070b14;color:#e2e8f0;font-family:Inter,sans-serif}button,select,input{font:inherit}button,select{cursor:pointer}.mono{font-family:"JetBrains Mono",monospace}.panel{background:rgba(12,18,32,.91);border:1px solid rgba(56,189,248,.17);backdrop-filter:blur(12px)}.tab{border:1px solid transparent;color:#94a3b8}.tab.active{background:rgba(0,229,255,.13);border-color:rgba(0,229,255,.4);color:#a5f3fc}.control{background:#070b14;border:1px solid #26364f;border-radius:11px;color:#cbd5e1;padding:9px 11px}.action{border:1px solid #334155;background:#172338;color:#dbeafe;border-radius:11px;padding:9px 13px}.action.active{background:#0e4855;border-color:#06b6d4;color:#a5f3fc}.sky-wrap{height:min(64vh,620px);min-height:390px;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,#101f33,#050a13 72%);border:1px solid #26364f;border-radius:18px}.sky-wrap canvas{width:100%;height:100%;display:block}.hud{position:absolute;top:12px;left:12px;right:12px;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none}.hud span{background:#0b1422df;border:1px solid #334155;border-radius:9px;padding:7px 9px;font:10px "JetBrains Mono",monospace;color:#a5f3fc}.sky-toast{position:absolute;left:12px;right:12px;bottom:12px;background:#0b1422e8;border:1px solid #334155;border-radius:10px;padding:10px;font-size:12px;color:#cbd5e1}.range{accent-color:#00e5ff;width:100%}.small-label{font:10px "JetBrains Mono",monospace;letter-spacing:.13em;color:#94a3b8}.metric{color:#67e8f9}.hide{display:none!important}@media(max-width:700px){.sky-wrap{height:440px;min-height:360px}.header-inner{align-items:flex-start;flex-direction:column}.top-controls{width:100%}.mode-tabs{overflow-x:auto}.epoch-row{display:grid;grid-template-columns:1fr}.epoch-row select{width:100%}.band-labels span:nth-child(2),.band-labels span:nth-child(4){display:none}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+</style>
+</head>
+<body class="min-h-screen">
+<header class="panel sticky top-0 z-30 border-x-0 border-t-0 px-4 py-3">
+ <div class="header-inner max-w-7xl mx-auto flex justify-between gap-4">
+  <a href="index.html" class="flex items-center gap-3 no-underline text-white">
+   <span class="w-10 h-10 rounded-xl border border-cyan-400/40 bg-cyan-500/10 grid place-items-center text-cyan-300 text-xl">✳</span>
+   <span><b class="text-sm tracking-widest">COSMOS</b><span class="block text-xs text-slate-400">MISSION LAB</span></span>
+  </a>
+  <div class="top-controls flex flex-wrap items-center gap-2">
+   <label class="small-label">SKY SECTOR</label>
+   <select id="sectorSelect" class="control text-xs"><option value="ecliptic">SEC-04 · Ecliptic Plane</option><option value="galactic">SEC-19 · Taurus Molecular Cloud</option><option value="deepfield">SEC-42 · South Ecliptic Pole</option></select>
+   <button id="guideBtn" class="action text-xs">ⓘ Mission guide</button>
+   <a href="index.html#explore" class="action text-xs no-underline">← Back to COSMOS</a>
+  </div>
+ </div>
+</header>
+<main class="max-w-7xl mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-3">
+ <section class="lg:col-span-8 flex flex-col gap-3">
+  <div class="panel rounded-2xl p-3 flex flex-col gap-3">
+   <div class="flex flex-wrap justify-between items-center gap-2">
+    <div class="mode-tabs flex gap-1 bg-slate-950 p-1 rounded-xl">
+     <button class="tab active rounded-lg px-3 py-2 text-xs" data-mode="blink">⚡ Blink</button>
+     <button class="tab rounded-lg px-3 py-2 text-xs" data-mode="split">◫ Split wipe</button>
+     <button class="tab rounded-lg px-3 py-2 text-xs" data-mode="rgb">🌈 RGB view</button>
+     <button class="tab rounded-lg px-3 py-2 text-xs" data-mode="scrub">🎞 Timeline</button>
+    </div>
+    <div class="epoch-row flex items-center gap-2 text-xs mono">
+     <label class="text-cyan-300">EPOCH A <select id="epochA" class="control"><option value="0">E1 · H1 2025</option><option value="1">E2 · H2 2025</option><option value="2">E3 · H1 2026</option><option value="3">E4 · H2 2026</option></select></label>
+     <span class="text-slate-500">⇄</span>
+     <label class="text-amber-300">EPOCH B <select id="epochB" class="control"><option value="0">E1 · H1 2025</option><option value="1">E2 · H2 2025</option><option value="2">E3 · H1 2026</option><option value="3" selected>E4 · H2 2026</option></select></label>
+    </div>
+   </div>
+   <div class="border-t border-slate-800 pt-3 flex flex-wrap items-center gap-3">
+    <div id="blinkControls" class="flex flex-wrap items-center gap-2">
+     <button id="playBtn" class="action active text-xs">Ⅱ Auto blink ON</button><button id="stepBtn" class="action text-xs">Step flip · Space</button>
+     <label class="text-xs text-slate-400">Cadence <input id="speed" type="range" min=".3" max="2" step=".1" value=".7" class="range w-24 inline-block align-middle"><b id="speedValue" class="metric mono">0.7s</b></label>
+    </div>
+    <div id="splitControls" class="hide flex items-center gap-2 text-xs w-full"><span>Wipe position</span><input id="wipe" type="range" min="0" max="100" value="50" class="range max-w-xs"><b id="wipeValue" class="metric mono">50%</b></div>
+    <div id="rgbControls" class="hide text-xs text-slate-400">Cyan: Epoch A · Amber: Epoch B · This is a simulated positional overlay.</div>
+    <div id="scrubControls" class="hide flex items-center gap-2 text-xs w-full"><span>Timeline</span><input id="timeline" type="range" min="0" max="3" step=".01" value="0" class="range"><b id="timelineValue" class="metric mono">E1 · H1 2025</b></div>
+    <span id="viewing" class="ml-auto text-xs mono text-cyan-300">VIEWING · EPOCH 1</span>
+   </div>
+  </div>
+  <div class="sky-wrap" id="skyWrap">
+   <canvas id="skyCanvas" aria-label="Illustrative simulated star field"></canvas>
+   <div class="hud"><span id="hudSector">SEC-04 · ECLIPTIC PLANE</span><span id="hudBand">2.15 µm · BAND 042</span><span>SIMULATED FIELD</span></div>
+   <div class="absolute right-3 top-16 flex flex-col gap-2"><button id="zoomIn" class="action w-10 h-10 text-lg">+</button><button id="zoomOut" class="action w-10 h-10 text-lg">−</button><button id="reset" class="action w-10 h-10">↻</button></div>
+   <div id="toast" class="sky-toast">Select a source below to inspect its illustrative properties. The star field is a simulation, not a live SPHEREx image.</div>
+  </div>
+  <div class="panel rounded-2xl p-4">
+   <div class="flex justify-between items-center gap-2"><h2 class="font-semibold">Near-infrared wavelength filter</h2><span class="small-label">102 BAND MODEL</span></div>
+   <div class="flex justify-between mt-3 text-xs mono"><b id="bandNum" class="metric">042 / 102</b><b id="waveNum" class="text-amber-300">2.15 µm</b></div>
+   <div class="h-2.5 rounded-full mt-3" style="background:linear-gradient(90deg,#6366f1,#06b6d4,#10b981,#f59e0b,#ef4444)"></div>
+   <input id="bandSlider" type="range" min="1" max="102" value="42" class="range -mt-1">
+   <div class="band-labels flex justify-between text-[10px] text-slate-500 mono mt-2"><span>0.75 µm</span><span>1.6 µm</span><span>3.0 µm</span><span>4.2 µm</span><span>5.0 µm</span></div>
+   <div class="flex flex-wrap gap-2 mt-4"><button class="action text-xs" data-band="12">1.10 µm · Hot stars</button><button class="action text-xs" data-band="42">2.15 µm · Dust window</button><button class="action text-xs" data-band="62">3.05 µm · Ice feature</button><button class="action text-xs" data-band="88">4.35 µm · Long-wave</button></div>
+   <p class="text-xs text-slate-500 mt-3">Wavelength selection changes the illustrative display only; this page does not retrieve calibrated SPHEREx band images.</p>
+  </div>
+ </section>
+ <aside class="lg:col-span-4 flex flex-col gap-3">
+  <div class="panel rounded-2xl p-4">
+   <div class="small-label">MISSION GUIDE</div><h2 class="text-lg font-semibold mt-2">Explore the changing sky</h2>
+   <p class="text-sm text-slate-400 leading-6 mt-2">SPHEREx observes the whole sky in near-infrared light. This interactive learning workspace demonstrates how observations from different epochs can be compared.</p>
+   <div class="grid grid-cols-2 gap-2 mt-4"><div class="bg-slate-950 rounded-xl p-3"><b class="metric text-xl">102</b><p class="text-xs text-slate-500 mt-1">spectral bands</p></div><div class="bg-slate-950 rounded-xl p-3"><b class="text-amber-300 text-xl">0.75–5</b><p class="text-xs text-slate-500 mt-1">micrometres</p></div></div>
+   <p class="text-xs text-slate-500 mt-3">Mission facts are educational context; the sky, source positions and epoch changes below are simulated.</p>
+  </div>
+  <div class="panel rounded-2xl p-4">
+   <div class="flex justify-between items-center"><h2 class="font-semibold">Source inspector</h2><span id="sourceId" class="small-label">NONE</span></div>
+   <p id="sourceName" class="text-sm text-slate-400 mt-3">Choose one of the simulated sources.</p>
+   <div class="mt-4 space-y-3 text-xs"><div class="flex justify-between"><span class="text-slate-500">Illustrative type</span><b id="sourceType">—</b></div><div class="flex justify-between"><span class="text-slate-500">Epoch A position</span><b id="sourcePosA" class="mono">—</b></div><div class="flex justify-between"><span class="text-slate-500">Epoch B position</span><b id="sourcePosB" class="mono">—</b></div><div class="flex justify-between"><span class="text-slate-500">Display band</span><b id="sourceBand" class="mono">2.15 µm</b></div></div>
+   <div class="mt-4 flex flex-wrap gap-2" id="sourceButtons"></div>
+  </div>
+  <div class="panel rounded-2xl p-4">
+   <div class="small-label">DISCOVERY NOTES</div><h2 class="font-semibold mt-2">Record what you notice</h2>
+   <textarea id="note" rows="3" maxlength="240" placeholder="Write an observation about the simulated field…" class="control w-full mt-3 text-sm"></textarea>
+   <button id="saveNote" class="action active w-full mt-2 text-sm">Save local note</button><p id="noteStatus" class="text-xs text-slate-500 mt-2">Notes stay in this browser session.</p>
+  </div>
+ </aside>
+ <div class="lg:col-span-12 panel rounded-xl p-3 text-xs text-slate-400 leading-6"><b class="text-amber-300">Scientific integrity note:</b> This Mission Lab is an educational simulation. The star field, source positions, epoch differences, RGB overlays and wavelength display are illustrative. They are not actual SPHEREx observations, measured spectra, or validated detections. For real archive data, use the official <a class="text-cyan-300 underline" href="https://irsa.ipac.caltech.edu/applications/spherex/" target="_blank" rel="noopener">SPHEREx Data Explorer</a>.</div>
+</main>
+<script>
+(()=> {
+ const $=id=>document.getElementById(id), canvas=$('skyCanvas'),ctx=canvas.getContext('2d');
+ const names=['Source 01','Source 02','Source 03','Source 04'];
+ const sources=names.map((name,i)=>({name,type:['Bright star','Faint source','Illustrative moving point','Diffuse source'][i],x:[.25,.68,.48,.79][i],y:[.36,.25,.67,.76][i],dx:[.002,-.004,.035,.006][i],dy:[-.002,.003,-.018,.002][i]}));
+ let mode='blink',epoch=0,playing=true,phase=0,zoom=1,selected=-1,band=42,wipe=50,last=0,width=0,height=0,stars=[];
+ const epochNames=['E1 · H1 2025','E2 · H2 2025','E3 · H1 2026','E4 · H2 2026'];
+ function resize(){const r=canvas.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,1.5);width=r.width;height=r.height;canvas.width=Math.round(width*d);canvas.height=Math.round(height*d);ctx.setTransform(d,0,0,d,0,0);stars=Array.from({length:Math.max(100,Math.min(260,Math.round(width*height/2300)))},()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.25+.25,a:Math.random()*.65+.15,t:Math.random()*6.28}));}
+ function pos(s,e){return {x:s.x+s.dx*e,y:s.y+s.dy*e}}
+ function drawStars(){for(const s of stars){ctx.globalAlpha=s.a*(.75+.25*Math.sin(performance.now()*.0007+s.t));ctx.fillStyle='#b7d9ef';ctx.beginPath();ctx.arc(s.x*width,s.y*height,s.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1}
+ function drawSources(e,color='#e7f7ff',offset=0){sources.forEach((s,i)=>{const p=pos(s,e);const x=(p.x-.5)*width*zoom+width/2,y=(p.y-.5)*height*zoom+height/2;ctx.save();ctx.shadowBlur=selected===i?22:12;ctx.shadowColor=color;ctx.fillStyle=color;ctx.globalAlpha=.9;ctx.beginPath();ctx.arc(x,y,selected===i?4.5:2.8,0,Math.PI*2);ctx.fill();ctx.globalAlpha=.55;ctx.fillRect(x-9,y,x+9);ctx.fillRect(x,y-9,1,18);ctx.restore();})}
+ function frame(){ctx.clearRect(0,0,width,height);drawStars();if(mode==='rgb'){drawSources(+$('epochA').value,'#22d3ee');drawSources(+$('epochB').value,'#f59e0b')}else if(mode==='split'){const cut=width*wipe/100;ctx.save();ctx.beginPath();ctx.rect(0,0,cut,height);ctx.clip();drawSources(+$('epochA').value,'#67e8f9');ctx.restore();ctx.save();ctx.beginPath();ctx.rect(cut,0,width-cut,height);ctx.clip();drawSources(+$('epochB').value,'#fbbf24');ctx.restore();ctx.strokeStyle='#f8fafc';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cut,0);ctx.lineTo(cut,height);ctx.stroke()}else{const e=mode==='scrub'?+$('timeline').value:epoch;drawSources(e,e===+$('epochA').value?'#67e8f9':'#fbbf24')}requestAnimationFrame(frame)}
+ function updateSource(i){selected=i;if(i<0)return;const s=sources[i],a=pos(s,+$('epochA').value),b=pos(s,+$('epochB').value);$('sourceId').textContent='SRC-'+String(i+1).padStart(2,'0');$('sourceName').textContent=s.name+' · illustrative object';$('sourceType').textContent=s.type;$('sourcePosA').textContent=(a.x*100).toFixed(1)+'%, '+(a.y*100).toFixed(1)+'%';$('sourcePosB').textContent=(b.x*100).toFixed(1)+'%, '+(b.y*100).toFixed(1)+'%';$('sourceBand').textContent=(.75+(band-1)*4.25/101).toFixed(2)+' µm';$('toast').textContent=s.name+' selected. These coordinates are simulated for demonstration.'}
+ function setMode(m){mode=m;document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));['blink','split','rgb','scrub'].forEach(k=>$((k==='blink'?'blink':k)+'Controls').classList.toggle('hide',k!==m));$('epochPairControls')?.classList.toggle('hide',m==='scrub');$('toast').textContent=({blink:'Blink mode alternates between the selected illustrative epochs.',split:'Move the wipe slider to reveal each simulated epoch.',rgb:'Cyan and amber show simulated source positions in two epochs.',scrub:'Scrub through four illustrative survey epochs.'})[m]}
+ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
+ $('playBtn').addEventListener('click',()=>{playing=!playing;$('playBtn').textContent=playing?'Ⅱ Auto blink ON':'▶ Auto blink OFF';});
+ $('stepBtn').addEventListener('click',()=>{epoch=epoch===+$('epochA').value?+$('epochB').value:+$('epochA').value;$('viewing').textContent='VIEWING · '+(epoch+1)});
+ $('speed').addEventListener('input',e=>{$('speedValue').textContent=Number(e.target.value).toFixed(1)+'s'});
+ $('wipe').addEventListener('input',e=>{wipe=+e.target.value;$('wipeValue').textContent=wipe+'%'});
+ $('timeline').addEventListener('input',e=>{$('timelineValue').textContent=epochNames[Math.round(+e.target.value)]||epochNames[0]});
+ $('bandSlider').addEventListener('input',e=>setBand(+e.target.value));
+ function setBand(n){band=n;const w=.75+(n-1)*4.25/101;$('bandNum').textContent=String(n).padStart(3,'0')+' / 102';$('waveNum').textContent=w.toFixed(2)+' µm';$('hudBand').textContent=w.toFixed(2)+' µm · BAND '+String(n).padStart(3,'0');$('sourceBand').textContent=w.toFixed(2)+' µm'}
+ document.querySelectorAll('[data-band]').forEach(b=>b.addEventListener('click',()=>{$('bandSlider').value=b.dataset.band;setBand(+b.dataset.band)}));
+ $('sectorSelect').addEventListener('change',e=>{$('hudSector').textContent=e.target.selectedOptions[0].text.toUpperCase();$('toast').textContent='Sector changed. This is still an illustrative simulated sky field.'});
+ $('zoomIn').onclick=()=>zoom=Math.min(zoom*1.2,2.5);$('zoomOut').onclick=()=>zoom=Math.max(zoom/1.2,.65);$('reset').onclick=()=>zoom=1;
+ $('sourceButtons').innerHTML=sources.map((s,i)=>'<button class="action text-xs" data-source="'+i+'">'+s.name+'</button>').join('');
+ $('sourceButtons').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>updateSource(+b.dataset.source)));
+ canvas.addEventListener('click',e=>{const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;let best=0,dist=Infinity;sources.forEach((s,i)=>{const p=pos(s,epoch),d=Math.hypot(p.x-x,p.y-y);if(d<dist){dist=d;best=i}});updateSource(best)});
+ $('saveNote').onclick=()=>{const v=$('note').value.trim();if(!v){$('noteStatus').textContent='Write a short note first.';return}try{const list=JSON.parse(sessionStorage.getItem('cosmosMissionNotes')||'[]');list.unshift(v);sessionStorage.setItem('cosmosMissionNotes',JSON.stringify(list.slice(0,10)));$('note').value='';$('noteStatus').textContent='Saved in this browser session.'}catch(e){$('noteStatus').textContent='Could not save this note in the current browser.'}};
+ $('guideBtn').onclick=()=>alert('Mission Lab is an educational simulation. Its sky, sources, epoch differences and wavelength display are illustrative, not live SPHEREx data.');
+ window.addEventListener('keydown',e=>{if(e.code==='Space'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();$('stepBtn').click()}});
+ function tick(t){if(playing&&mode==='blink'&&t-last>Number($('speed').value)*1000){epoch=epoch===+$('epochA').value?+$('epochB').value:+$('epochA').value;last=t;$('viewing').textContent='VIEWING · '+(epoch+1)}requestAnimationFrame(tick)}
+ new ResizeObserver(resize).observe(canvas);resize();frame();tick(0);
+})();
+</script>
+</body></html>
