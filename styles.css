@@ -180,3 +180,10 @@
   .galaxy-disc{width:min(370px,88vw);height:185px}
   .galaxy-satellite{right:13%;top:13%}
 }
+
+/* Auto-discovered observation date selectors */
+.time-discovery{display:flex;flex-direction:column;gap:8px;margin:20px 0}
+.time-discovery .button{align-self:flex-start}
+.time-side select{width:100%;min-height:54px;padding:0 14px;border:1px solid rgba(255,202,130,.16);border-radius:13px;background:rgba(9,10,18,.82);color:#fff0d5;font:inherit}
+.time-side select:disabled{opacity:.6;cursor:not-allowed}
+.time-submit:disabled,.time-discovery .button:disabled{opacity:.6;cursor:wait}
