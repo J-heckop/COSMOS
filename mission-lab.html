@@ -219,13 +219,13 @@
     const name=document.createElement('b');name.className='text-xs text-slate-100';name.textContent=row.obs_id?'SPHEREx plane '+row.obs_id:'SPHEREx archive image '+(index+1);
     const meta=document.createElement('p');meta.className='text-xs text-slate-400';meta.textContent=(row._collection||'SPHEREx').toUpperCase()+' · '+mjdDate(row.t_min)+' · '+(row.band||row.energy_bandpassname||selectedBand);
     const btn=document.createElement('button');btn.className='action active text-xs mt-auto';btn.textContent='Load real sky image';btn.addEventListener('click',()=>loadImage(row,btn));
-    card.append(name,meta,btn);card.hidden=index>=5;cards.push(card);results.append(card);
+    card.append(name,meta,btn);card.hidden=index>=10;cards.push(card);results.append(card);
    });
    if(cards.length>5){
-    let visibleCount=5;
+    let visibleCount=10;
     const more=document.createElement('button');more.type='button';more.className='action w-full text-sm mt-2';
-    const updateMore=()=>{const remaining=cards.length-visibleCount;more.textContent=remaining>0?'Load 5 more observations ('+remaining+' remaining)':'All '+cards.length+' observations shown';more.disabled=remaining===0};
-    more.addEventListener('click',()=>{const next=Math.min(cards.length,visibleCount+5);cards.slice(visibleCount,next).forEach(card=>card.hidden=false);visibleCount=next;updateMore()});
+    const updateMore=()=>{const remaining=cards.length-visibleCount;more.textContent=remaining>0?'Load 10 more observations ('+remaining+' remaining)':'All '+cards.length+' observations shown';more.disabled=remaining===0};
+    more.addEventListener('click',()=>{const next=Math.min(cards.length,visibleCount+10);cards.slice(visibleCount,next).forEach(card=>card.hidden=false);visibleCount=next;updateMore()});
     updateMore();results.append(more);
    }
    if(rows.length>1){lapsePanel.classList.remove('hide');lapsePlay.disabled=false;lapseStatus.textContent='Play the real FITS observations chronologically.'}
