@@ -66,12 +66,16 @@
           <button class="button primary time-submit" id="time-submit" type="submit">Compare observations <span>→</span></button>
         </form>
         <p class="time-hint">Uses the RA, Dec and radius above. Search dates must be on or after 1 May 2025.</p>
-        <button type="button" class="button secondary position-test-button" id="position-only-test">Test this sky position (ignore dates)</button>
-        <div id="position-only-status" class="archive-status" role="status" aria-live="polite">This test checks whether SPHEREx has any observations at these coordinates, regardless of date.</div>
-        <div id="position-only-results" class="archive-results"></div>
         <div id="time-status" class="archive-status" role="status" aria-live="polite">Enter coordinates above, then choose two date ranges.</div>
         <div class="time-results-grid"><section><h4>PERIOD A <span id="period-a-label"></span></h4><div id="period-a-results" class="archive-results"></div></section><section><h4>PERIOD B <span id="period-b-label"></span></h4><div id="period-b-results" class="archive-results"></div></section></div>
         <p class="time-disclaimer">These are archive observation records, not a processed before-and-after animation. SPHEREx image products are FITS files; use the official viewer or download link to inspect the science image.</p>
+        <details class="diagnostics-panel">
+          <summary>Advanced diagnostics · Test all observations at this sky position</summary>
+          <p class="time-hint">This optional check ignores dates and is mainly for troubleshooting whether the selected coordinates have any archive observations.</p>
+          <button type="button" class="button secondary position-test-button" id="position-only-test">Test this sky position (ignore dates)</button>
+          <div id="position-only-status" class="archive-status" role="status" aria-live="polite">Run this only if you need to troubleshoot the sky position.</div>
+          <div id="position-only-results" class="archive-results"></div>
+        </details>
       </div>
       <div class="search-panel">
         <label for="space-search">What are you curious about?</label>
