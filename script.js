@@ -272,7 +272,7 @@ if (timeForm) {
       return;
     }
     placeholder.hidden = false;
-    placeholder.textContent = "Loading real SPHEREx image…";
+    placeholder.textContent = "Loading your selected SPHEREx image…";
     status.textContent = "Retrieving FITS cutout from IRSA…";
     try {
       const url = new URL("/api/spherex-image", window.location.origin);
@@ -401,7 +401,7 @@ if (timeForm) {
       const preview = document.createElement("button");
       preview.type = "button";
       preview.className = "preview-image-button";
-      preview.textContent = "Preview image";
+      preview.textContent = "View sky image";
       preview.addEventListener("click", () => {
         const period = target.id === "period-a-results" ? "a" : "b";
         const ra = Number(document.querySelector("#ra-input").value);
@@ -546,7 +546,7 @@ if (timeForm) {
         const links=[...container.querySelectorAll(".archive-result")];
         links.forEach((item,index) => { const meta=item.querySelector("span"); if(meta && sets[index]) meta.textContent=sets[index].collection.toUpperCase()+" · "+timeSafeText(sets[index].row.band || sets[index].row.energy_bandpassname,"Band not listed")+" · "+(Number.isFinite(Number(sets[index].row.t_min))?new Date((Number(sets[index].row.t_min)-40587)*86400000).toISOString().slice(0,10):"Date not listed"); });
       });
-      timeStatus.textContent = "Comparison ready: " + a.length + " observation(s) in Period A and " + b.length + " in Period B. Image downloads are separate—tap Preview image on a record when you want to inspect it.";
+      timeStatus.textContent = "Comparison ready: " + a.length + " observation(s) in Period A and " + b.length + " in Period B. Images are not loaded automatically. Scroll to each period’s observation list and tap “View sky image” on a record to display it in the matching panel above.";
       timeStatus.className = "archive-status success";
     } catch (error) {
       timeStatus.textContent = "The archive proxy could not complete the request (" + error.message + "). Try the official SPHEREx Data Explorer, which supports position and timing constraints.";
