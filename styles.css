@@ -316,3 +316,8 @@
 .image-comparison-heading h4{color:#f3e7d4}
 .image-comparison-heading p{color:#b8aa98}
 .image-pane{background:#100d0b}
+
+
+.release-picker-label{display:block;margin:0 0 14px;color:#e7c58b;font-size:12px;font-weight:700;letter-spacing:.04em}
+.release-picker-label select{display:block;width:100%;max-width:100%;margin-top:8px;padding:13px 14px;border:1px solid rgba(255,205,130,.28);border-radius:10px;background:#100d0b;color:#f3e7d4;font:500 13px "DM Sans";color-scheme:dark}
+.release-picker-label select:focus-visible{outline:2px solid rgba(255,205,130,.65);outline-offset:2px}
