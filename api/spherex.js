@@ -3,7 +3,8 @@
 const ALLOWED_COLLECTIONS = new Set(["spherex_dr1", "spherex_qr3"]);
 
 function send(res, status, body) {
-  res.status(status).setHeader("Content-Type", "application/json; charset=utf-8");
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
   return res.end(JSON.stringify(body));
 }
