@@ -174,7 +174,14 @@
         <div class="chips"><button class="chip active" data-topic="all">All objects</button><button class="chip" data-topic="galaxies">Galaxies</button><button class="chip" data-topic="nebulae">Nebulae</button><button class="chip" data-topic="stars">Stars</button><button class="chip" data-topic="brown-dwarfs">Brown dwarfs</button><button class="chip" data-topic="dust">Cosmic dust</button><button class="chip" data-topic="star-forming">Star-forming regions</button><button class="chip" data-topic="cosmology">Cosmology</button></div>
       </div>
       <div class="object-grid" id="object-grid">
-        <button type="button" class="object-card" data-category="galaxies" data-search="galaxies andromeda spiral galaxy milky way m31"><div class="object-image galaxy-image nasa-galaxy-image"><span>01 / GALAXY</span></div><div class="object-info"><div><h3>Galaxies</h3><p>Vast islands of stars, gas and dust.</p></div><span class="card-arrow">↗</span></div></button>
+        <button type="button" class="object-card" data-category="galaxies" data-search="SPHEREx galaxy spectra cosmic history Andromeda Milky Way"><div class="object-image galaxy-image nasa-galaxy-image"><span>01 / GALAXY SPECTRA</span></div><div class="object-info"><div><h3>Galaxies & cosmic history</h3><p>Explore infrared galaxy observations.</p></div><span class="card-arrow">↗</span></div></button>
+        <button type="button" class="object-card" data-category="nebulae" data-search="SPHEREx interstellar dust infrared nebula Orion Carina"><div class="object-image nebula-image nasa-nebula-image"><span>02 / DUST & NEBULAE</span></div><div class="object-info"><div><h3>Dusty clouds & nebulae</h3><p>Explore infrared views of dusty regions.</p></div><span class="card-arrow">↗</span></div></button>
+        <button type="button" class="object-card" data-category="stars" data-search="SPHEREx stellar populations stars clusters Pleiades Sirius"><div class="object-image star-image"><span>03 / STELLAR POPULATIONS</span></div><div class="object-info"><div><h3>Stars & environments</h3><p>Explore stellar regions in the archive.</p></div><span class="card-arrow">↗</span></div></button>
+        <button type="button" class="object-card" data-category="brown-dwarfs" data-search="SPHEREx brown dwarfs cool infrared atmospheres"><div class="object-image brown-dwarf-image"><span>04 / COOL OBJECTS</span></div><div class="object-info"><div><h3>Brown dwarfs</h3><p>Why infrared surveys matter for cool objects.</p></div><span class="card-arrow">↗</span></div></button>
+        <button type="button" class="object-card" data-category="dust" data-search="SPHEREx molecular clouds interstellar ices spectra"><div class="object-image dust-image"><span>05 / MOLECULES & ICES</span></div><div class="object-info"><div><h3>Interstellar molecules</h3><p>Explore the chemistry of cold clouds.</p></div><span class="card-arrow">↗</span></div></button>
+        <button type="button" class="object-card" data-category="star-forming" data-search="SPHEREx star formation young stars molecular clouds Orion Carina"><div class="object-image star-forming-image"><span>06 / STAR FORMATION</span></div><div class="object-info"><div><h3>Star-forming regions</h3><p>Investigate stellar nurseries.</p></div><span class="card-arrow">↗</span></div></button>
+        <button type="button" class="object-card" data-category="cosmology" data-search="SPHEREx repeated all sky survey 102 bands observation dates"><div class="object-image universe-image"><span>07 / REPEATED SURVEYS</span></div><div class="object-info"><div><h3>Repeated sky surveys</h3><p>Explore observations from different dates.</p></div><span class="card-arrow">↗</span></div></button>
+      </div><div class="object-info"><div><h3>Galaxies</h3><p>Vast islands of stars, gas and dust.</p></div><span class="card-arrow">↗</span></div></button>
         <button type="button" class="object-card" data-category="nebulae" data-search="nebulae orion carina stellar nurseries gas dust"><div class="object-image nebula-image nasa-nebula-image"><span>02 / NEBULA</span></div><div class="object-info"><div><h3>Nebulae</h3><p>Cosmic clouds of gas and dust.</p></div><span class="card-arrow">↗</span></div></button>
         <button type="button" class="object-card" data-category="stars" data-search="stars stellar objects pleiades star cluster"><div class="object-image star-image"><span>03 / STAR</span></div><div class="object-info"><div><h3>Stars & clusters</h3><p>Explore stellar life and star groups.</p></div><span class="card-arrow">↗</span></div></button>
         <button type="button" class="object-card" data-category="brown-dwarfs" data-search="brown dwarfs failed stars infrared cool objects"><div class="object-image brown-dwarf-image"><span>04 / BROWN DWARF</span></div><div class="object-info"><div><h3>Brown dwarfs</h3><p>Objects between planets and stars.</p></div><span class="card-arrow">↗</span></div></button>
@@ -183,7 +190,7 @@
         <button type="button" class="object-card" data-category="cosmology" data-search="cosmology universe cosmic background deep universe"><div class="object-image universe-image"><span>07 / DEEP SPACE</span></div><div class="object-info"><div><h3>Deep universe</h3><p>Investigate the universe on its largest scales.</p></div><span class="card-arrow">↗</span></div></button>
       </div>
       <p class="empty-state" id="empty-state" hidden>No matches yet. Try another search. ✨</p>
-      <p class="data-note"><span>ⓘ</span> These are introductory topic cards, not live SPHEREx detections. Use the archive explorer above to search real observations and preview their FITS imagery.</p>
+      <p class="data-note"><span>ⓘ</span> Explore how SPHEREx studies these science themes. Example targets open coordinate searches; available observations and dates are confirmed by the live archive.</p>
     </section>
 
 
@@ -210,6 +217,6 @@
   <footer><a class="brand" href="#"><span class="brand-mark">✳</span> COSMOS</a><span>Made for curious minds. Built around NASA SPHEREx.</span><span class="developer-credit">Developed by <strong>JAMES</strong></span><a href="https://www.nasa.gov/" target="_blank" rel="noreferrer">NASA ↗</a></footer>
   <script type="module" src="galaxy-bg.js"></script>
   <script src="vendor/fits.js"></script>
-  <script src="script.js?v=discovery-log-fix-20261114"></script>
+  <script src="script.js?v=spherex-science-topics-20261114"></script>
 </body>
 </html>
