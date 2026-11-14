@@ -259,7 +259,7 @@ if (timeForm) {
   }
 
   const loadMoreDatesButton = document.querySelector("#load-more-dates");
-  let archiveMaxRecords = 10;
+  let archiveMaxRecords = 100;
   let loadMoreRequested = false;
   if (loadMoreDatesButton) {
     loadMoreDatesButton.addEventListener("click", () => {
@@ -270,7 +270,7 @@ if (timeForm) {
     });
   }
   discoverButton.addEventListener("click", async () => {
-    if (!loadMoreRequested) archiveMaxRecords = 10;
+    if (!loadMoreRequested) archiveMaxRecords = 100;
     loadMoreRequested = false;
     const ra = Number(document.querySelector("#ra-input").value);
     const dec = Number(document.querySelector("#dec-input").value);
@@ -375,7 +375,7 @@ if (timeForm) {
         dec: String(dec),
         size: String(Math.min(0.2, Math.max(0.1, radius)))
       }).toString();
-      const response = await fetch(url, {signal: AbortSignal.timeout(52000)});
+      const response = await fetch(url, {signal: AbortSignal.timeout(75000)});
       if (!response.ok) {
         const problem = await response.json().catch(() => ({}));
         throw new Error(problem.detail || problem.error || "Image request failed (HTTP " + response.status + ")");
