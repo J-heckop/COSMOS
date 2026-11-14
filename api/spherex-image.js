@@ -26,27 +26,30 @@ module.exports = async function handler(req, res) {
         !Number.isFinite(size) || size <= 0 || size > 0.5) {
       return send(res, 400, { error: "Invalid image cutout coordinates or size." });
     }
-    // IRSA's documented cutout service accepts J2000 coordinates in degrees.
-    source.searchParams.set("center", ra + "," + dec + "deg");
-    source.searchParams.set("size", size + "deg");
-    source.searchParams.set("gzip", "false");
-
-    // Retry brief upstream outages (503/504) before returning a useful error.
+    // Use the documented SPHEREx cutout URL syntax; retry smaller cutouts if IRSA is busy.
+    const sizes = [...new Set([size, Math.max(0.03, size / 2), Math.max(0.03, size / 4)])];
     let upstream;
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      upstream = await fetch(source.toString(), {
+    let lastStatus = 0;
+    for (let attempt = 0; attempt < sizes.length; attempt += 1) {
+      const attemptUrl = new URL(source.toString());
+      attemptUrl.searchParams.set("center", ra + "," + dec);
+      attemptUrl.searchParams.set("size", String(sizes[attempt]));
+      attemptUrl.searchParams.delete("gzip");
+      upstream = await fetch(attemptUrl.toString(), {
         headers: { Accept: "application/fits, application/octet-stream" },
-        signal: AbortSignal.timeout(55000)
+        signal: AbortSignal.timeout(50000)
       });
-      if (upstream.ok || ![502, 503, 504].includes(upstream.status) || attempt === 2) break;
-      await new Promise(resolve => setTimeout(resolve, 700 * (attempt + 1)));
+      if (upstream.ok) break;
+      lastStatus = upstream.status;
+      if (![429, 500, 502, 503, 504].includes(upstream.status) || attempt === sizes.length - 1) break;
+      await new Promise(resolve => setTimeout(resolve, 800 * (attempt + 1)));
     }
-    if (!upstream.ok) {
+    if (!upstream || !upstream.ok) {
       res.setHeader("Retry-After", "30");
-      return send(res, upstream.status === 503 ? 503 : 502, {
-        error: "The IRSA image service is temporarily unavailable.",
-        detail: "IRSA returned HTTP " + upstream.status + ". Your observation search still worked; try the image preview again shortly.",
-        retryable: [502, 503, 504].includes(upstream.status)
+      return send(res, lastStatus === 503 ? 503 : 502, {
+        error: "IRSA SPHEREx cutout service is temporarily unavailable.",
+        detail: "The observation record exists, but IRSA could not create its image cutout (HTTP " + lastStatus + "). Try again later or open the original FITS product.",
+        retryable: true
       });
     }
     const bytes = Buffer.from(await upstream.arrayBuffer());
