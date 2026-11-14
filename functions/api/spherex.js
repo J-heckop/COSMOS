@@ -90,13 +90,18 @@ export async function onRequest({request}) {
       method:"POST",
       headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8","Accept":"text/plain"},
       body:params.toString(),
-      redirect:"manual",
+      redirect:"follow",
       signal:AbortSignal.timeout(15000)
     });
+    // Cloudflare Workers can expose manual redirects as opaque responses with
+    // no readable Location header. Follow the TAP 303 and use the final URL.
     const location=response.headers.get("Location");
-    let jobUrl=location;
-    if(!jobUrl&&response.ok) jobUrl=(await response.text()).trim();
-    if(!jobUrl) throw new Error("IRSA did not return an asynchronous job URL (HTTP "+response.status+").");
+    const jobUrl=location||response.url;
+    if(!response.ok) {
+      const detail=(await response.text()).replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim().slice(0,400);
+      throw new Error("IRSA rejected the async request (HTTP "+response.status+"). "+detail);
+    }
+    if(!jobUrl||jobUrl===IRSA+"/TAP/async") throw new Error("IRSA did not provide a job URL. Final URL: "+(response.url||"unavailable"));
     const parsed=new URL(jobUrl,IRSA);
     if(parsed.origin!==IRSA||!/^\/TAP\/async\/\d+\/?$/.test(parsed.pathname))throw new Error("IRSA returned an invalid job URL.");
     const jobId=parsed.pathname.match(/\/(\d+)\/?$/)[1];
