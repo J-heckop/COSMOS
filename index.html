@@ -64,15 +64,24 @@
         <div class="chips"><button class="chip active" data-topic="all">All objects</button><button class="chip" data-topic="galaxies">Galaxies</button><button class="chip" data-topic="nebulae">Nebulae</button><button class="chip" data-topic="stars">Stars</button><button class="chip" data-topic="cosmology">Cosmology</button></div>
       </div>
       <div class="object-grid" id="object-grid">
-        <article class="object-card" data-category="galaxies" data-search="galaxies andromeda spiral galaxy"><div class="object-image galaxy-image"><span>01 / GALAXY</span></div><div class="object-info"><div><h3>Galaxies</h3><p>Vast islands of stars, gas and dust.</p></div><span class="card-arrow">↗</span></div></article>
+        <button type="button" class="object-card" data-category="galaxies" data-search="galaxies andromeda spiral galaxy"><div class="object-image galaxy-image"><span>01 / GALAXY</span></div><div class="object-info"><div><h3>Galaxies</h3><p>Vast islands of stars, gas and dust.</p></div><span class="card-arrow">↗</span></div></article>
         <article class="object-card" data-category="nebulae" data-search="nebulae stellar nurseries gas dust"><div class="object-image nebula-image"><span>02 / NEBULA</span></div><div class="object-info"><div><h3>Nebulae</h3><p>Cosmic clouds where stars are born.</p></div><span class="card-arrow">↗</span></div></article>
         <article class="object-card" data-category="stars" data-search="stars stellar objects brown dwarfs"><div class="object-image star-image"><span>03 / STAR</span></div><div class="object-info"><div><h3>Stars</h3><p>Explore the building blocks of galaxies.</p></div><span class="card-arrow">↗</span></div></article>
-        <article class="object-card" data-category="cosmology" data-search="cosmology universe cosmic background"><div class="object-image universe-image"><span>04 / DEEP SPACE</span></div><div class="object-info"><div><h3>Deep universe</h3><p>Investigate the universe on its largest scales.</p></div><span class="card-arrow">↗</span></div></article>
+        <article class="object-card" data-category="cosmology" data-search="cosmology universe cosmic background"><div class="object-image universe-image"><span>04 / DEEP SPACE</span></div><div class="object-info"><div><h3>Deep universe</h3><p>Investigate the universe on its largest scales.</p></div><span class="card-arrow">↗</span></div></button>
       </div>
       <p class="empty-state" id="empty-state" hidden>No matches yet. Try another search. ✨</p>
       <p class="data-note"><span>ⓘ</span> These are introductory topic cards, not live SPHEREx detections. Live archive imagery and measurements will be connected in a later build.</p>
     </section>
 
+
+    <dialog class="topic-dialog" id="topic-dialog" aria-labelledby="topic-dialog-title">
+      <button class="dialog-close" id="topic-dialog-close" type="button" aria-label="Close details">×</button>
+      <span class="eyebrow" id="topic-dialog-kicker">COSMIC FIELD GUIDE</span>
+      <h2 id="topic-dialog-title">Explore</h2>
+      <p id="topic-dialog-description"></p>
+      <div class="dialog-fact"><strong>What SPHEREx can add</strong><p id="topic-dialog-fact"></p></div>
+      <a class="button primary" id="topic-dialog-link" href="https://irsa.ipac.caltech.edu/applications/spherex/" target="_blank" rel="noreferrer">Open SPHEREx Explorer <span>↗</span></a>
+    </dialog>
     <section class="mission" id="mission">
       <div class="mission-visual"><div class="scan-ring"></div><div class="scan-core">SPHEREx</div><span class="scan-caption">MAPPING THE ENTIRE SKY</span></div>
       <div class="mission-copy"><div class="eyebrow">MEET THE MISSION</div><h2>Same universe.<br><em>Different light.</em></h2><p>NASA’s SPHEREx space telescope surveys the entire sky in 102 colours of near-infrared light. Those wavelengths help scientists study everything from nearby stars to the history of galaxies.</p><a class="text-link" href="https://irsa.ipac.caltech.edu/Missions/spherex.html" target="_blank" rel="noreferrer">Explore the official SPHEREx archive <span>↗</span></a></div>
