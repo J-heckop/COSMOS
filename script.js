@@ -71,6 +71,7 @@ if (archiveForm) {
     const ra = Number(document.querySelector("#ra-input").value);
     const dec = Number(document.querySelector("#dec-input").value);
     const radius = Number(document.querySelector("#radius-input").value);
+    const collection = document.querySelector("#collection-input")?.value || "spherex_qr3";
     if (!Number.isFinite(ra) || ra < 0 || ra > 360 || !Number.isFinite(dec) || dec < -90 || dec > 90) {
       setArchiveStatus("Please enter valid J2000 coordinates: RA 0–360° and Dec −90° to +90°.", "error");
       return;
@@ -86,7 +87,7 @@ if (archiveForm) {
 
     try {
       const proxyUrl = new URL("/api/spherex", window.location.origin);
-      proxyUrl.search = new URLSearchParams({ra:String(ra), dec:String(dec), radius:String(radius)}).toString();
+      proxyUrl.search = new URLSearchParams({ra:String(ra), dec:String(dec), radius:String(radius), collection, maxrec:"20"}).toString();
       const response = await fetch(proxyUrl, {signal: AbortSignal.timeout(55000)});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive proxy failed");
