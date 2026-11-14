@@ -32,7 +32,7 @@ module.exports = async function handler(req, res) {
   const params = new URLSearchParams({
     POS: `CIRCLE ${ra} ${dec} ${radius}`,
     RESPONSEFORMAT: "VOTABLE",
-    MAXREC: "100"
+    MAXREC: "30"
   });
 
   if (q.start !== undefined || q.end !== undefined) {
@@ -50,16 +50,17 @@ module.exports = async function handler(req, res) {
       const collectionParams = new URLSearchParams(params);
       collectionParams.set("COLLECTION", collection);
       url.search = collectionParams.toString();
+      const startedAt = Date.now();
       const response = await fetch(url.toString(), {
         headers: { Accept: "application/x-votable+xml, application/xml, text/xml" },
-        signal: AbortSignal.timeout(25000)
+        signal: AbortSignal.timeout(55000)
       });
       if (!response.ok) throw new Error(`${collection} returned HTTP ${response.status}`);
       const xml = await response.text();
       if (!xml.includes("<VOTABLE") && !xml.includes(":VOTABLE")) {
         throw new Error(`${collection} did not return a VOTable response`);
       }
-      return { collection, xml };
+      return { collection, xml, elapsed_ms: Date.now() - startedAt };
     }));
     return send(res, 200, { results });
   } catch (error) {
