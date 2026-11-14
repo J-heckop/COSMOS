@@ -7,9 +7,9 @@ export async function onRequest({request}){
   if(!Number.isFinite(ra)||ra<0||ra>360||!Number.isFinite(dec)||dec< -90||dec>90||!Number.isFinite(size)||size<=0||size>0.5)return json({error:"Invalid image cutout coordinates or size."},400);
   // Keep preview cutouts deliberately small: parent SPHEREx MEFs can be large.
   // Retry temporary IRSA failures before reporting that the preview is unavailable.
-  const sizes=[Math.min(0.2,Math.max(0.1,size)),0.1].filter((v,i,a)=>a.indexOf(v)===i);
+  const sizes=[Math.min(0.2,Math.max(0.1,size)),0.1,0.05,0.03].filter((v,i,a)=>a.indexOf(v)===i);
   let upstream,lastStatus=0,lastError="";
-  for(let i=0;i<3;i++){
+  for(let i=0;i<sizes.length;i++){
     const cutoutSize=sizes[Math.min(i,sizes.length-1)];
     const u=new URL(source.toString());
     u.searchParams.set("center",ra+","+dec);
@@ -18,7 +18,7 @@ export async function onRequest({request}){
     try{
       upstream=await fetch(u.toString(),{
         headers:{Accept:"application/fits, application/octet-stream"},
-        signal:AbortSignal.timeout(15000)
+        signal:AbortSignal.timeout(10000)
       });
       if(upstream.ok)break;
       lastStatus=upstream.status;
@@ -28,11 +28,11 @@ export async function onRequest({request}){
       lastError=error?.name==="TimeoutError"?"IRSA cutout request timed out":(error?.message||"Network error");
       lastStatus=0;
     }
-    if(i<2)await new Promise(resolve=>setTimeout(resolve,1000*(i+1)));
+    if(i<sizes.length-1)await new Promise(resolve=>setTimeout(resolve,500*(i+1)));
   }
   if(!upstream||!upstream.ok)return json({
     error:"IRSA SPHEREx cutout service is temporarily unavailable.",
-    detail:"The observation record exists, but IRSA could not generate its small image preview after 3 attempts. "+(lastError||"Please try again later.")+" You can still open the original FITS product.",
+    detail:"The observation record exists, but IRSA could not generate its small image preview after 4 progressively smaller attempts. "+(lastError||"Please try again later.")+" You can still open the original FITS product.",
     retryable:true
   },lastStatus===503?503:502,{"Retry-After":"30"});
   const bytes=await upstream.arrayBuffer();if(bytes.byteLength<2880||new TextDecoder().decode(bytes.slice(0,8)).indexOf("SIMPLE")!==0)return json({error:"IRSA did not return a readable FITS image."},502);
