@@ -311,18 +311,18 @@ if (timeForm) {
   }
 
   const loadMoreDatesButton = document.querySelector("#load-more-dates");
-  let archiveMaxRecords = 100;
+  let archiveMaxRecords = 500;
   let loadMoreRequested = false;
   if (loadMoreDatesButton) {
     loadMoreDatesButton.addEventListener("click", () => {
-      archiveMaxRecords = Math.min(500, archiveMaxRecords + 100);
+      archiveMaxRecords = Math.min(5000, archiveMaxRecords + 500);
       loadMoreRequested = true;
       loadMoreDatesButton.disabled = true;
       discoverButton.click();
     });
   }
   discoverButton.addEventListener("click", async () => {
-    if (!loadMoreRequested) archiveMaxRecords = 100;
+    if (!loadMoreRequested) archiveMaxRecords = 500;
     loadMoreRequested = false;
     const ra = Number(document.querySelector("#ra-input").value);
     const dec = Number(document.querySelector("#dec-input").value);
@@ -344,7 +344,7 @@ if (timeForm) {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive query failed.");
       const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml));      if (loadMoreDatesButton) {
-        loadMoreDatesButton.hidden = records.length < archiveMaxRecords || archiveMaxRecords >= 500;
+        loadMoreDatesButton.hidden = records.length < archiveMaxRecords || archiveMaxRecords >= 5000;
         loadMoreDatesButton.disabled = false;
       }
       const unique = new Map();
