@@ -14,7 +14,7 @@ const IRSA="https://irsa.ipac.caltech.edu";
 async function queryCollection(collection,ra,dec,radius,range){
   const params=new URLSearchParams({
     COLLECTION:collection,
-    POS:"CIRCLE "+ra+" "+dec+" "+radius,
+    POS:"circle "+ra+" "+dec+" "+radius,
     MAXREC:"150",
     RESPONSEFORMAT:"VOTABLE"
   });
@@ -26,7 +26,7 @@ async function queryCollection(collection,ra,dec,radius,range){
     try{
       const response=await fetch(host+"/SIA?"+params.toString(),{
         headers:{Accept:"application/x-votable+xml, application/xml, text/xml"},
-        signal:AbortSignal.timeout(10000)
+        signal:AbortSignal.timeout(28000)
       });
       const xml=await response.text();
       if(!response.ok){
