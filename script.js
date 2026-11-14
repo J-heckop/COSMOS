@@ -207,7 +207,7 @@ if (timeForm) {
       const meta = document.createElement("span");
       const mjd = Number(row.t_min);
       const date = Number.isFinite(mjd) ? new Date((mjd - 40587) * 86400000).toISOString().slice(0,10) : "Date not listed";
-      meta.textContent = collection.toUpperCase() + " · " + safeText(row.band, "Band not listed") + " · " + date;
+      meta.textContent = collection.toUpperCase() + " · " + timeSafeText(row.band, "Band not listed") + " · " + date;
       info.append(name, meta);
       const link = document.createElement("a");
       link.textContent = "Open FITS data ↗";
@@ -256,7 +256,7 @@ if (timeForm) {
         url.search = new URLSearchParams(params).toString();
         const response = await fetch(url, {headers:{Accept:"application/x-votable+xml, application/xml, text/xml"}});
         if (!response.ok) throw new Error("IRSA returned HTTP " + response.status);
-        return {collection, rows:parseVOTable(await response.text())};
+        return {collection, rows:timeParseVOTable(await response.text())};
       }));
       return resultSets.flatMap(set => set.rows.map(row => ({row, collection:set.collection})));
     }
