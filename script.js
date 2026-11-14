@@ -282,8 +282,18 @@ if (timeForm) {
       });
     } catch (error) {
       placeholder.hidden = false;
-      placeholder.textContent = "Image preview unavailable. Open the original FITS data instead.";
+      placeholder.textContent = "Image preview is temporarily unavailable.";
       status.textContent = error.message;
+      const pane = canvas && canvas.closest(".image-pane");
+      if (pane && row.access_url && !pane.querySelector(".image-fallback-link")) {
+        const fallback = document.createElement("a");
+        fallback.className = "image-fallback-link";
+        fallback.href = row.access_url;
+        fallback.target = "_blank";
+        fallback.rel = "noopener noreferrer";
+        fallback.textContent = "Open original SPHEREx FITS product ↗";
+        pane.append(fallback);
+      }
     }
   }
 
