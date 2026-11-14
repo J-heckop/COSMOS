@@ -47,52 +47,39 @@ export async function onRequest({request}) {
   const collections=collection==="both"?["spherex_dr1","spherex_qr3"]:[collection];
 
   async function queryCollection(selected){
-    let response;
-    if(dateOnly){
-      // SIA2 is IRSA's purpose-built spatial image search. Use it for date
-      // discovery instead of scanning/joining TAP metadata tables.
+    // SIA2 is optimized for spatial + time-constrained image searches.
+    // Query each selected date separately so the archive never scans a broad
+    // catalogue range just to return two comparison periods.
+    const requestedRanges=dateOnly?[{label:null,start:null,end:null}]:ranges;
+    const responses=await Promise.all(requestedRanges.map(async range=>{
       const params=new URLSearchParams({
         COLLECTION:selected,
         POS:"CIRCLE "+ra+" "+dec+" "+radius,
-        MAXREC:String(maxrec),
+        DPTYPE:"image",
+        MAXREC:String(dateOnly?maxrec:30),
         RESPONSEFORMAT:"VOTABLE"
       });
-      response=await fetch("https://irsa.ipac.caltech.edu/SIA?"+params.toString(),{
+      if(range) params.set("TIME",range.start+" "+range.end);
+      const response=await fetch("https://irsa.ipac.caltech.edu/SIA?"+params.toString(),{
         headers:{"Accept":"application/x-votable+xml, application/xml, text/xml"},
-        signal:AbortSignal.timeout(22000)
+        signal:AbortSignal.timeout(18000)
       });
-    }else{
-      // TAP remains the source for the selected-date product metadata.
-      const query="SELECT DISTINCT TOP "+maxrec+" 'https://irsa.ipac.caltech.edu/' || a.uri AS access_url, "+
-        "p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max, a.planeid AS obs_id, p.energy_bandpassname AS band "+
-        "FROM spherex.artifact a JOIN spherex.plane p ON a.planeid = p.planeid "+
-        "WHERE 1 = CONTAINS(POINT('ICRS', "+ra+", "+dec+"), p.poly)"+timeClause+
-        " ORDER BY p.time_bounds_lower";
-      const body=new URLSearchParams({REQUEST:"doQuery",LANG:"ADQL",FORMAT:"votable",QUERY:query});
-      response=await fetch("https://irsa.ipac.caltech.edu/TAP/sync",{
-        method:"POST",
-        headers:{
-          "Content-Type":"application/x-www-form-urlencoded",
-          "Accept":"application/x-votable+xml, application/xml, text/xml"
-        },
-        body,
-        signal:AbortSignal.timeout(40000)
-      });
-    }
-    const xml=await response.text();
-    if(!response.ok)throw new Error("IRSA TAP returned HTTP "+response.status);
-    const queryError=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
-    if(queryError){
-      const detail=queryError[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400);
-      throw new Error(detail||"IRSA TAP rejected the query.");
-    }
-    if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml))
-      throw new Error("IRSA TAP returned an unexpected response.");
-    return {collection:selected,period:null,xml};
+      const xml=await response.text();
+      if(!response.ok) throw new Error("IRSA SIA2 returned HTTP "+response.status);
+      const queryError=xml.match(/<INFO\\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\\s\\S]*?)<\\/INFO>/i);
+      if(queryError){
+        const detail=queryError[1].replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim().slice(0,400);
+        throw new Error(detail||"IRSA SIA2 rejected the query.");
+      }
+      if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\\b/i.test(xml))
+        throw new Error("IRSA SIA2 returned an unexpected response.");
+      return {collection:selected,period:range?.label||null,xml};
+    }));
+    return responses;
   }
 
   const settled=await Promise.allSettled(collections.map(queryCollection));
-  const results=settled.filter(item=>item.status==="fulfilled").map(item=>item.value);
+  const results=settled.filter(item=>item.status==="fulfilled").flatMap(item=>item.value);
   const errors=settled.map((item,index)=>item.status==="rejected"
     ?{collection:collections[index],error:item.reason?.message||"Archive query failed."}
     :null).filter(Boolean);
@@ -102,7 +89,7 @@ export async function onRequest({request}) {
       error:"No SPHEREx collection could be queried.",
       detail:errors.map(item=>item.collection+": "+item.error).join("; "),
       errors,
-      source:"IRSA TAP",
+      source:"IRSA SIA2",
       mode:dateOnly?"dates":"products"
     },502);
   }
