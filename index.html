@@ -70,13 +70,16 @@
       </div>
       <div class="time-machine-panel">
         <div class="live-heading"><div><span class="eyebrow">COSMIC TIME MACHINE</span><h3>Did the sky change?</h3><p>Search the same sky position in two different date windows. COSMOS compares real SPHEREx archive observations and links each result to its original data.</p></div><span class="live-tag"><i></i> TIME COMPARISON</span></div>
+        <div class="time-discovery">
+          <button class="button secondary" id="discover-dates" type="button">Find available observation dates</button>
+          <p class="time-hint">COSMOS checks the official archive for this sky position and lists only dates returned by SPHEREx.</p>
+        </div>
         <form id="time-compare-form" class="time-form">
-          <div class="time-side"><span class="time-side-title">PERIOD A</span><label>From<input id="date-a-start" type="date" min="2025-05-01" required></label><label>To<input id="date-a-end" type="date" required></label></div>
-          <div class="time-side"><span class="time-side-title">PERIOD B</span><label>From<input id="date-b-start" type="date" required></label><label>To<input id="date-b-end" type="date" required></label></div>
-          <button class="button primary time-submit" id="time-submit" type="submit">Compare observations <span>→</span></button>
+          <div class="time-side"><span class="time-side-title">PERIOD A</span><label>Observation date<select id="date-a" required disabled><option value="">Discover dates first</option></select></label></div>
+          <div class="time-side"><span class="time-side-title">PERIOD B</span><label>Observation date<select id="date-b" required disabled><option value="">Discover dates first</option></select></label></div>
+          <button class="button primary time-submit" id="time-submit" type="submit" disabled>Compare observations <span>→</span></button>
         </form>
-        <p class="time-hint">Uses the RA, Dec and radius above. Search dates must be on or after 1 May 2025.</p>
-        <div id="time-status" class="archive-status" role="status" aria-live="polite">Enter coordinates above, then choose two date ranges.</div>
+        <div id="time-status" class="archive-status" role="status" aria-live="polite">Enter sky coordinates above, then discover the observation dates available for that position.</div>
         <section class="image-comparison" aria-label="SPHEREx image comparison">
           <div class="image-comparison-heading"><span class="eyebrow">REAL SPHEREx IMAGERY</span><h4>See the sky in both periods</h4><p>COSMOS loads small FITS cutouts from the official archive when observations are available.</p></div>
           <div class="image-panes">
