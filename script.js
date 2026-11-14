@@ -416,15 +416,24 @@ if (timeForm) {
     placeholder.hidden = false;
     placeholder.textContent = "Loading your selected SPHEREx image…";
     status.textContent = "Retrieving the original full-resolution FITS product from IRSA…";
+    let fetchTimer = null;
     try {
+      const startedAt = Date.now();
+      status.textContent = "Fetching original FITS · 0s elapsed";
+      fetchTimer = window.setInterval(() => {
+        const seconds = Math.floor((Date.now() - startedAt) / 1000);
+        status.textContent = "Fetching original FITS · " + seconds + "s elapsed";
+      }, 1000);
       const url = new URL("/api/spherex-image", window.location.origin);
       url.search = new URLSearchParams({url: row.access_url}).toString();
-      const response = await fetch(url, {signal: AbortSignal.timeout(120000)});
+      const response = await fetch(url, {signal: AbortSignal.timeout(90000)});
       if (!response.ok) {
         const problem = await response.json().catch(() => ({}));
         throw new Error(problem.detail || problem.error || "Image request failed (HTTP " + response.status + ")");
       }
       const blob = await response.blob();
+      window.clearInterval(fetchTimer);
+      fetchTimer = null;
       if (blob.size < 2880) throw new Error("The archive returned an empty FITS product.");
       await new Promise((resolve, reject) => {
         let settled = false;
@@ -492,6 +501,7 @@ if (timeForm) {
         window.setTimeout(() => finish(reject, new Error("FITS image parsing timed out.")), 55000);
       });
     } catch (error) {
+      if (fetchTimer) window.clearInterval(fetchTimer);
       placeholder.hidden = false;
       placeholder.textContent = "Image preview is temporarily unavailable.";
       status.textContent = error.message;
