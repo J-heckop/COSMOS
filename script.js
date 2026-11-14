@@ -311,18 +311,18 @@ if (timeForm) {
   }
 
   const loadMoreDatesButton = document.querySelector("#load-more-dates");
-  let archiveMaxRecords = 500;
+  let archiveMaxRecords = 150;
   let loadMoreRequested = false;
   if (loadMoreDatesButton) {
     loadMoreDatesButton.addEventListener("click", () => {
-      archiveMaxRecords = Math.min(5000, archiveMaxRecords + 500);
+      archiveMaxRecords = 150;
       loadMoreRequested = true;
       loadMoreDatesButton.disabled = true;
       discoverButton.click();
     });
   }
   discoverButton.addEventListener("click", async () => {
-    if (!loadMoreRequested) archiveMaxRecords = 500;
+    if (!loadMoreRequested) archiveMaxRecords = 150;
     loadMoreRequested = false;
     const ra = Number(document.querySelector("#ra-input").value);
     const dec = Number(document.querySelector("#dec-input").value);
@@ -340,11 +340,11 @@ if (timeForm) {
     try {
       const url = new URL("/api/spherex", window.location.origin);
       url.search = new URLSearchParams({ra:String(ra),dec:String(dec),radius:String(radius),collection:document.querySelector("#collection-input")?.value || "spherex_qr3",maxrec:String(archiveMaxRecords)}).toString();
-      const response = await fetch(url, {signal: AbortSignal.timeout(26000)});
+      const response = await fetch(url, {signal: AbortSignal.timeout(30000)});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive query failed.");
       const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml));      if (loadMoreDatesButton) {
-        loadMoreDatesButton.hidden = records.length < archiveMaxRecords || archiveMaxRecords >= 5000;
+        loadMoreDatesButton.hidden = records.length < archiveMaxRecords || archiveMaxRecords >= 150;
         loadMoreDatesButton.disabled = false;
       }
       const unique = new Map();
