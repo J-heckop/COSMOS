@@ -175,9 +175,11 @@ if (timeForm) {
   function timeParseVOTable(xmlText) {
     const doc = new DOMParser().parseFromString(xmlText, "application/xml");
     if (doc.querySelector("parsererror")) throw new Error("The archive returned an unreadable table.");
-    const fields = [...doc.querySelectorAll("FIELD")].map(field => (field.getAttribute("name") || field.getAttribute("ID") || "").toLowerCase());
-    return [...doc.querySelectorAll("TABLEDATA TR")].map(row => {
-      const values = [...row.querySelectorAll("TD")].map(cell => cell.textContent.trim());
+    const all = name => [...doc.getElementsByTagNameNS("*", name)];
+    const fields = all("FIELD").map(field => (field.getAttribute("name") || field.getAttribute("ID") || "").toLowerCase());
+    const rows = all("TR").filter(row => row.parentNode && (row.parentNode.localName || row.parentNode.nodeName).toLowerCase() === "tabledata");
+    return rows.map(row => {
+      const values = [...row.childNodes].filter(node => node.nodeType === 1 && (node.localName || node.nodeName).toLowerCase() === "td").map(cell => cell.textContent.trim());
       return Object.fromEntries(fields.map((field,index) => [field,values[index] || ""]));
     });
   }
