@@ -24,8 +24,8 @@ module.exports = async function handler(req, res) {
     return send(res, 400, { error: "Invalid sky position or search radius." });
   }
 
-  const parsedMax = Number.parseInt(q.maxrec || "30", 10);
-  const maxrec = Number.isFinite(parsedMax) ? Math.min(200, Math.max(1, parsedMax)) : 30;
+  const parsedMax = Number.parseInt(q.maxrec || "20", 10);
+  const maxrec = Number.isFinite(parsedMax) ? Math.min(50, Math.max(1, parsedMax)) : 30;
 
   const ranges = [];
   const hasA = q.startA !== undefined || q.endA !== undefined || q.start !== undefined || q.end !== undefined;
@@ -63,7 +63,7 @@ module.exports = async function handler(req, res) {
     try {
       const response = await fetch("https://irsa.ipac.caltech.edu/SIA?" + params.toString(), {
         headers: { "Accept": "application/x-votable+xml, application/xml, text/xml" },
-        signal: AbortSignal.timeout(22000)
+        signal: AbortSignal.timeout(48000)
       });
       const xml = await response.text();
       if (!response.ok) {
