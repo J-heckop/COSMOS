@@ -192,16 +192,23 @@ if (timeForm) {
   }
   function appendTimeRecords(target, rows, collection) {
     target.replaceChildren();
-    if (!rows.length) {
+    const unique = [...new Map(rows.map(row => {
+      const key = [row.obs_id || "", row.access_url || "", row.t_min || ""].join("|");
+      return [key, row];
+    })).values()];
+    if (!unique.length) {
       const empty = document.createElement("p");
       empty.className = "time-empty";
       empty.textContent = "No matching observations in this date window.";
       target.append(empty);
       return;
     }
-    rows.slice(0, 15).forEach((row, index) => {
+    const list = document.createElement("div");
+    list.className = "time-record-list";
+    unique.forEach((row, index) => {
       const item = document.createElement("article");
       item.className = "archive-result";
+      if (index >= 3) item.hidden = true;
       const info = document.createElement("div");
       const name = document.createElement("strong");
       name.textContent = timeSafeText(row.obs_id, "Observation " + (index + 1));
@@ -216,8 +223,23 @@ if (timeForm) {
       link.target = "_blank";
       link.rel = "noopener noreferrer";
       item.append(info, link);
-      target.append(item);
+      list.append(item);
     });
+    target.append(list);
+    if (unique.length > 3) {
+      const more = document.createElement("button");
+      more.type = "button";
+      more.className = "results-toggle";
+      more.textContent = "View all " + unique.length + " observations";
+      more.addEventListener("click", () => {
+        const expanded = more.getAttribute("aria-expanded") === "true";
+        [...list.children].forEach((item,index) => { if (index >= 3) item.hidden = expanded; });
+        more.setAttribute("aria-expanded", String(!expanded));
+        more.textContent = expanded ? "View all " + unique.length + " observations" : "Show fewer observations";
+      });
+      more.setAttribute("aria-expanded", "false");
+      target.append(more);
+    }
   }
   const positionTestButton = document.querySelector("#position-only-test");
   if (positionTestButton) {
@@ -303,7 +325,13 @@ if (timeForm) {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive proxy failed");
       const resultSets = payload.results.map(result => ({collection:result.collection, rows:timeParseVOTable(result.xml)}));
-      return resultSets.flatMap(set => set.rows.map(row => ({row, collection:set.collection})));
+      const combined = resultSets.flatMap(set => set.rows.map(row => ({row, collection:set.collection})));
+      const unique = new Map();
+      combined.forEach(item => {
+        const key = [item.collection, item.row.obs_id || "", item.row.access_url || "", item.row.t_min || ""].join("|");
+        if (!unique.has(key)) unique.set(key, item);
+      });
+      return [...unique.values()];
     }
     try {
       const [a,b] = await Promise.all([queryWindow(aStart,aEnd),queryWindow(bStart,bEnd)]);
