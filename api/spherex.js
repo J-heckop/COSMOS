@@ -59,7 +59,7 @@ module.exports = async function handler(req, res) {
       });
       if (!response.ok) throw new Error(`${collection} returned HTTP ${response.status}`);
       const xml = await response.text();
-      if (!/<(?:[A-Za-z0-9_]+:)?VOTABLE\\b/i.test(xml)) {
+      if (!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml)) {
         throw new Error(`${collection} did not return a VOTable response`);
       }
       return { collection, xml, elapsed_ms: Date.now() - startedAt };
