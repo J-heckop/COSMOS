@@ -81,7 +81,8 @@
         </form>
         <div id="time-status" class="archive-status" role="status" aria-live="polite">Enter sky coordinates above, then discover the observation dates available for that position.</div>
         <section class="image-comparison" aria-label="SPHEREx image comparison">
-          <div class="image-comparison-heading"><span class="eyebrow">REAL SPHEREx IMAGERY</span><h4>See the sky in both periods</h4><p>COSMOS loads small FITS cutouts from the official archive when observations are available.</p></div>
+          <div class="image-comparison-heading"><span class="eyebrow">REAL SPHEREx IMAGERY</span><h4>See the sky in both periods</h4><p>Compare real observations from the official SPHEREx archive.</p></div>
+          <div class="image-howto" id="image-howto"><strong>Your images are not loaded yet.</strong><span>After comparing, scroll down to the observation lists. Tap <b>View sky image</b> on a record in Period A or Period B. Its image will appear in the matching panel above.</span></div>
           <div class="image-panes">
             <article class="image-pane"><h5>PERIOD A</h5><div class="fits-image-wrap"><canvas id="image-a" aria-label="Period A SPHEREx image preview"></canvas><span id="image-a-placeholder">Run a comparison to load an image</span></div><p id="image-a-status" class="image-status">Waiting for comparison…</p></article>
             <article class="image-pane"><h5>PERIOD B</h5><div class="fits-image-wrap"><canvas id="image-b" aria-label="Period B SPHEREx image preview"></canvas><span id="image-b-placeholder">Run a comparison to load an image</span></div><p id="image-b-status" class="image-status">Waiting for comparison…</p></article>
