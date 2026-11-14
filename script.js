@@ -258,7 +258,20 @@ if (timeForm) {
     if (loadingFacts) loadingFacts.hidden = true;
   }
 
+  const loadMoreDatesButton = document.querySelector("#load-more-dates");
+  let archiveMaxRecords = 10;
+  let loadMoreRequested = false;
+  if (loadMoreDatesButton) {
+    loadMoreDatesButton.addEventListener("click", () => {
+      archiveMaxRecords = Math.min(100, archiveMaxRecords + 10);
+      loadMoreRequested = true;
+      loadMoreDatesButton.disabled = true;
+      discoverButton.click();
+    });
+  }
   discoverButton.addEventListener("click", async () => {
+    if (!loadMoreRequested) archiveMaxRecords = 10;
+    loadMoreRequested = false;
     const ra = Number(document.querySelector("#ra-input").value);
     const dec = Number(document.querySelector("#dec-input").value);
     const radius = Number(document.querySelector("#radius-input").value);
@@ -274,11 +287,14 @@ if (timeForm) {
     startArchiveLoadingFacts();
     try {
       const url = new URL("/api/spherex", window.location.origin);
-      url.search = new URLSearchParams({ra:String(ra),dec:String(dec),radius:String(radius),collection:document.querySelector("#collection-input")?.value || "spherex_qr3",maxrec:"30"}).toString();
+      url.search = new URLSearchParams({ra:String(ra),dec:String(dec),radius:String(radius),collection:document.querySelector("#collection-input")?.value || "spherex_qr3",maxrec:String(archiveMaxRecords)}).toString();
       const response = await fetch(url, {signal: AbortSignal.timeout(32000)});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive query failed.");
-      const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml));
+      const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml));      if (loadMoreDatesButton) {
+        loadMoreDatesButton.hidden = records.length < archiveMaxRecords || archiveMaxRecords >= 100;
+        loadMoreDatesButton.disabled = false;
+      }
       const unique = new Map();
       records.forEach(row => {
         const candidates = [row.t_min,row.t_max,row.mjd_obs,row.obs_mjd,row.date_obs,row.obs_date,row.date].filter(value => value !== undefined && value !== null && String(value).trim() !== "");
@@ -318,6 +334,7 @@ if (timeForm) {
         timeStatus.className = "archive-status";
       }
     } catch (error) {
+      if (loadMoreDatesButton) loadMoreDatesButton.disabled = false;
       timeStatus.textContent = error.name === "TimeoutError" || error.name === "AbortError" ? "The SPHEREx archive is taking too long to respond. Try again in a moment; this is not a zero-observation result." : "Could not discover observation dates: " + error.message;
       timeStatus.className = "archive-status error";
     } finally {
