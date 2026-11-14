@@ -172,11 +172,13 @@
   const r=Number(ra.value),d=Number(dec.value),rad=Number(radius.value),selectedBand=band.value;
   if(!Number.isFinite(r)||r<0||r>360||!Number.isFinite(d)||d< -90||d>90){status.textContent='Enter valid RA (0–360°) and Dec (−90–90°).';return}
   stopTimelapse('Waiting for archive observations…');
-  search.disabled=true;search.textContent='Searching IRSA…';status.textContent='Searching the official SPHEREx image archive…';results.replaceChildren();panel.classList.add('hide');lapsePanel.classList.add('hide');rows=[];
+  const hadPreviousResults=rows.length>0;
+  search.disabled=true;search.textContent='Searching IRSA…';
+  status.textContent=hadPreviousResults?'Searching new coordinates… Previous successful results are being kept until the new search finishes.':'Searching the official SPHEREx image archive…';
   try{
    const params=new URLSearchParams({ra:String(r),dec:String(d),radius:String(rad),band:selectedBand,maxrec:'150'});
    const url=new URL('/api/spherex',location.origin);url.search=params.toString();
-   let response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(25000)});let payload=await response.json();
+   let response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(29000)});let payload=await response.json();
    if(!response.ok)throw new Error(payload.detail||payload.errors?.map(x=>x.collection+': '+x.error).join('; ')||payload.error||'Could not start the archive search.');
    if(payload.jobId){
     search.textContent='Checking IRSA job…';
@@ -208,8 +210,9 @@
    rows.sort((a,b)=>Number(a.t_min)-Number(b.t_min));
    const unique=[...new Map(rows.map(row=>[row.access_url||[row.obs_id||'',row.t_min||''].join('|'),row])).values()];
    rows=unique;
-   if(!rows.length){status.textContent='No released observations were returned for this position and band. Try another band or a wider radius.';return}
-   status.textContent='Found '+rows.length+' real archive image records · '+selectedBand+' · sorted oldest to newest.';
+   if(!rows.length){results.replaceChildren();panel.classList.add('hide');lapsePanel.classList.add('hide');status.textContent='No released observations were returned for these coordinates and band. Previous results are cleared because this search completed successfully with zero matches.';return}
+   results.replaceChildren();panel.classList.add('hide');lapsePanel.classList.add('hide');
+   status.textContent='Found '+rows.length+' real archive image records for RA '+r.toFixed(4)+'°, Dec '+d.toFixed(4)+'° · '+selectedBand+' · sorted oldest to newest.'+(payload.partial?' (Some archive releases were unavailable.)':'');
    const cards=[];
    rows.forEach((row,index)=>{
     const card=document.createElement('article');card.className='rounded-xl border border-slate-700 bg-slate-950/70 p-3 flex flex-col gap-2';
@@ -229,7 +232,7 @@
   }catch(error){
    status.replaceChildren();
    const message=document.createElement('span');
-   message.textContent='COSMOS could not retrieve the archive automatically: '+error.message+' ';
+   message.textContent='COSMOS could not retrieve the archive automatically: '+error.message+(hadPreviousResults?' Previous successful results are still shown below. ':' ')+' ';
    const official=document.createElement('a');
    const officialUrl=new URL('https://irsa.ipac.caltech.edu/applications/spherex/');
    officialUrl.search=new URLSearchParams({
