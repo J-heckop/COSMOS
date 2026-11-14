@@ -261,3 +261,4 @@
 .archive-loading-facts p{margin:0;color:#e9ddc8;font-size:13px;line-height:1.55;transition:opacity .18s ease}
 .archive-loading-facts p.fact-changing{opacity:0}
 @keyframes archive-spin{to{transform:rotate(360deg)}}
+.load-more-dates{margin:14px 0 8px;min-height:48px;padding:12px 20px;border:1px solid rgba(255,210,122,.38);border-radius:999px;background:rgba(255,190,90,.08);color:#ffda9a;font-weight:600}.load-more-dates[hidden]{display:none}.load-more-dates:disabled{opacity:.55;cursor:wait}
