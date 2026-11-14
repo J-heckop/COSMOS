@@ -71,12 +71,12 @@ export async function onRequest({request}) {
     });
     const xml=await response.text();
     if(!response.ok)throw new Error("IRSA TAP returned HTTP "+response.status);
-    const queryError=xml.match(/<INFO\\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\\s\\S]*?)<\\/INFO>/i);
+    const queryError=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
     if(queryError){
-      const detail=queryError[1].replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim().slice(0,400);
+      const detail=queryError[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400);
       throw new Error(detail||"IRSA TAP rejected the query.");
     }
-    if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\\b/i.test(xml))
+    if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml))
       throw new Error("IRSA TAP returned an unexpected response.");
     return {collection:selected,period:null,xml};
   }
