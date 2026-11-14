@@ -60,12 +60,26 @@ export async function onRequest({request}) {
         RESPONSEFORMAT:"VOTABLE"
       });
       if(range && Number.isFinite(range.start) && Number.isFinite(range.end)) params.set("TIME",range.start+" "+range.end);
-      const response=await fetch("https://irsa.ipac.caltech.edu/SIA?"+params.toString(),{
-        headers:{"Accept":"application/x-votable+xml, application/xml, text/xml"},
-        signal:AbortSignal.timeout(18000)
-      });
+      // IRSA can temporarily return gateway errors under load. Retry only
+      // transient upstream failures; never retry a valid archive response.
+      let response=null;
+      let lastError=null;
+      for(let attempt=0;attempt<3;attempt++){
+        try{
+          response=await fetch("https://irsa.ipac.caltech.edu/SIA?"+params.toString(),{
+            headers:{"Accept":"application/x-votable+xml, application/xml, text/xml"},
+            signal:AbortSignal.timeout(18000)
+          });
+          if(response.status!==502 && response.status!==503 && response.status!==504) break;
+          lastError=new Error("IRSA SIA2 returned HTTP "+response.status);
+        }catch(error){
+          lastError=error;
+        }
+        if(attempt<2) await new Promise(resolve=>setTimeout(resolve,700*(attempt+1)));
+      }
+      if(!response) throw new Error("IRSA SIA2 request failed: "+(lastError?.message||"network error"));
       const xml=await response.text();
-      if(!response.ok) throw new Error("IRSA SIA2 returned HTTP "+response.status);
+      if(!response.ok) throw new Error("IRSA SIA2 returned HTTP "+response.status+" after retries");
       const queryError=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
       if(queryError){
         const detail=queryError[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400);
