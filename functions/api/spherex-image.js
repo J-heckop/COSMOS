@@ -2,40 +2,37 @@ function json(body,status=200,extra={}){return new Response(JSON.stringify(body)
 export async function onRequest({request}){
  if(request.method!=="GET")return json({error:"Use GET for image previews."},405,{Allow:"GET"});
  try{
-  const q=new URL(request.url).searchParams,source=new URL(String(q.get("url")||"")),ra=Number(q.get("ra")),dec=Number(q.get("dec")),size=Number(q.get("size")||0.1);
-  if(source.protocol!=="https:"||source.hostname!=="irsa.ipac.caltech.edu"||!source.pathname.startsWith("/ibe/data/spherex/")||!source.pathname.endsWith(".fits"))return json({error:"Only official SPHEREx FITS image products can be previewed."},400);
-  if(!Number.isFinite(ra)||ra<0||ra>360||!Number.isFinite(dec)||dec< -90||dec>90||!Number.isFinite(size)||size<=0||size>0.5)return json({error:"Invalid image cutout coordinates or size."},400);
-  // Keep preview cutouts deliberately small: parent SPHEREx MEFs can be large.
-  // Retry temporary IRSA failures before reporting that the preview is unavailable.
-  const sizes=[Math.min(0.2,Math.max(0.1,size)),0.1,0.05,0.03].filter((v,i,a)=>a.indexOf(v)===i);
-  let upstream,lastStatus=0,lastError="";
-  for(let i=0;i<sizes.length;i++){
-    const cutoutSize=sizes[Math.min(i,sizes.length-1)];
-    const u=new URL(source.toString());
-    u.searchParams.set("center",ra+","+dec);
-    u.searchParams.set("size",String(cutoutSize));
-    u.searchParams.set("gzip","false");
-    try{
-      upstream=await fetch(u.toString(),{
-        headers:{Accept:"application/fits, application/octet-stream"},
-        signal:AbortSignal.timeout(10000)
-      });
-      if(upstream.ok)break;
-      lastStatus=upstream.status;
-      lastError="IRSA returned HTTP "+lastStatus;
-      if(![429,500,502,503,504].includes(lastStatus))break;
-    }catch(error){
-      lastError=error?.name==="TimeoutError"?"IRSA cutout request timed out":(error?.message||"Network error");
-      lastStatus=0;
-    }
-    if(i<sizes.length-1)await new Promise(resolve=>setTimeout(resolve,500*(i+1)));
+  const q=new URL(request.url).searchParams,source=new URL(String(q.get("url")||""));
+  if(source.protocol!=="https:"||source.hostname!=="irsa.ipac.caltech.edu"||!source.pathname.startsWith("/ibe/data/spherex/")||!source.pathname.endsWith(".fits"))
+   return json({error:"Only official SPHEREx FITS image products can be opened."},400);
+  // Fetch the original archive product. Do not add center/size cutout parameters:
+  // those shrink the observation to a tiny postage stamp and discard surrounding pixels.
+  source.searchParams.delete("center");
+  source.searchParams.delete("size");
+  source.searchParams.delete("gzip");
+  const upstream=await fetch(source.toString(),{
+   headers:{Accept:"application/fits, application/octet-stream"},
+   signal:AbortSignal.timeout(90000)
+  });
+  if(!upstream.ok){
+   const retryable=[429,500,502,503,504].includes(upstream.status);
+   return json({
+    error:"The original SPHEREx FITS product could not be retrieved.",
+    detail:"IRSA returned HTTP "+upstream.status+". "+(retryable?"The archive may be temporarily busy; retry in a little while.":"Check the original archive product link."),
+    retryable
+   },upstream.status===503?503:502,{"Retry-After":"30"});
   }
-  if(!upstream||!upstream.ok)return json({
-    error:"IRSA SPHEREx cutout service is temporarily unavailable.",
-    detail:"The observation record exists, but IRSA could not generate its small image preview after 4 progressively smaller attempts. "+(lastError||"Please try again later.")+" You can still open the original FITS product.",
-    retryable:true
-  },lastStatus===503?503:502,{"Retry-After":"30"});
-  const bytes=await upstream.arrayBuffer();if(bytes.byteLength<2880||new TextDecoder().decode(bytes.slice(0,8)).indexOf("SIMPLE")!==0)return json({error:"IRSA did not return a readable FITS image."},502);
-  return new Response(bytes,{status:200,headers:{"Content-Type":"application/fits","Content-Length":String(bytes.byteLength),"Cache-Control":"public, max-age=3600",'Content-Disposition':'inline; filename="spherex-cutout.fits"'}});
- }catch(error){return json({error:"Could not retrieve the SPHEREx image cutout.",detail:error?.message||"Unknown error."},502)}
+  const contentLength=Number(upstream.headers.get("content-length")||0);
+  if(contentLength>100*1024*1024)return json({error:"This original FITS product is larger than the 100 MB browser-preview limit.",detail:"Open the original FITS product directly or choose a smaller observation product."},413);
+  if(!upstream.body)return json({error:"IRSA returned an empty FITS product."},502);
+  return new Response(upstream.body,{status:200,headers:{
+   "Content-Type":"application/fits",
+   ...(contentLength?{"Content-Length":String(contentLength)}:{}),
+   "Cache-Control":"public, max-age=3600",
+   "Content-Disposition":'inline; filename="spherex-original.fits"'
+  }});
+ }catch(error){
+  const timedOut=error?.name==="TimeoutError";
+  return json({error:"Could not retrieve the original SPHEREx FITS product.",detail:timedOut?"The full FITS download took too long. Try again or open the original product directly.":(error?.message||"Unknown error."),retryable:true},502,{"Retry-After":"30"});
+ }
 }
