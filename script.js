@@ -415,18 +415,22 @@ if (timeForm) {
     }
     placeholder.hidden = false;
     placeholder.textContent = "Loading your selected SPHEREx image…";
-    status.textContent = "Retrieving the original full-resolution FITS product from IRSA…";
+    status.textContent = "Retrieving a quick SPHEREx cutout from IRSA…";
     let fetchTimer = null;
     try {
       const startedAt = Date.now();
-      status.textContent = "Fetching original FITS · 0s elapsed";
+      status.textContent = "Fetching quick SPHEREx preview · 0s elapsed";
       fetchTimer = window.setInterval(() => {
         const seconds = Math.floor((Date.now() - startedAt) / 1000);
-        status.textContent = "Fetching original FITS · " + seconds + "s elapsed";
+        status.textContent = "Fetching quick preview · " + seconds + "s elapsed";
       }, 1000);
       const url = new URL("/api/spherex-image", window.location.origin);
-      url.search = new URLSearchParams({url: row.access_url}).toString();
-      const response = await fetch(url, {signal: AbortSignal.timeout(90000)});
+      url.search = new URLSearchParams({
+        url: row.access_url,
+        center: String(ra) + "," + String(dec),
+        size: "0.1"
+      }).toString();
+      const response = await fetch(url, {signal: AbortSignal.timeout(45000)});
       if (!response.ok) {
         const problem = await response.json().catch(() => ({}));
         throw new Error(problem.detail || problem.error || "Image request failed (HTTP " + response.status + ")");
@@ -492,7 +496,7 @@ if (timeForm) {
                 }
                 context.putImageData(pixelsOut, 0, 0);
                 placeholder.hidden = true;
-                status.textContent = "Showing science IMAGE extension · " + width + " × " + height + " native pixels · " + timeSafeText(row.obs_id, "SPHEREx observation");
+                status.textContent = "Showing SPHEREx preview · " + width + " × " + height + " native pixels · " + timeSafeText(row.obs_id, "SPHEREx observation");
                 finish(resolve);
               } catch (error) { finish(reject, error); }
             });
