@@ -3,7 +3,7 @@
 function send(res, status, body) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
-  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Cache-Control", status === 200 ? "public, s-maxage=300, stale-while-revalidate=600" : "no-store");
   return res.end(JSON.stringify(body));
 }
 
@@ -25,7 +25,11 @@ module.exports = async function handler(req, res) {
   }
 
   const parsedMax = Number.parseInt(q.maxrec || "20", 10);
-  const maxrec = Number.isFinite(parsedMax) ? Math.min(50, Math.max(1, parsedMax)) : 30;
+  const maxrec = Number.isFinite(parsedMax) ? Math.min(50, Math.max(1, parsedMax)) : 20;
+  const collection = String(q.collection || "spherex_qr3").toLowerCase();
+  if (!["spherex_qr3", "spherex_dr1"].includes(collection)) {
+    return send(res, 400, { error: "Choose the QR3 or DR1 SPHEREx collection." });
+  }
 
   const ranges = [];
   const hasA = q.startA !== undefined || q.endA !== undefined || q.start !== undefined || q.end !== undefined;
@@ -49,7 +53,8 @@ module.exports = async function handler(req, res) {
   }
   if (!ranges.length) ranges.push(null);
 
-  const collections = ["spherex_dr1", "spherex_qr3"];
+  // Search one release per request to reduce work on the remote archive.
+  const collections = [collection];
   const jobs = collections.flatMap(collection => ranges.map(range => ({ collection, range })));
 
   const settled = await Promise.all(jobs.map(async job => {
