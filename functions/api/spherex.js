@@ -15,7 +15,7 @@ async function queryCollection(collection,ra,dec,radius,range){
   const params=new URLSearchParams({
     COLLECTION:collection,
     POS:"circle "+ra+" "+dec+" "+radius,
-    MAXREC:"150",
+    MAXREC:"25",
     RESPONSEFORMAT:"VOTABLE"
   });
   if(range) params.set("TIME",range.start+" "+range.end);
@@ -26,7 +26,7 @@ async function queryCollection(collection,ra,dec,radius,range){
     try{
       const response=await fetch(host+"/SIA?"+params.toString(),{
         headers:{Accept:"application/x-votable+xml, application/xml, text/xml"},
-        signal:AbortSignal.timeout(28000)
+        signal:AbortSignal.timeout(14000)
       });
       const xml=await response.text();
       if(!response.ok){
