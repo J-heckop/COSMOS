@@ -18,25 +18,36 @@ module.exports = async function handler(req, res) {
   const n = Number.parseInt(q.maxrec || "30", 10);
   const maxrec = Number.isFinite(n) ? Math.min(500, Math.max(1, n)) : 100;
   const size = Math.min(0.5, Math.max(0.03, radius * 2));
-  const start = q.start === undefined ? null : Number(q.start);
-  const end = q.end === undefined ? null : Number(q.end);
-  if ((start !== null || end !== null) && (!Number.isFinite(start) || !Number.isFinite(end) || start <= 0 || end < start)) {
-    return send(res, 400, { error: "Invalid observation time range." });
+  const ranges = [];
+  if (q.startA !== undefined || q.endA !== undefined || q.start !== undefined || q.end !== undefined) {
+    const aStart = Number(q.startA !== undefined ? q.startA : q.start);
+    const aEnd = Number(q.endA !== undefined ? q.endA : q.end);
+    if (!Number.isFinite(aStart) || !Number.isFinite(aEnd) || aStart <= 0 || aEnd < aStart) {
+      return send(res, 400, { error: "Invalid Period A observation time range." });
+    }
+    ranges.push({ start:aStart, end:aEnd });
   }
-  const accessUrl = "'https://irsa.ipac.caltech.edu/' || a.uri || '?center=" + ra + "," + dec + "&size=" + size + "'";
+  if (q.startB !== undefined || q.endB !== undefined) {
+    const bStart = Number(q.startB), bEnd = Number(q.endB);
+    if (!Number.isFinite(bStart) || !Number.isFinite(bEnd) || bStart <= 0 || bEnd < bStart) {
+      return send(res, 400, { error: "Invalid Period B observation time range." });
+    }
+    ranges.push({ start:bStart, end:bEnd });
+  }
+  const accessUrl = "'https://irsa.ipac.caltech.edu/' || a.uri || '?center=" + ra + "," + dec + "d&size=" + size + "'";
   const where = ["1 = CONTAINS(POINT('ICRS', " + ra + ", " + dec + "), p.poly)"];
-  if (start !== null && end !== null) {
-    where.push("p.time_bounds_lower <= " + end);
-    where.push("p.time_bounds_upper >= " + start);
+  if (ranges.length) {
+    where.push("(" + ranges.map(range => "(p.time_bounds_lower <= " + range.end + " AND p.time_bounds_upper >= " + range.start + ")").join(" OR ") + ")");
   }
-  const adql = "SELECT TOP " + maxrec + " p.planeid AS obs_id, p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max, p.energy_bandpassname AS band, " + accessUrl + " AS access_url FROM spherex.artifact AS a JOIN spherex.plane AS p ON a.planeid = p.planeid WHERE " + where.join(" AND ") + " ORDER BY p.time_bounds_lower";
+  const adql = "SELECT TOP " + maxrec + " p.planeid AS obs_id, p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max, p.energy_bandpassname AS band, " + accessUrl + " AS access_url FROM spherex.artifact AS a JOIN spherex.plane AS p ON a.planeid = p.planeid WHERE " + where.join(" AND ");
+
   try {
     const body = new URLSearchParams({REQUEST:"doQuery",LANG:"ADQL",FORMAT:"votable",QUERY:adql});
     const response = await fetch("https://irsa.ipac.caltech.edu/TAP/sync", {
       method:"POST",
       headers:{"Content-Type":"application/x-www-form-urlencoded","Accept":"application/x-votable+xml, application/xml, text/xml"},
       body,
-      signal:AbortSignal.timeout(55000)
+      signal:AbortSignal.timeout(50000)
     });
     const xml = await response.text();
     if (!response.ok) return send(res,502,{error:"IRSA TAP query failed.",detail:"HTTP "+response.status});
