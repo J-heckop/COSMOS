@@ -1,0 +1,16 @@
+function json(body,status=200,extra={}){return new Response(JSON.stringify(body),{status,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":status===200?"public, max-age=30, s-maxage=300, stale-while-revalidate=600":"no-store",...extra}})}
+export async function onRequest({request}){
+ if(request.method!=="GET")return json({error:"Use GET for archive searches."},405,{Allow:"GET"});
+ const q=new URL(request.url).searchParams,ra=Number(q.get("ra")),dec=Number(q.get("dec")),radius=Number(q.get("radius"));
+ if(!Number.isFinite(ra)||ra<0||ra>360||!Number.isFinite(dec)||dec< -90||dec>90||!Number.isFinite(radius)||radius<=0||radius>1)return json({error:"Invalid sky position or search radius."},400);
+ const parsed=Number.parseInt(q.get("maxrec")||"12",10),maxrec=Number.isFinite(parsed)?Math.min(30,Math.max(1,parsed)):12,collection=String(q.get("collection")||"spherex_qr3").toLowerCase();
+ if(!["spherex_qr3","spherex_dr1"].includes(collection))return json({error:"Choose the QR3 or DR1 SPHEREx collection."},400);
+ const ranges=[],hasA=q.has("startA")||q.has("endA")||q.has("start")||q.has("end"),hasB=q.has("startB")||q.has("endB");
+ if(hasA){const start=Number(q.has("startA")?q.get("startA"):q.get("start")),end=Number(q.has("endA")?q.get("endA"):q.get("end"));if(!Number.isFinite(start)||!Number.isFinite(end)||start<=0||end<start)return json({error:"Invalid Period A observation time range."},400);ranges.push({label:"A",start,end})}
+ if(hasB){const start=Number(q.get("startB")),end=Number(q.get("endB"));if(!Number.isFinite(start)||!Number.isFinite(end)||start<=0||end<start)return json({error:"Invalid Period B observation time range."},400);ranges.push({label:"B",start,end})}
+ if(!ranges.length)ranges.push(null);
+ const settled=await Promise.all(ranges.map(async range=>{const params=new URLSearchParams();params.set("COLLECTION",collection);params.set("POS","CIRCLE "+ra+" "+dec+" "+radius);params.set("MAXREC",String(maxrec));params.set("RESPONSEFORMAT","VOTABLE");if(range)params.set("TIME",range.start+" "+range.end);try{const response=await fetch("https://irsa.ipac.caltech.edu/SIA?"+params.toString(),{headers:{Accept:"application/x-votable+xml, application/xml, text/xml"},signal:AbortSignal.timeout(18000)}),xml=await response.text();if(!response.ok)return{ok:false,collection,period:range?.label,error:"IRSA SIA2 returned HTTP "+response.status};if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\\b/i.test(xml))return{ok:false,collection,period:range?.label,error:"IRSA returned an unexpected SIA2 response."};return{ok:true,collection,period:range?.label,xml}}catch(error){return{ok:false,collection,period:range?.label,error:error?.name==="TimeoutError"?"IRSA SIA2 request timed out.":error?.message||"Unknown archive error."}}}));
+ const results=settled.filter(x=>x.ok).map(x=>({collection:x.collection,period:x.period,xml:x.xml})),errors=settled.filter(x=>!x.ok).map(x=>({collection:x.collection,period:x.period,error:x.error}));
+ if(!results.length)return json({error:"The IRSA SPHEREx image search could not be completed.",detail:errors.map(x=>x.collection+(x.period?" Period "+x.period:"")+": "+x.error).join(" "),errors},502);
+ return json({results,errors,source:"IRSA SIA2",partial:errors.length>0});
+}
