@@ -39,8 +39,15 @@
    <label class="text-xs text-slate-400">Right ascension (°)<input id="liveRA" class="control block w-full mt-1" type="number" min="0" max="360" step="0.0001" value="10.6847"></label>
    <label class="text-xs text-slate-400">Declination (°)<input id="liveDec" class="control block w-full mt-1" type="number" min="-90" max="90" step="0.0001" value="41.2690"></label>
    <label class="text-xs text-slate-400">Search radius<select id="liveRadius" class="control block w-full mt-1"><option value="0.05">3 arcmin</option><option value="0.1" selected>6 arcmin</option><option value="0.25">15 arcmin</option><option value="0.5">30 arcmin</option></select></label>
+   <label class="text-xs text-slate-400">Spectral band<select id="liveBand" class="control block w-full mt-1"><option value="SPHEREx-D1">Band 1 · 0.75–1.11 µm</option><option value="SPHEREx-D2" selected>Band 2 · 1.11–1.64 µm</option><option value="SPHEREx-D3">Band 3 · 1.64–2.42 µm</option><option value="SPHEREx-D4">Band 4 · 2.42–3.82 µm</option><option value="SPHEREx-D5">Band 5 · 3.82–4.42 µm</option><option value="SPHEREx-D6">Band 6 · 4.42–5.00 µm</option><option value="all">All bands · slower</option></select></label>
   </div>
-  <div class="flex flex-wrap items-center gap-2"><button id="liveSearch" class="action active text-sm">⌕ Search live observations</button><span id="liveStatus" class="text-xs text-slate-400" role="status" aria-live="polite">Choose a target and search the official IRSA archive.</span></div>
+  <div class="flex flex-wrap items-center gap-2"><button id="liveSearch" class="action active text-sm">⌕ Search live observations</button><span id="liveStatus" class="text-xs text-slate-400" role="status" aria-live="polite">Choose a target, spectral band and search the official IRSA archive.</span></div>
+  <div id="liveTimelapse" class="hide flex flex-wrap items-center gap-2 rounded-xl border border-cyan-900/60 bg-slate-950/70 p-3">
+   <button id="liveTimelapsePlay" class="action active text-xs" type="button">▶ Play real-data time-lapse</button>
+   <button id="liveTimelapseStop" class="action text-xs" type="button" disabled>■ Stop</button>
+   <label class="text-xs text-slate-400">Frame interval <select id="liveTimelapseSpeed" class="control ml-1"><option value="2500">2.5 sec</option><option value="4000" selected>4 sec</option><option value="6000">6 sec</option></select></label>
+   <span id="liveTimelapseStatus" class="text-xs text-slate-400" aria-live="polite">Loads actual archive images in observation-date order.</span>
+  </div>
   <div id="liveImagePanel" class="hide rounded-xl border border-slate-700 bg-slate-950 p-3">
    <div class="flex flex-wrap justify-between gap-2"><b id="liveImageTitle" class="text-sm text-cyan-200">Selected SPHEREx observation</b><div class="flex items-center gap-3"><button id="liveRetry" type="button" class="text-xs text-cyan-200 underline">Retry preview</button><a id="liveOriginal" class="text-xs text-amber-300 underline" target="_blank" rel="noopener noreferrer">Open original FITS ↗</a></div></div>
    <div class="mt-3 bg-black rounded-lg min-h-48 grid place-items-center overflow-auto"><canvas id="liveFitsCanvas" class="max-w-full h-auto"></canvas><p id="liveImagePlaceholder" class="text-xs text-slate-400 p-6">Choose an observation to load its image.</p></div>
