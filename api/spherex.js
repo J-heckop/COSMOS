@@ -41,7 +41,7 @@ module.exports = async function handler(req, res) {
     if (!Number.isFinite(start) || !Number.isFinite(end) || start <= 0 || end < start) {
       return send(res, 400, { error: "Invalid observation time range." });
     }
-    params.set("TIME", `${start}/${end}`);
+    params.set("TIME", `${start} ${end}`);
   }
 
   try {
