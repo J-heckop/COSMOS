@@ -27,7 +27,7 @@ module.exports = async function handler(req, res) {
       return send(res, 400, { error: "Invalid image cutout coordinates or size." });
     }
     // Use the documented SPHEREx cutout URL syntax; retry smaller cutouts if IRSA is busy.
-    const sizes = [...new Set([size, Math.max(0.03, size / 2), Math.max(0.03, size / 4)])];
+    const sizes = [...new Set([size, Math.max(0.03, size / 2)])];
     let upstream;
     let lastStatus = 0;
     for (let attempt = 0; attempt < sizes.length; attempt += 1) {
@@ -37,12 +37,12 @@ module.exports = async function handler(req, res) {
       attemptUrl.searchParams.delete("gzip");
       upstream = await fetch(attemptUrl.toString(), {
         headers: { Accept: "application/fits, application/octet-stream" },
-        signal: AbortSignal.timeout(16000)
+        signal: AbortSignal.timeout(11000)
       });
       if (upstream.ok) break;
       lastStatus = upstream.status;
       if (![429, 500, 502, 503, 504].includes(upstream.status) || attempt === sizes.length - 1) break;
-      await new Promise(resolve => setTimeout(resolve, 800 * (attempt + 1)));
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
     if (!upstream || !upstream.ok) {
       res.setHeader("Retry-After", "30");
