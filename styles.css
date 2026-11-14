@@ -198,3 +198,25 @@
 .image-howto strong{color:#ffd27a;letter-spacing:.02em}
 .image-howto b{color:#ffe2a8}
 .preview-image-button{min-width:132px}
+
+/* COSMOS Discovery Lab */
+.cosmos-lab{margin:28px 0 0;padding:25px;border:1px solid rgba(255,196,112,.23);border-radius:18px;background:linear-gradient(135deg,rgba(34,27,29,.82),rgba(13,15,25,.84));backdrop-filter:blur(10px)}
+.lab-heading h3{margin:8px 0;font:600 26px "Space Grotesk";color:var(--text)}.lab-heading p,.lab-tool p{color:var(--muted);font-size:11px;line-height:1.7}
+.lab-tool-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin-top:17px}
+.lab-tool{min-width:0;padding:17px;border:1px solid rgba(255,202,130,.16);border-radius:13px;background:rgba(9,11,19,.68)}
+.lab-kicker{color:#ffd27a;font-size:9px;font-weight:700;letter-spacing:1.4px}.lab-tool h4{margin:8px 0;font:600 17px "Space Grotesk";color:var(--text)}
+.lab-tool p{margin:7px 0 12px}.lab-actions{display:flex;gap:8px;flex-wrap:wrap}.lab-actions .button,.lab-tool>.button{font-size:10px;padding:10px 13px}
+.lab-note,.timeline-readout{margin-top:10px;color:#c9bba5;font-size:10px;line-height:1.6}
+.wipe-frame{position:relative;min-height:160px;background:#05070c;border-radius:9px;overflow:hidden;display:grid;place-items:center}
+#wipe-canvas{display:block;width:100%;height:auto;max-height:240px;object-fit:contain}
+#wipe-empty{position:absolute;padding:15px;color:#b7a98e;font-size:11px;text-align:center}
+.lab-range-label,.target-tool label,.discovery-tool label{display:block;margin-top:12px;color:#e9ddc8;font-size:10px}
+.lab-tool input[type=range]{width:100%;accent-color:#ffc15a;margin:10px 0}
+.spectrum-wrap{width:100%;height:145px;background:#080b13;border:1px solid rgba(255,202,130,.12);border-radius:9px;overflow:hidden}
+#spectrum-canvas{width:100%;height:100%;display:block}
+.spectrum-scale{display:flex;justify-content:space-between;color:#c9bba5;font-size:9px;margin-top:6px}
+.target-tool input,.discovery-tool textarea{display:block;width:100%;margin-top:7px;padding:10px;border:1px solid rgba(255,202,130,.2);border-radius:8px;background:#090a12;color:#fff0d5;font:12px "DM Sans"}
+.target-coordinates{display:flex;flex-wrap:wrap;gap:15px;margin:14px 0;color:#bba98d;font-size:10px}.target-coordinates strong{display:block;color:#ffe0a0;margin-top:4px}
+.discovery-list{display:grid;gap:7px;margin-top:10px}.discovery-entry{padding:9px;border:1px solid rgba(255,202,130,.13);border-radius:8px;color:#e9ddc8;font-size:10px;line-height:1.5}.discovery-entry small{display:block;color:#a99b83;margin-top:5px}
+.lab-disclaimer{margin:17px 0 0;color:#b6a78e;font-size:10px;line-height:1.7}
+@media(max-width:650px){.cosmos-lab{padding:16px}.lab-tool-grid{grid-template-columns:1fr}.lab-tool{padding:14px}.wipe-frame{min-height:180px}}
