@@ -711,7 +711,7 @@ if (timeForm) {
         collection:document.querySelector("#collection-input")?.value || "spherex_qr3",
         maxrec:"30"
       }).toString();
-      timeStatus.textContent = "Running one combined archive query for both dates…";
+      timeStatus.textContent = "Searching SPHEREx for both selected dates in parallel…";
       const response = await fetch(url,{signal:AbortSignal.timeout(23000)});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive proxy failed");
