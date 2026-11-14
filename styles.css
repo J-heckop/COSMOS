@@ -275,3 +275,13 @@
 .fits-image-wrap{min-height:220px}
 .fits-image-wrap canvas{width:100%;height:auto;max-height:380px;object-fit:contain;image-rendering:auto}
 @media(max-width:600px){.fits-image-wrap{min-height:220px}.fits-image-wrap canvas{max-height:380px}}
+
+
+/* Astronomical object-name lookup */
+.object-lookup{margin-top:20px;padding:15px 16px;border:1px solid rgba(255,210,122,.22);border-radius:12px;background:rgba(255,190,80,.045)}
+.object-lookup>label{display:block;color:#f2dfb6;font-size:12px;font-weight:700;margin-bottom:9px}
+.object-lookup-row{display:flex;gap:9px;align-items:stretch}
+.object-lookup-row input{flex:1;min-width:0;background:#080e20;color:#f4f5ff;border:1px solid var(--line);border-radius:8px;padding:12px;font:13px "DM Sans"}
+.object-lookup-row button{white-space:nowrap;padding:0 16px}
+.object-lookup>small{display:block;margin-top:8px;color:#aebbd2;font-size:10px;line-height:1.5}
+@media(max-width:420px){.object-lookup-row{flex-direction:column}.object-lookup-row button{min-height:42px;width:100%}}
