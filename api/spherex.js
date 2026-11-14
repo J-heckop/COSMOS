@@ -29,10 +29,12 @@ module.exports = async function handler(req, res) {
     .split(",").filter(value => ALLOWED_COLLECTIONS.has(value));
   if (!collections.length) return send(res, 400, { error: "No supported SPHEREx collection selected." });
 
+  const requestedMax = Number.parseInt(q.maxrec || "30", 10);
+  const maxrec = Number.isFinite(requestedMax) ? Math.min(1000, Math.max(1, requestedMax)) : 30;
   const params = new URLSearchParams({
     POS: `CIRCLE ${ra} ${dec} ${radius}`,
     RESPONSEFORMAT: "VOTABLE",
-    MAXREC: "30"
+    MAXREC: String(maxrec)
   });
 
   if (q.start !== undefined || q.end !== undefined) {
@@ -45,7 +47,7 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const results = await Promise.all(collections.map(async collection => {
+    const settled = await Promise.allSettled(collections.map(async collection => {
       const url = new URL("https://irsa.ipac.caltech.edu/SIA");
       const collectionParams = new URLSearchParams(params);
       collectionParams.set("COLLECTION", collection);
@@ -53,16 +55,26 @@ module.exports = async function handler(req, res) {
       const startedAt = Date.now();
       const response = await fetch(url.toString(), {
         headers: { Accept: "application/x-votable+xml, application/xml, text/xml" },
-        signal: AbortSignal.timeout(55000)
+        signal: AbortSignal.timeout(50000)
       });
       if (!response.ok) throw new Error(`${collection} returned HTTP ${response.status}`);
       const xml = await response.text();
-      if (!xml.includes("<VOTABLE") && !xml.includes(":VOTABLE")) {
+      if (!/<(?:[A-Za-z0-9_]+:)?VOTABLE\\b/i.test(xml)) {
         throw new Error(`${collection} did not return a VOTable response`);
       }
       return { collection, xml, elapsed_ms: Date.now() - startedAt };
     }));
-    return send(res, 200, { results });
+    const results = settled.filter(item => item.status === "fulfilled").map(item => item.value);
+    const errors = settled.filter(item => item.status === "rejected").map((item, index) => ({
+      collection: collections[settled.findIndex(x => x === item)] || "unknown",
+      detail: item.reason && item.reason.message ? item.reason.message : "Archive request failed."
+    }));
+    if (!results.length) return send(res, 502, {
+      error: "All SPHEREx archive collection requests failed.",
+      detail: errors.map(item => item.collection + ": " + item.detail).join("; "),
+      errors
+    });
+    return send(res, 200, { results, errors });
   } catch (error) {
     return send(res, 502, { error: "IRSA archive request failed.", detail: error.message });
   }
