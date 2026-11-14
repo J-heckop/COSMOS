@@ -74,10 +74,7 @@
    <div class="panel rounded-2xl p-4">
     <h2 class="font-semibold">How to explore real observations</h2>
     <ol class="list-decimal pl-5 mt-2 space-y-2 text-sm text-slate-400 leading-6">
-     <li>Choose a sky target or enter its RA and Dec above.</li>
-     <li>Search the live SPHEREx archive.</li>
-     <li>Load an observation from the results list.</li>
-     <li>Read its actual observation date, release, band and coordinates above.</li>
+     <li>Choose a sky target or enter its RA and Dec above.</li><li>Search the live SPHEREx archive.</li><li>Load an observation from the results list.</li><li>Read its actual observation date, release, band and coordinates above.</li>
     </ol>
     <p class="text-xs text-slate-500 mt-3">The displayed image is an actual archive FITS cutout with an automatic display stretch. It is not a live video feed or a calibrated change-detection product.</p>
    </div>
@@ -90,8 +87,7 @@
     <p class="text-xs text-slate-500 mt-3">These are mission specifications. The selected archive record determines the actual observation date and available image data.</p>
    </div>
    <div class="panel rounded-2xl p-4">
-    <div class="small-label">OBSERVATION DETAILS</div>
-    <p class="text-sm text-slate-400 leading-6 mt-2">After loading an image, check the title and metadata in the selected-observation panel. They identify the archive product and its recorded observation time.</p>
+    <div class="small-label">OBSERVATION DETAILS</div><p class="text-sm text-slate-400 leading-6 mt-2">After loading an image, check the title and metadata in the selected-observation panel. They identify the archive product and its recorded observation time.</p>
     <a class="text-cyan-300 underline text-sm mt-3 inline-block" href="https://irsa.ipac.caltech.edu/applications/spherex/" target="_blank" rel="noopener">Open official SPHEREx Data Explorer ↗</a>
    </div>
    <div class="panel rounded-2xl p-4">
@@ -104,6 +100,181 @@
  </main>
 
 <script src="vendor/fits.js"></script>
+<script>
+(()=> {
+ const $=id=>document.getElementById(id);
+ const target=$('liveTarget'),ra=$('liveRA'),dec=$('liveDec'),radius=$('liveRadius'),band=$('liveBand'),search=$('liveSearch'),status=$('liveStatus'),results=$('liveResults');
+ const panel=$('liveImagePanel'),canvas=$('liveFitsCanvas'),placeholder=$('liveImagePlaceholder'),imageStatus=$('liveImageStatus'),title=$('liveImageTitle'),original=$('liveOriginal'),retry=$('liveRetry');
+ const mainSkyCanvas=$('realSkyCanvas'),hudDataLabel=$('hudDataLabel'),hudSector=$('hudSector'),hudBand=$('hudBand'),skyToast=$('toast'),realViewerState=$('realViewerState');
+ const lapsePanel=$('liveTimelapse'),lapsePlay=$('liveTimelapsePlay'),lapseStop=$('liveTimelapseStop'),lapseSpeed=$('liveTimelapseSpeed'),lapseStatus=$('liveTimelapseStatus');
+ let rows=[],selectedRow=null,selectedButton=null,lapseRunning=false,lapseIndex=0,lapseTimer=null;
+ function parseVOTable(xmlText){
+  const doc=new DOMParser().parseFromString(xmlText,'application/xml');
+  if(doc.querySelector('parsererror'))throw new Error('IRSA returned an unreadable observation table.');
+  return [...doc.getElementsByTagNameNS('*','TR')].filter(row=>row.parentElement?.localName.toLowerCase()==='tabledata').map(row=>{
+   let table=row.parentElement;while(table&&table.localName.toLowerCase()!=='table')table=table.parentElement;
+   const fields=table?[...table.getElementsByTagNameNS('*','FIELD')].map(f=>(f.getAttribute('name')||f.getAttribute('ID')||'').toLowerCase()):[];
+   const values=[...row.children].map(cell=>cell.textContent.trim());
+   return Object.fromEntries(fields.map((field,i)=>[field,values[i]||'']));
+  });
+ }
+ function mjdDate(value){const n=Number(value);return Number.isFinite(n)?new Date((n-40587)*86400000).toISOString().slice(0,10):'Date not listed'}
+ target.addEventListener('change',()=>{if(target.value==='custom')return;const [a,d]=target.value.split(',');ra.value=a;dec.value=d;});
+ function stopTimelapse(message='Time-lapse stopped.'){
+  lapseRunning=false;if(lapseTimer)clearTimeout(lapseTimer);lapseTimer=null;
+  lapsePlay.disabled=rows.length<2;lapsePlay.textContent='▶ Play real-data time-lapse';
+  lapseStop.disabled=true;if(message)lapseStatus.textContent=message;
+ }
+ lapseStop.addEventListener('click',()=>stopTimelapse());
+ lapsePlay.addEventListener('click',()=>{
+  if(rows.length<2)return;
+  if(lapseRunning){stopTimelapse('Time-lapse paused. Press play to resume.');return}
+  lapseRunning=true;lapseIndex=0;lapsePlay.textContent='Ⅱ Pause';lapseStop.disabled=false;
+  async function nextFrame(){
+   if(!lapseRunning)return;
+   const row=rows[lapseIndex%rows.length];
+   lapseStatus.textContent='Frame '+(lapseIndex%rows.length+1)+' / '+rows.length+' · '+mjdDate(row.t_min);
+   const ok=await loadImage(row,null,false,true);
+   if(!lapseRunning)return;
+   if(!ok){stopTimelapse('Stopped because an archive image could not be loaded.');return}
+   lapseIndex++;
+   lapseTimer=setTimeout(nextFrame,Number(lapseSpeed.value)||4000);
+  }
+  nextFrame();
+ });
+ search.addEventListener('click',async()=>{
+  const r=Number(ra.value),d=Number(dec.value),rad=Number(radius.value),selectedBand=band.value;
+  if(!Number.isFinite(r)||r<0||r>360||!Number.isFinite(d)||d< -90||d>90){status.textContent='Enter valid RA (0–360°) and Dec (−90–90°).';return}
+  stopTimelapse('Waiting for archive observations…');
+  const hadPreviousResults=rows.length>0;
+  search.disabled=true;search.textContent='Searching IRSA…';
+  status.textContent=hadPreviousResults?'Searching new coordinates… Previous successful results are being kept until the new search finishes.':'Searching the official SPHEREx image archive…';
+  try{
+   const params=new URLSearchParams({ra:String(r),dec:String(d),radius:String(rad),band:selectedBand,maxrec:'150'});
+   const url=new URL('/api/spherex',location.origin);url.search=params.toString();
+   let response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(27000)});let payload=await response.json();
+   if(!response.ok)throw new Error(payload.detail||payload.errors?.map(x=>x.collection+': '+x.error).join('; ')||payload.error||'Could not start the archive search.');
+   if(payload.jobId){
+    search.textContent='Checking IRSA job…';
+    let complete=false;
+    for(let attempt=0;attempt<180;attempt++){
+     await new Promise(resolve=>setTimeout(resolve,2000));
+     const pollUrl=new URL('/api/spherex',location.origin);pollUrl.search=new URLSearchParams({job:String(payload.jobId)}).toString();
+     response=await fetch(pollUrl,{signal:AbortSignal.timeout(18000)});payload=await response.json();
+     if(response.status===202){status.textContent='IRSA background job: '+(payload.phase||'RUNNING')+' · still searching…';continue}
+     if(!response.ok)throw new Error(payload.error||'IRSA background job failed.');
+     complete=!!payload.done;break;
+    }
+    if(!complete)throw new Error('The IRSA background job is still running. Search again shortly to check for results.');
+   }
+   rows=(payload.results||[]).flatMap(set=>parseVOTable(set.xml).map(row=>({...row,_collection:set.collection,_queryRa:r,_queryDec:d})));
+   const bandLimits={
+    'SPHEREx-D1':[0.75e-6,1.11e-6],
+    'SPHEREx-D2':[1.11e-6,1.64e-6],
+    'SPHEREx-D3':[1.64e-6,2.42e-6],
+    'SPHEREx-D4':[2.42e-6,3.82e-6],
+    'SPHEREx-D5':[3.82e-6,4.42e-6],
+    'SPHEREx-D6':[4.42e-6,5.00e-6]
+   };
+   if(selectedBand!=='all'&&bandLimits[selectedBand]){
+    const [wantedLo,wantedHi]=bandLimits[selectedBand];
+    const known=rows.some(row=>Number.isFinite(Number(row.em_min))&&Number.isFinite(Number(row.em_max)));
+    if(known)rows=rows.filter(row=>!Number.isFinite(Number(row.em_min))||!Number.isFinite(Number(row.em_max))||(Number(row.em_min)<wantedHi&&Number(row.em_max)>wantedLo));
+   }
+   rows.sort((a,b)=>Number(a.t_min)-Number(b.t_min));
+   const unique=[...new Map(rows.map(row=>[row.access_url||[row.obs_id||'',row.t_min||''].join('|'),row])).values()];
+   rows=unique;
+   if(!rows.length){results.replaceChildren();results.classList.add('hide');panel.classList.add('hide');lapsePanel.classList.add('hide');status.textContent='No released observations were returned for these coordinates and band. Previous results are cleared because this search completed successfully with zero matches.';return}
+   results.replaceChildren();results.classList.remove('hide');panel.classList.add('hide');lapsePanel.classList.add('hide');
+   status.textContent='Found '+rows.length+' real archive image records for RA '+r.toFixed(4)+'°, Dec '+d.toFixed(4)+'° · '+selectedBand+' · sorted oldest to newest.'+(payload.partial?' (Some archive releases were unavailable.)':'');
+   const cards=[];
+   rows.forEach((row,index)=>{
+    const card=document.createElement('article');card.className='rounded-xl border border-slate-700 bg-slate-950/70 p-3 flex flex-col gap-2';
+    const name=document.createElement('b');name.className='text-xs text-slate-100';name.textContent=row.obs_id?'SPHEREx plane '+row.obs_id:'SPHEREx archive image '+(index+1);
+    const meta=document.createElement('p');meta.className='text-xs text-slate-400';meta.textContent=(row._collection||'SPHEREx').toUpperCase()+' · '+mjdDate(row.t_min)+' · '+(row.band||row.energy_bandpassname||selectedBand);
+    const btn=document.createElement('button');btn.className='action active text-xs mt-auto';btn.textContent='Load real sky image';btn.addEventListener('click',()=>loadImage(row,btn));
+    card.append(name,meta,btn);card.hidden=index>=10;cards.push(card);results.append(card);
+   });
+   if(cards.length>5){
+    let visibleCount=10;
+    const more=document.createElement('button');more.type='button';more.className='action w-full text-sm mt-2';
+    const updateMore=()=>{const remaining=cards.length-visibleCount;more.textContent=remaining>0?'Load 10 more observations ('+remaining+' remaining)':'All '+cards.length+' observations shown';more.disabled=remaining===0};
+    more.addEventListener('click',()=>{const next=Math.min(cards.length,visibleCount+10);cards.slice(visibleCount,next).forEach(card=>card.hidden=false);visibleCount=next;updateMore()});
+    updateMore();results.append(more);
+   }
+   if(rows.length>1){lapsePanel.classList.remove('hide');lapsePlay.disabled=false;lapseStatus.textContent='Play the real FITS observations chronologically.'}
+  }catch(error){
+   status.replaceChildren();
+   const message=document.createElement('span');
+   message.textContent='COSMOS could not retrieve the archive automatically: '+error.message+(hadPreviousResults?' Previous successful results are still shown below. ':' ')+' ';
+   const official=document.createElement('a');
+   const officialUrl=new URL('https://irsa.ipac.caltech.edu/applications/spherex/');
+   officialUrl.search=new URLSearchParams({
+    api:'spectral-images',
+    ra:String(r),
+    dec:String(d),
+    sr:(rad*60)+'m'
+   }).toString();
+   official.href=officialUrl.toString();
+   official.target='_blank';
+   official.rel='noopener noreferrer';
+   official.className='inline-flex mt-2 rounded-lg border border-cyan-700 bg-cyan-950/60 px-3 py-2 text-sm text-cyan-200 underline';
+   official.textContent='Open this exact search in the official SPHEREx Data Explorer ↗';
+   status.append(message,official);
+  }
+  finally{search.disabled=false;search.textContent='⌕ Search live observations'}
+ });
+ retry.addEventListener('click',()=>{if(selectedRow)loadImage(selectedRow,selectedButton,true)});
+ async function loadImage(row,button,isRetry=false,quiet=false){
+  if(!row.access_url){if(!quiet)status.textContent='This record has no FITS product URL.';return false}
+  selectedRow=row;selectedButton=button;
+  panel.classList.remove('hide');
+  if(!quiet)panel.scrollIntoView({behavior:'smooth',block:'start'});canvas.width=0;canvas.height=0;placeholder.classList.remove('hide');placeholder.textContent=isRetry?'Retrying real SPHEREx FITS preview…':'Loading real SPHEREx FITS cutout…';imageStatus.textContent=isRetry?'Retrying the IRSA image request…':'Requesting a quick 0.1° cutout from IRSA…';title.textContent=(row.obs_id||'SPHEREx observation')+' · '+mjdDate(row.t_min);original.href=row.access_url;
+  if(button){button.disabled=true;button.textContent='Loading…'}
+  try{
+   const imageRa=Number.isFinite(Number(row._queryRa))?Number(row._queryRa):Number(ra.value),imageDec=Number.isFinite(Number(row._queryDec))?Number(row._queryDec):Number(dec.value);const url=new URL('/api/spherex-image',location.origin);url.search=new URLSearchParams({url:row.access_url,center:String(imageRa)+','+String(imageDec),size:'0.1'}).toString();
+   const response=await fetch(url,{signal:AbortSignal.timeout(45000)});if(!response.ok){const problem=await response.json().catch(()=>({}));throw new Error(problem.detail||problem.error||'Image request failed (HTTP '+response.status+')')}
+   const blob=await response.blob();if(blob.size<2880)throw new Error('IRSA returned an empty FITS file.');
+   if(!window.astro?.FITS)throw new Error('FITS viewer library did not load.');
+   await new Promise((resolve,reject)=>{
+    let done=false;const finish=(fn,v)=>{if(!done){done=true;fn(v)}};
+    const fits=new astro.FITS(blob,function(){
+     try{
+      const hdu=(this.hdus||[]).find(x=>x.data instanceof astro.FITS.Image&&String(x.header?.get?.('EXTNAME')||'').trim().toUpperCase()==='IMAGE')||(this.hdus||[]).find(x=>x.data instanceof astro.FITS.Image);
+      if(!hdu)throw new Error('No image plane in this FITS file.');
+      hdu.data.getFrame(0,pixels=>{
+       try{
+        const w=hdu.data.width,h=hdu.data.height;if(!w||!h||!pixels?.length)throw new Error('FITS image has no pixels.');
+        const sample=[];const stride=Math.max(1,Math.floor(pixels.length/24000));for(let i=0;i<pixels.length;i+=stride){const v=Number(pixels[i]);if(Number.isFinite(v))sample.push(v)}sample.sort((a,b)=>a-b);
+        const pct=p=>sample[Math.min(sample.length-1,Math.max(0,Math.floor((sample.length-1)*p)))],median=pct(.5),dev=sample.map(v=>Math.abs(v-median)).sort((a,b)=>a-b),sigma=Math.max((dev[Math.floor(dev.length/2)]||0)*1.4826,(pct(.75)-pct(.25))/1.349,1e-12),low=median+sigma*.8,high=Math.max(pct(.998),low+sigma*5),span=high-low;
+        canvas.width=w;canvas.height=h;const c=canvas.getContext('2d'),out=c.createImageData(w,h);
+        for(let y=0;y<h;y++)for(let x=0;x<w;x++){const v=Number(pixels[y*w+x]),z=Number.isFinite(v)&&v>low?Math.asinh(Math.max(0,Math.min(1,(v-low)/span))*5)/Math.asinh(5):0,shade=Math.round(Math.pow(z,.9)*255),i=((h-1-y)*w+x)*4;out.data[i]=shade;out.data[i+1]=Math.round(shade*.96);out.data[i+2]=Math.round(shade*.86);out.data[i+3]=255}
+        c.putImageData(out,0,0);
+        // Promote the exact same decoded FITS pixels into the large primary sky viewer.
+        mainSkyCanvas.width=w;mainSkyCanvas.height=h;
+        mainSkyCanvas.getContext('2d').drawImage(canvas,0,0);
+        mainSkyCanvas.classList.remove('hide');
+        if(realViewerState)realViewerState.textContent='REAL OBSERVATION LOADED';
+        const observedDate=mjdDate(row.t_min);
+        hudSector.textContent='REAL SPHEREx OBSERVATION';
+        hudBand.textContent=(row.band||row.energy_bandpassname||selectedBand)+' · '+w+' × '+h;
+        hudDataLabel.textContent='OBSERVED '+observedDate+' · FITS DATA';
+        skyToast.textContent='Real SPHEREx observation · '+observedDate+' · '+(row.obs_id||'archive image')+' · RA '+imageRa.toFixed(4)+'°, Dec '+imageDec.toFixed(4)+'°. Display stretch is automatic; this is not a calibrated change-detection map.';
+        placeholder.classList.add('hide');
+        imageStatus.textContent='Real SPHEREx FITS preview · '+w+' × '+h+' native pixels · 0.1° cutout · observation date '+observedDate+' · automatic grayscale stretch';
+        finish(resolve);
+       }catch(e){finish(reject,e)}
+      });
+     }catch(e){finish(reject,e)}
+    });
+    setTimeout(()=>finish(reject,new Error('FITS parsing timed out.')),55000);
+   });
+   return true;
+  }catch(error){placeholder.classList.remove('hide');placeholder.textContent='Preview unavailable. You can retry or open the original FITS product.';if(realViewerState)realViewerState.textContent='IMAGE UNAVAILABLE';imageStatus.textContent=error.message+' If IRSA keeps returning 503, its image service may be temporarily unavailable.';return false}
+  finally{if(button){button.disabled=false;button.textContent='Load real sky image'}}
+ }
+})();
+</script>
 <script>
 (()=> {
  const image=document.getElementById('realSkyCanvas');
@@ -119,65 +290,6 @@
   try{const notes=JSON.parse(sessionStorage.getItem('cosmosMissionNotes')||'[]');notes.unshift(value);sessionStorage.setItem('cosmosMissionNotes',JSON.stringify(notes.slice(0,10)));note.value='';status.textContent='Saved in this browser session.'}
   catch(error){status.textContent='Could not save this note in this browser.'}
  });
-})();
-</script>
-<script>
-(()=> {
- const $=id=>document.getElementById(id), canvas=$('skyCanvas'),ctx=canvas.getContext('2d');
- const names=['Source 01','Source 02','Source 03','Source 04'];
- const sources=names.map((name,i)=>({name,type:['Bright star','Faint source','Illustrative moving point','Diffuse source'][i],x:[.25,.68,.48,.79][i],y:[.36,.25,.67,.76][i],dx:[.002,-.004,.035,.006][i],dy:[-.002,.003,-.018,.002][i]}));
- let mode='blink',epoch=0,playing=true,phase=0,zoom=1,selected=-1,band=42,wipe=50,last=0,width=0,height=0,stars=[];
- const epochNames=['E1 · H1 2025','E2 · H2 2025','E3 · H1 2026','E4 · H2 2026'];
- function resize(){const r=canvas.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,1.5);width=r.width;height=r.height;canvas.width=Math.round(width*d);canvas.height=Math.round(height*d);ctx.setTransform(d,0,0,d,0,0);stars=Array.from({length:Math.max(100,Math.min(260,Math.round(width*height/2300)))},()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.25+.25,a:Math.random()*.65+.15,t:Math.random()*6.28}));}
- function pos(s,e){return {x:s.x+s.dx*e,y:s.y+s.dy*e}}
- function drawNebula(){
-  // Decorative procedural nebula layers: atmosphere only, never scientific data.
-  const clouds=[
-   [.20,.27,.44,.30,'rgba(115,65,139,.16)'],
-   [.72,.58,.48,.34,'rgba(27,111,139,.13)'],
-   [.48,.82,.38,.22,'rgba(167,91,83,.07)'],
-   [.83,.18,.24,.18,'rgba(79,82,153,.08)']
-  ];
-  clouds.forEach(([x,y,rx,ry,color])=>{
-   const g=ctx.createRadialGradient(x*width,y*height,0,x*width,y*height,Math.max(rx*width,ry*height));
-   g.addColorStop(0,color);g.addColorStop(.48,color.replace(/\.\d+\)/,'.045)'));g.addColorStop(1,'rgba(0,0,0,0)');
-   ctx.fillStyle=g;ctx.fillRect(0,0,width,height);
-  });
- }
- function drawStars(){
-  for(const s of stars){
-   const twinkle=.72+.28*Math.sin(performance.now()*.00045+s.t);
-   ctx.globalAlpha=s.a*twinkle;
-   ctx.fillStyle=s.r>1.05?'#f5e8d2':'#c8d8ed';
-   ctx.shadowBlur=s.r>1.05?9:2;ctx.shadowColor='#b8d7ee';
-   ctx.beginPath();ctx.arc(s.x*width,s.y*height,s.r,0,Math.PI*2);ctx.fill();
-   if(s.r>1.15){ctx.globalAlpha*=.35;ctx.fillRect(s.x*width-5,s.y*height,.5+10,0.7);ctx.fillRect(s.x*width,s.y*height-5,.7,.5+10)}
-  }
-  ctx.shadowBlur=0;ctx.globalAlpha=1;
- }
- function drawSources(e,color='#e7f7ff',offset=0){sources.forEach((s,i)=>{const p=pos(s,e);const x=(p.x-.5)*width*zoom+width/2,y=(p.y-.5)*height*zoom+height/2;ctx.save();ctx.shadowBlur=selected===i?22:12;ctx.shadowColor=color;ctx.fillStyle=color;ctx.globalAlpha=.9;ctx.beginPath();ctx.arc(x,y,selected===i?4.5:2.8,0,Math.PI*2);ctx.fill();ctx.globalAlpha=.55;ctx.fillRect(x-9,y,18,1);ctx.fillRect(x,y-9,1,18);ctx.restore();})}
- function frame(){ctx.clearRect(0,0,width,height);drawNebula();drawStars();if(mode==='rgb'){drawSources(+$('epochA').value,'#22d3ee');drawSources(+$('epochB').value,'#f59e0b')}else if(mode==='split'){const cut=width*wipe/100;ctx.save();ctx.beginPath();ctx.rect(0,0,cut,height);ctx.clip();drawSources(+$('epochA').value,'#67e8f9');ctx.restore();ctx.save();ctx.beginPath();ctx.rect(cut,0,width-cut,height);ctx.clip();drawSources(+$('epochB').value,'#fbbf24');ctx.restore();ctx.strokeStyle='#f8fafc';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cut,0);ctx.lineTo(cut,height);ctx.stroke()}else{const e=mode==='scrub'?+$('timeline').value:epoch;drawSources(e,e===+$('epochA').value?'#67e8f9':'#fbbf24')}requestAnimationFrame(frame)}
- function updateSource(i){selected=i;if(i<0)return;const s=sources[i],a=pos(s,+$('epochA').value),b=pos(s,+$('epochB').value);$('sourceId').textContent='SRC-'+String(i+1).padStart(2,'0');$('sourceName').textContent=s.name+' · illustrative object';$('sourceType').textContent=s.type;$('sourcePosA').textContent=(a.x*100).toFixed(1)+'%, '+(a.y*100).toFixed(1)+'%';$('sourcePosB').textContent=(b.x*100).toFixed(1)+'%, '+(b.y*100).toFixed(1)+'%';$('sourceBand').textContent=(.75+(band-1)*4.25/101).toFixed(2)+' µm';$('toast').textContent=s.name+' selected. These coordinates are simulated for demonstration.'}
- function setMode(m){mode=m;document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));['blink','split','rgb','scrub'].forEach(k=>$((k==='blink'?'blink':k)+'Controls').classList.toggle('hide',k!==m));$('epochPairControls')?.classList.toggle('hide',m==='scrub');$('toast').textContent=({blink:'Blink mode alternates between the selected illustrative epochs.',split:'Move the wipe slider to reveal each simulated epoch.',rgb:'Cyan and amber show simulated source positions in two epochs.',scrub:'Scrub through four illustrative survey epochs.'})[m]}
- document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
- $('playBtn').addEventListener('click',()=>{playing=!playing;$('playBtn').textContent=playing?'Ⅱ Auto blink ON':'▶ Auto blink OFF';});
- $('stepBtn').addEventListener('click',()=>{epoch=epoch===+$('epochA').value?+$('epochB').value:+$('epochA').value;$('viewing').textContent='VIEWING · '+(epoch+1)});
- $('speed').addEventListener('input',e=>{$('speedValue').textContent=Number(e.target.value).toFixed(1)+'s'});
- $('wipe').addEventListener('input',e=>{wipe=+e.target.value;$('wipeValue').textContent=wipe+'%'});
- $('timeline').addEventListener('input',e=>{$('timelineValue').textContent=epochNames[Math.round(+e.target.value)]||epochNames[0]});
- $('bandSlider').addEventListener('input',e=>setBand(+e.target.value));
- function setBand(n){band=n;const w=.75+(n-1)*4.25/101;$('bandNum').textContent=String(n).padStart(3,'0')+' / 102';$('waveNum').textContent=w.toFixed(2)+' µm';$('hudBand').textContent=w.toFixed(2)+' µm · BAND '+String(n).padStart(3,'0');$('sourceBand').textContent=w.toFixed(2)+' µm'}
- document.querySelectorAll('[data-band]').forEach(b=>b.addEventListener('click',()=>{$('bandSlider').value=b.dataset.band;setBand(+b.dataset.band)}));
- $('sectorSelect').addEventListener('change',e=>{$('hudSector').textContent=e.target.selectedOptions[0].text.toUpperCase();$('toast').textContent='Sector changed. This is still an illustrative simulated sky field.'});
- $('zoomIn').onclick=()=>zoom=Math.min(zoom*1.2,2.5);$('zoomOut').onclick=()=>zoom=Math.max(zoom/1.2,.65);$('reset').onclick=()=>zoom=1;
- $('sourceButtons').innerHTML=sources.map((s,i)=>'<button class="action text-xs" data-source="'+i+'">'+s.name+'</button>').join('');
- $('sourceButtons').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>updateSource(+b.dataset.source)));
- canvas.addEventListener('click',e=>{const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;let best=0,dist=Infinity;sources.forEach((s,i)=>{const p=pos(s,epoch),d=Math.hypot(p.x-x,p.y-y);if(d<dist){dist=d;best=i}});updateSource(best)});
- $('saveNote').onclick=()=>{const v=$('note').value.trim();if(!v){$('noteStatus').textContent='Write a short note first.';return}try{const list=JSON.parse(sessionStorage.getItem('cosmosMissionNotes')||'[]');list.unshift(v);sessionStorage.setItem('cosmosMissionNotes',JSON.stringify(list.slice(0,10)));$('note').value='';$('noteStatus').textContent='Saved in this browser session.'}catch(e){$('noteStatus').textContent='Could not save this note in the current browser.'}};
- $('guideBtn').onclick=()=>alert('Mission Lab has two parts: the live IRSA archive search above retrieves real observation metadata and FITS previews; the interactive sky canvas below is an educational simulation, not live telescope imagery.');
- window.addEventListener('keydown',e=>{if(e.code==='Space'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();$('stepBtn').click()}});
- function tick(t){if(playing&&mode==='blink'&&t-last>Number($('speed').value)*1000){epoch=epoch===+$('epochA').value?+$('epochB').value:+$('epochA').value;last=t;$('viewing').textContent='VIEWING · '+(epoch+1)}requestAnimationFrame(tick)}
- new ResizeObserver(resize).observe(canvas);resize();frame();tick(0);
 })();
 </script>
 </body></html>
