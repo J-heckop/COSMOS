@@ -47,33 +47,38 @@ export async function onRequest({request}) {
   const collections=collection==="both"?["spherex_dr1","spherex_qr3"]:[collection];
 
   async function queryCollection(selected){
-    const releasePath=selected==="spherex_dr1"?"/dr1/":"/qr3/";
-    // Date discovery needs one row per UTC day, not thousands of image planes.
-    // Full product URLs and plane metadata are returned only for comparisons.
-    // Use the observation table to filter releases. Date discovery does not
-    // need the artifact table, so avoid joining every image product just to
-    // obtain a list of distinct observation days.
-    const select=dateOnly
-      ?"SELECT DISTINCT TOP "+maxrec+" FLOOR(p.time_bounds_lower) AS t_min "
-      :"SELECT DISTINCT TOP "+maxrec+" 'https://irsa.ipac.caltech.edu/' || a.uri AS access_url, "+
-       "p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max, a.planeid AS obs_id, p.energy_bandpassname AS band ";
-    const from=dateOnly
-      ?"FROM spherex.plane p JOIN spherex.observation o ON o.obsid = p.obsid "
-      :"FROM spherex.artifact a JOIN spherex.plane p ON a.planeid = p.planeid JOIN spherex.observation o ON o.obsid = p.obsid ";
-    const orderBy=dateOnly?" ORDER BY FLOOR(p.time_bounds_lower)":" ORDER BY p.time_bounds_lower";
-    const query=select+from+
-      "WHERE 1 = CONTAINS(POINT('ICRS', "+ra+", "+dec+"), p.poly) "+
-      "AND o.collection = '"+selected+"'"+timeClause+orderBy;
-    const body=new URLSearchParams({REQUEST:"doQuery",LANG:"ADQL",FORMAT:"votable",QUERY:query});
-    const response=await fetch("https://irsa.ipac.caltech.edu/TAP/sync",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/x-www-form-urlencoded",
-        "Accept":"application/x-votable+xml, application/xml, text/xml"
-      },
-      body,
-      signal:AbortSignal.timeout(55000)
-    });
+    let response;
+    if(dateOnly){
+      // SIA2 is IRSA's purpose-built spatial image search. Use it for date
+      // discovery instead of scanning/joining TAP metadata tables.
+      const params=new URLSearchParams({
+        COLLECTION:selected,
+        POS:"CIRCLE "+ra+" "+dec+" "+radius,
+        MAXREC:String(maxrec),
+        RESPONSEFORMAT:"VOTABLE"
+      });
+      response=await fetch("https://irsa.ipac.caltech.edu/SIA?"+params.toString(),{
+        headers:{"Accept":"application/x-votable+xml, application/xml, text/xml"},
+        signal:AbortSignal.timeout(22000)
+      });
+    }else{
+      // TAP remains the source for the selected-date product metadata.
+      const query="SELECT DISTINCT TOP "+maxrec+" 'https://irsa.ipac.caltech.edu/' || a.uri AS access_url, "+
+        "p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max, a.planeid AS obs_id, p.energy_bandpassname AS band "+
+        "FROM spherex.artifact a JOIN spherex.plane p ON a.planeid = p.planeid "+
+        "WHERE 1 = CONTAINS(POINT('ICRS', "+ra+", "+dec+"), p.poly)"+timeClause+
+        " ORDER BY p.time_bounds_lower";
+      const body=new URLSearchParams({REQUEST:"doQuery",LANG:"ADQL",FORMAT:"votable",QUERY:query});
+      response=await fetch("https://irsa.ipac.caltech.edu/TAP/sync",{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/x-www-form-urlencoded",
+          "Accept":"application/x-votable+xml, application/xml, text/xml"
+        },
+        body,
+        signal:AbortSignal.timeout(40000)
+      });
+    }
     const xml=await response.text();
     if(!response.ok)throw new Error("IRSA TAP returned HTTP "+response.status);
     const queryError=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
