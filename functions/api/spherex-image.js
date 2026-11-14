@@ -7,7 +7,7 @@ export async function onRequest({request}){
   if(!Number.isFinite(ra)||ra<0||ra>360||!Number.isFinite(dec)||dec< -90||dec>90||!Number.isFinite(size)||size<=0||size>0.5)return json({error:"Invalid image cutout coordinates or size."},400);
   // Keep preview cutouts deliberately small: parent SPHEREx MEFs can be large.
   // Retry temporary IRSA failures before reporting that the preview is unavailable.
-  const sizes=[Math.min(0.05,size),0.03].filter((v,i,a)=>a.indexOf(v)===i);
+  const sizes=[Math.min(0.1,Math.max(0.05,size)),0.05].filter((v,i,a)=>a.indexOf(v)===i);
   let upstream,lastStatus=0,lastError="";
   for(let i=0;i<3;i++){
     const cutoutSize=sizes[Math.min(i,sizes.length-1)];
