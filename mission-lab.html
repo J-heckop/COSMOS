@@ -38,7 +38,7 @@
    <label class="text-xs text-slate-400">Target preset<select id="liveTarget" class="control block w-full mt-1"><option value="10.6847,41.2690">Andromeda Galaxy</option><option value="83.8221,-5.3911">Orion Nebula</option><option value="56.75,24.1167">Pleiades</option><option value="266.4168,-29.0078">Galactic Centre</option><option value="custom">Custom coordinates</option></select></label>
    <label class="text-xs text-slate-400">Right ascension (°)<input id="liveRA" class="control block w-full mt-1" type="number" min="0" max="360" step="0.0001" value="10.6847"></label>
    <label class="text-xs text-slate-400">Declination (°)<input id="liveDec" class="control block w-full mt-1" type="number" min="-90" max="90" step="0.0001" value="41.2690"></label>
-   <label class="text-xs text-slate-400">Search radius<select id="liveRadius" class="control block w-full mt-1"><option value="0.05">3 arcmin</option><option value="0.1" selected>6 arcmin</option><option value="0.25">15 arcmin</option><option value="0.5">30 arcmin</option></select></label>
+   <label class="text-xs text-slate-400">Search radius<select id="liveRadius" class="control block w-full mt-1"><option value="0.05" selected>3 arcmin · faster</option><option value="0.1">6 arcmin</option><option value="0.25">15 arcmin</option><option value="0.5">30 arcmin</option></select></label>
    <label class="text-xs text-slate-400">Spectral band<select id="liveBand" class="control block w-full mt-1"><option value="SPHEREx-D1">Band 1 · 0.75–1.11 µm</option><option value="SPHEREx-D2" selected>Band 2 · 1.11–1.64 µm</option><option value="SPHEREx-D3">Band 3 · 1.64–2.42 µm</option><option value="SPHEREx-D4">Band 4 · 2.42–3.82 µm</option><option value="SPHEREx-D5">Band 5 · 3.82–4.42 µm</option><option value="SPHEREx-D6">Band 6 · 4.42–5.00 µm</option><option value="all">All bands · slower</option></select></label>
   </div>
   <div class="flex flex-wrap items-center gap-2"><button id="liveSearch" class="action active text-sm">⌕ Search live observations</button><span id="liveStatus" class="text-xs text-slate-400" role="status" aria-live="polite">Choose a target, spectral band and search the official IRSA archive.</span></div>
@@ -169,9 +169,9 @@
   stopTimelapse('Waiting for archive observations…');
   search.disabled=true;search.textContent='Searching IRSA…';status.textContent='Searching the official SPHEREx image archive…';results.replaceChildren();panel.classList.add('hide');lapsePanel.classList.add('hide');rows=[];
   try{
-   const params=new URLSearchParams({ra:String(r),dec:String(d),radius:String(rad),band:selectedBand,maxrec:'150'});
+   const params=new URLSearchParams({ra:String(r),dec:String(d),radius:String(rad),band:selectedBand,maxrec:'25'});
    const url=new URL('/api/spherex',location.origin);url.search=params.toString();
-   let response=await fetch(url,{signal:AbortSignal.timeout(65000)});let payload=await response.json();
+   let response=await fetch(url,{signal:AbortSignal.timeout(35000)});let payload=await response.json();
    if(!response.ok)throw new Error(payload.detail||payload.errors?.map(x=>x.collection+': '+x.error).join('; ')||payload.error||'Could not start the archive search.');
    if(payload.jobId){
     search.textContent='Checking IRSA job…';
@@ -230,9 +230,7 @@
     api:'spectral-images',
     ra:String(r),
     dec:String(d),
-    sr:(rad*60)+'m',
-    spatialRegionOperation:'intersects',
-    execute:''
+    sr:(rad*60)+'m'
    }).toString();
    official.href=officialUrl.toString();
    official.target='_blank';
