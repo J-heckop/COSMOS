@@ -373,7 +373,7 @@ if (timeForm) {
         url: row.access_url,
         ra: String(ra),
         dec: String(dec),
-        size: String(Math.min(0.1, Math.max(0.1, radius)))
+        size: String(Math.min(0.2, Math.max(0.1, radius)))
       }).toString();
       const response = await fetch(url, {signal: AbortSignal.timeout(52000)});
       if (!response.ok) {
