@@ -262,3 +262,10 @@
 .archive-loading-facts p.fact-changing{opacity:0}
 @keyframes archive-spin{to{transform:rotate(360deg)}}
 .load-more-dates{margin:14px 0 8px;min-height:48px;padding:12px 20px;border:1px solid rgba(255,210,122,.38);border-radius:999px;background:rgba(255,190,90,.08);color:#ffda9a;font-weight:600}.load-more-dates[hidden]{display:none}.load-more-dates:disabled{opacity:.55;cursor:wait}
+
+
+/* Make Mission Lab a clear primary destination in the header. */
+.topbar nav a:last-child{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 21px;border:1px solid rgba(255,210,122,.65);border-radius:999px;background:linear-gradient(110deg,#ffb52e,#ffe09a);color:#211407;font-size:14px;font-weight:700;letter-spacing:.2px;box-shadow:0 5px 22px rgba(255,177,55,.18);white-space:nowrap}
+.topbar nav a:last-child:hover{color:#211407;filter:brightness(1.08);transform:translateY(-1px)}
+@media(max-width:760px){.topbar{gap:10px}.topbar nav{margin-left:auto}.topbar nav a:last-child{display:inline-flex;padding:12px 17px;font-size:13px;min-height:43px}}
+@media(max-width:380px){.topbar{padding:0 12px}.topbar nav a:last-child{padding:10px 12px;font-size:12px}.brand{font-size:15px}}
