@@ -87,8 +87,8 @@ if (archiveForm) {
 
     try {
       const proxyUrl = new URL("/api/spherex", window.location.origin);
-      proxyUrl.search = new URLSearchParams({ra:String(ra), dec:String(dec), radius:String(radius), collection, maxrec:"20"}).toString();
-      const response = await fetch(proxyUrl, {signal: AbortSignal.timeout(55000)});
+      proxyUrl.search = new URLSearchParams({ra:String(ra), dec:String(dec), radius:String(radius), collection, maxrec:"12"}).toString();
+      const response = await fetch(proxyUrl, {signal: AbortSignal.timeout(23000)});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive proxy failed");
       const responses = (payload.results || []).map(result => ({collection:result.collection, rows:parseVOTable(result.xml)}));
