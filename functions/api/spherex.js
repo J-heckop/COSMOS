@@ -6,7 +6,7 @@ function json(body,status=200){
     status,
     headers:{
       "Content-Type":"application/json; charset=utf-8",
-      "Cache-Control":status===200?"public, max-age=30, s-maxage=180, stale-while-revalidate=300":"no-store"
+      "Cache-Control":"no-store"
     }
   });
 }
@@ -19,32 +19,30 @@ async function queryCollection(collection,ra,dec,radius,range,maxrec){
     RESPONSEFORMAT:"VOTABLE"
   });
   if(range) params.set("TIME",range.start+" "+range.end);
-  const hosts=["https://irsa.ipac.caltech.edu"];
+  const host="https://irsa.ipac.caltech.edu";
   let lastError="No response from IRSA";
-  // Use IRSA's documented SPHEREx SIA2 endpoint.
-  for(const host of hosts){
+  // Retry transient gateway/network failures with short backoff. Releases
+  // are queried concurrently by the caller, keeping the total bounded.
+  for(let attempt=0;attempt<3;attempt++){
     try{
       const response=await fetch(host+"/SIA?"+params.toString(),{
         headers:{Accept:"application/x-votable+xml, application/xml, text/xml"},
-        signal:AbortSignal.timeout(10000)
+        signal:AbortSignal.timeout(7000)
       });
       const xml=await response.text();
-      if(!response.ok){
-        lastError=host+" returned HTTP "+response.status;
-        continue;
+      if(response.status===502||response.status===503||response.status===504){
+        lastError=host+" returned HTTP "+response.status+" (attempt "+(attempt+1)+"/3)";
+        if(attempt<2){await new Promise(resolve=>setTimeout(resolve,500*(attempt+1)));continue}
+        break;
       }
-      if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml)){
-        lastError=host+" returned a non-VOTable response";
-        continue;
-      }
+      if(!response.ok) throw new Error(host+" returned HTTP "+response.status);
+      if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml)) throw new Error(host+" returned a non-VOTable response");
       const error=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
-      if(error){
-        lastError=error[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400)||"IRSA rejected the image query";
-        continue;
-      }
+      if(error) throw new Error(error[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400)||"IRSA rejected the image query");
       return {collection,period:range?.label||null,xml,archiveHost:host};
     }catch(error){
-      lastError=error?.name==="TimeoutError"?host+" timed out":(error?.message||"IRSA request failed");
+      lastError=error?.name==="TimeoutError"?host+" timed out (attempt "+(attempt+1)+"/3)":(error?.message||"IRSA request failed");
+      if(attempt<2) await new Promise(resolve=>setTimeout(resolve,500*(attempt+1)));
     }
   }
   throw new Error(lastError);
