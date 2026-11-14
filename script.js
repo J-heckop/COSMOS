@@ -166,6 +166,7 @@ if (timeForm) {
   const discoverButton = document.querySelector("#discover-dates");
   const today = new Date().toISOString().slice(0, 10);
   let discoveredDates = [];
+  let discoveredPosition = "";
 
   function timeSafeText(value, fallback = "Not supplied") {
     return value && value !== "null" && value !== "undefined" ? value : fallback;
@@ -227,6 +228,7 @@ if (timeForm) {
         if (date >= "2025-05-01" && date <= today) unique.set(date, date);
       });
       discoveredDates = [...unique.keys()].sort();
+      discoveredPosition = [ra, dec, radius].join("|");
       fillDateSelect(dateA, discoveredDates, discoveredDates[0]);
       fillDateSelect(dateB, discoveredDates, discoveredDates.length > 1 ? discoveredDates[discoveredDates.length - 1] : discoveredDates[0]);
       timeButton.disabled = discoveredDates.length < 2;
@@ -484,6 +486,11 @@ if (timeForm) {
     const bDate = dateB.value;
     if (!Number.isFinite(ra) || !Number.isFinite(dec) || ra < 0 || ra > 360 || dec < -90 || dec > 90) {
       timeStatus.textContent = "Enter valid RA and Dec coordinates in the archive search above first.";
+      timeStatus.className = "archive-status error";
+      return;
+    }
+    if (discoveredPosition !== [ra, dec, radius].join("|")) {
+      timeStatus.textContent = "The sky position or search radius has changed. Discover available dates again for the current coordinates.";
       timeStatus.className = "archive-status error";
       return;
     }
