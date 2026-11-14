@@ -851,23 +851,44 @@ if (timeForm) {
   byId("target-name").addEventListener("input",refreshTarget);
   refreshTarget();
   const storageKey="cosmos-discovery-log-v1";
-  function readLog(){try{return JSON.parse(localStorage.getItem(storageKey)||"[]").slice(0,20);}catch{return [];}}
+  let memoryLog=[];
+  function readLog(){
+    try{
+      const saved=JSON.parse(window.localStorage.getItem(storageKey)||"[]");
+      return Array.isArray(saved)?saved.slice(0,20):[];
+    }catch{return memoryLog.slice(0,20);}
+  }
   function renderLog(){
     const list=byId("discovery-list");list.replaceChildren();
-    readLog().forEach(entry=>{
+    const entries=readLog();
+    if(!entries.length){
+      const empty=document.createElement("p");empty.className="discovery-empty";empty.textContent="No discovery saved yet.";
+      list.append(empty);return;
+    }
+    entries.forEach(entry=>{
       const card=document.createElement("div");card.className="discovery-entry";
-      const note=document.createElement("div");note.textContent=entry.note;
-      const meta=document.createElement("small");meta.textContent=entry.name+" · RA "+entry.ra+" · Dec "+entry.dec+" · "+entry.date;
+      const note=document.createElement("div");note.textContent=entry.note||"";
+      const meta=document.createElement("small");meta.textContent=(entry.name||"Unnamed sky region")+" · RA "+(entry.ra||"—")+" · Dec "+(entry.dec||"—")+" · "+(entry.date||"");
       card.append(note,meta);list.append(card);
     });
   }
   byId("save-discovery").addEventListener("click",()=>{
     const note=byId("discovery-note").value.trim();
-    if(!note){byId("discovery-status").textContent="Add a short observation note first.";return;}
+    const status=byId("discovery-status");
+    if(!note){status.textContent="Add a short observation note first.";byId("discovery-note").focus();return;}
     const entry={note,name:byId("target-name").value.trim()||"Unnamed sky region",ra:byId("ra-input").value||"—",dec:byId("dec-input").value||"—",date:new Date().toLocaleString()};
-    const log=readLog();log.unshift(entry);
-    try{localStorage.setItem(storageKey,JSON.stringify(log.slice(0,20)));byId("discovery-note").value="";byId("discovery-status").textContent="Saved in this browser. You can revisit this log on this device.";renderLog();}
-    catch{byId("discovery-status").textContent="This browser could not save the log. Check its local storage settings.";}
+    const log=[entry,...readLog()].slice(0,20);
+    memoryLog=log;
+    try{
+      window.localStorage.setItem(storageKey,JSON.stringify(log));
+      const verified=JSON.parse(window.localStorage.getItem(storageKey)||"[]");
+      if(!Array.isArray(verified)||verified.length!==log.length)throw new Error("Storage verification failed");
+      status.textContent="Saved successfully on this browser and device.";
+    }catch(error){
+      status.textContent="Saved for this page session only. Browser storage is blocked or full; keep this page open to avoid losing the note.";
+    }
+    byId("discovery-note").value="";
+    renderLog();
   });
   renderLog();
   // Keep the wipe and blink tools in sync whenever a preview canvas is cleared or drawn.
