@@ -300,3 +300,12 @@
 .fits-image-wrap{max-height:none;overflow:auto}
 .fits-image-wrap canvas{width:100%;height:auto;max-height:none;max-width:100%;object-fit:contain;image-rendering:auto}
 @media(max-width:600px){.fits-image-wrap canvas{max-height:none}}
+
+
+/* Warm charcoal image viewer: keep empty/loading states aligned with COSMOS gold theme. */
+.image-pane{background:#100d0b;border-color:rgba(255,205,130,.16)}
+.image-pane h5{color:#e7c58b}
+.fits-image-wrap{background:#070605;border:1px solid rgba(255,205,130,.09)}
+.fits-image-wrap span{color:#b8aa98}
+.image-status{color:#b8aa98}
+.image-fallback-link{color:#f0c77d}
