@@ -841,7 +841,14 @@ if (timeForm) {
     byId("target-radius").textContent=byId("radius-input").selectedOptions[0]?.textContent||"—";
   }
   byId("refresh-target").addEventListener("click",refreshTarget);
-  ["ra-input","dec-input","radius-input"].forEach(id=>byId(id).addEventListener("change",refreshTarget));
+  // Keep telemetry live while coordinates are typed, pasted, or filled by object lookup.
+  ["ra-input","dec-input","radius-input"].forEach(id=>{
+    byId(id).addEventListener("input",refreshTarget);
+    byId(id).addEventListener("change",refreshTarget);
+  });
+  // Also refresh after the archive form is submitted or an object-name lookup completes.
+  byId("archive-form").addEventListener("submit",()=>window.setTimeout(refreshTarget,0));
+  byId("target-name").addEventListener("input",refreshTarget);
   refreshTarget();
   const storageKey="cosmos-discovery-log-v1";
   function readLog(){try{return JSON.parse(localStorage.getItem(storageKey)||"[]").slice(0,20);}catch{return [];}}
