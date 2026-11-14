@@ -3,7 +3,7 @@
 function send(res, status, body) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
-  res.setHeader("Cache-Control", status === 200 ? "public, s-maxage=300, stale-while-revalidate=600" : "no-store");
+  res.setHeader("Cache-Control", status === 200 ? "public, max-age=30, s-maxage=300, stale-while-revalidate=600" : "no-store");
   return res.end(JSON.stringify(body));
 }
 
@@ -24,8 +24,8 @@ module.exports = async function handler(req, res) {
     return send(res, 400, { error: "Invalid sky position or search radius." });
   }
 
-  const parsedMax = Number.parseInt(q.maxrec || "20", 10);
-  const maxrec = Number.isFinite(parsedMax) ? Math.min(50, Math.max(1, parsedMax)) : 20;
+  const parsedMax = Number.parseInt(q.maxrec || "12", 10);
+  const maxrec = Number.isFinite(parsedMax) ? Math.min(30, Math.max(1, parsedMax)) : 12;
   const collection = String(q.collection || "spherex_qr3").toLowerCase();
   if (!["spherex_qr3", "spherex_dr1"].includes(collection)) {
     return send(res, 400, { error: "Choose the QR3 or DR1 SPHEREx collection." });
@@ -68,7 +68,7 @@ module.exports = async function handler(req, res) {
     try {
       const response = await fetch("https://irsa.ipac.caltech.edu/SIA?" + params.toString(), {
         headers: { "Accept": "application/x-votable+xml, application/xml, text/xml" },
-        signal: AbortSignal.timeout(48000)
+        signal: AbortSignal.timeout(18000)
       });
       const xml = await response.text();
       if (!response.ok) {
