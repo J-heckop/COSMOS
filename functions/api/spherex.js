@@ -66,12 +66,12 @@ export async function onRequest({request}) {
       });
       const xml=await response.text();
       if(!response.ok) throw new Error("IRSA SIA2 returned HTTP "+response.status);
-      const queryError=xml.match(/<INFO\\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\\s\\S]*?)<\\/INFO>/i);
+      const queryError=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
       if(queryError){
-        const detail=queryError[1].replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim().slice(0,400);
+        const detail=queryError[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400);
         throw new Error(detail||"IRSA SIA2 rejected the query.");
       }
-      if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\\b/i.test(xml))
+      if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml))
         throw new Error("IRSA SIA2 returned an unexpected response.");
       return {collection:selected,period:range?.label||null,xml};
     }));
@@ -96,7 +96,7 @@ export async function onRequest({request}) {
   return json({
     results,
     errors,
-    source:"IRSA TAP",
+    source:"IRSA SIA2",
     mode:dateOnly?"dates":"products",
     partial:errors.length>0,
     collections
