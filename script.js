@@ -428,7 +428,7 @@ if (timeForm) {
       url.search = new URLSearchParams({
         url: row.access_url,
         center: String(ra) + "," + String(dec),
-        size: "0.1"
+        size: "0.3"
       }).toString();
       const response = await fetch(url, {signal: AbortSignal.timeout(45000)});
       if (!response.ok) {
@@ -468,10 +468,12 @@ if (timeForm) {
                 const deviations = sample.map(value => Math.abs(value - median)).sort((a,b) => a-b);
                 const mad = deviations[Math.floor((deviations.length - 1) * 0.5)] || 0;
                 const sigma = Math.max(mad * 1.4826, (percentile(0.75) - percentile(0.25)) / 1.349, 1e-12);
-                const low = median + sigma * 0.2;
-                const high = Math.max(percentile(0.995), low + sigma * 3.0);
+                // More conservative background clipping reduces visible detector/background grain.
+                // A wider percentile range preserves bright sources without washing out the whole field.
+                const low = median + sigma * 0.8;
+                const high = Math.max(percentile(0.998), low + sigma * 5.0);
                 const span = high - low;
-                const asinhMax = Math.asinh(8);
+                const asinhMax = Math.asinh(5);
                 canvas.width = width;
                 canvas.height = height;
                 const context = canvas.getContext("2d", { willReadFrequently: false });
@@ -483,10 +485,10 @@ if (timeForm) {
                     let normalized = 0;
                     if (Number.isFinite(value) && value > low) {
                       const linear = Math.max(0, Math.min(1, (value - low) / span));
-                      normalized = Math.asinh(linear * 8) / asinhMax;
+                      normalized = Math.asinh(linear * 5) / asinhMax;
                     }
                     // A gentle display gamma preserves faint sources while keeping the sky dark.
-                    const shade = Math.round(Math.pow(normalized, 0.72) * 255);
+                    const shade = Math.round(Math.pow(normalized, 0.9) * 255);
                     const targetIndex = ((height - 1 - y) * width + x) * 4;
                     pixelsOut.data[targetIndex] = shade;
                     pixelsOut.data[targetIndex + 1] = Math.min(255, Math.round(shade * 0.96));
@@ -496,7 +498,7 @@ if (timeForm) {
                 }
                 context.putImageData(pixelsOut, 0, 0);
                 placeholder.hidden = true;
-                status.textContent = "Showing SPHEREx preview · " + width + " × " + height + " native pixels · " + timeSafeText(row.obs_id, "SPHEREx observation");
+                status.textContent = "Showing 0.3° SPHEREx preview · " + width + " × " + height + " native pixels · " + timeSafeText(row.obs_id, "SPHEREx observation");
                 finish(resolve);
               } catch (error) { finish(reject, error); }
             });
