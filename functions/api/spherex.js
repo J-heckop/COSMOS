@@ -11,7 +11,7 @@ function json(body,status=200){
   });
 }
 const IRSA="https://irsa.ipac.caltech.edu";
-async function queryCollection(collection,ra,dec,radius,range){
+async function queryCollection(collection,ra,dec,radius,range,requestedBand){
   const params=new URLSearchParams({
     COLLECTION:collection,
     POS:"CIRCLE "+ra+" "+dec+" "+radius,
@@ -19,6 +19,15 @@ async function queryCollection(collection,ra,dec,radius,range){
     MAXREC:"150",
     RESPONSEFORMAT:"VOTABLE"
   });
+  const bandRanges={
+    "SPHEREx-D1":[0.75e-6,1.11e-6],
+    "SPHEREx-D2":[1.11e-6,1.64e-6],
+    "SPHEREx-D3":[1.64e-6,2.42e-6],
+    "SPHEREx-D4":[2.42e-6,3.82e-6],
+    "SPHEREx-D5":[3.82e-6,4.42e-6],
+    "SPHEREx-D6":[4.42e-6,5.00e-6]
+  };
+  if(requestedBand!=="all"&&bandRanges[requestedBand]) params.set("BAND",bandRanges[requestedBand].join(" "));
   if(range) params.set("TIME",range.start+" "+range.end);
   let lastError=null;
   for(let attempt=0;attempt<2;attempt++){
@@ -74,7 +83,7 @@ export async function onRequest({request}){
   for(const collection of ["spherex_qr3","spherex_dr1"]){
     for(const range of requestedRanges){
       try{
-        results.push(await queryCollection(collection,ra,dec,radius,range));
+        results.push(await queryCollection(collection,ra,dec,radius,range,requestedBand));
       }catch(error){
         errors.push({collection,period:range?.label||null,error:error.message});
       }
@@ -90,6 +99,6 @@ export async function onRequest({request}){
   return json({
     done:true,results,errors,source:"IRSA SIA2",
     partial:errors.length>0,band:requestedBand,
-    note:"SIA2 returns released image metadata. Spectral-band selection is applied by the viewer when rendering results."
+    note:"SIA2 returns released image metadata filtered by sky position and selected wavelength range."
   });
 }
