@@ -37,16 +37,20 @@ export async function onRequest({request}) {
     ranges.push({label:"B",start,end});
   }
   const timeClause=ranges.length?" AND ("+ranges.map(x=>"(p.time_bounds_lower <= "+x.end+" AND p.time_bounds_upper >= "+x.start+")").join(" OR ")+")":"";
+  // Match IRSA's published SPHEREx TAP notebook query structure:
+  // artifact + plane only, spatial CONTAINS, and the selected D2 band.
+  // The release is filtered using the documented product URI directory;
+  // avoid joining an additional table that the official example does not use.
+  const releasePath=collection==="spherex_dr1"?"/dr1/":"/qr3/";
   const query="SELECT TOP "+maxrec+" "+
     "'https://irsa.ipac.caltech.edu/' || a.uri AS access_url, "+
     "p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max, "+
     "a.planeid AS obs_id, p.energy_bandpassname AS band "+
     "FROM spherex.artifact a "+
     "JOIN spherex.plane p ON a.planeid = p.planeid "+
-    "JOIN spherex.observation o ON o.obsid = p.obsid "+
     "WHERE 1 = CONTAINS(POINT('ICRS', "+ra+", "+dec+"), p.poly) "+
-    "AND o.collection = '"+collection+"' "+
-    "AND p.energy_bandpassname = 'SPHEREx-D2'"+timeClause+
+    "AND p.energy_bandpassname = 'SPHEREx-D2' "+
+    "AND a.uri LIKE '%"+releasePath+"%'"+timeClause+
     " ORDER BY p.time_bounds_lower";
   try {
     const body=new URLSearchParams({REQUEST:"doQuery",LANG:"ADQL",FORMAT:"votable",QUERY:query});
