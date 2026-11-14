@@ -21,7 +21,7 @@
   </a>
   <div class="top-controls flex flex-wrap items-center gap-2">
    <label class="small-label">SKY SECTOR</label>
-   <select id="sectorSelect" class="control text-xs"><option value="ecliptic">SEC-04 · Ecliptic Plane</option><option value="galactic">SEC-19 · Taurus Molecular Cloud</option><option value="deepfield">SEC-42 · South Ecliptic Pole</option></select>
+   <select id="sectorSelect" class="control text-xs"><option value="ecliptic">SEC-04 · Ecliptic Plane</option><option value="galactic">SEC-19 · Taurus Molecular Cloud</option><option value="deepfield">SEC-42 · South Ecliptic Pole</option></select><span class="text-[10px] text-slate-500 w-full sm:w-auto" id="sectorHint">Sector selection sets an approximate search centre</span>
    <button id="guideBtn" class="action text-xs">ⓘ Mission guide</button>
    <a href="index.html#explore" class="action text-xs no-underline">← Back to COSMOS</a>
   </div>
@@ -119,7 +119,32 @@
   });
  }
  function mjdDate(value){const n=Number(value);return Number.isFinite(n)?new Date((n-40587)*86400000).toISOString().slice(0,10):'Date not listed'}
- target.addEventListener('change',()=>{if(target.value==='custom')return;const [a,d]=target.value.split(',');ra.value=a;dec.value=d;});
+ const sector=$('sectorSelect'),savedControls=['liveTarget','liveRA','liveDec','liveRadius','liveBand','liveTimelapseSpeed','sectorSelect'];
+  function saveControls(){
+   try{const state={};savedControls.forEach(id=>{const el=$(id);if(el)state[id]=el.value});localStorage.setItem('cosmosMissionLabControls',JSON.stringify(state))}catch(error){}
+  }
+  function restoreControls(){
+   try{const state=JSON.parse(localStorage.getItem('cosmosMissionLabControls')||'{}');savedControls.forEach(id=>{
+    const el=$(id),value=state[id];if(!el||value===undefined)return;
+    if(el.tagName==='SELECT'){if([...el.options].some(option=>option.value===value))el.value=value}
+    else if(el.tagName==='INPUT'&&Number.isFinite(Number(value)))el.value=value;
+   })}catch(error){}
+  }
+  restoreControls();
+  function selectSector(value,announce=true){
+   const centres={ecliptic:{ra:90,dec:0,label:'Ecliptic Plane'},galactic:{ra:67.5,dec:24.1,label:'Taurus Molecular Cloud'},deepfield:{ra:90,dec:-66.56,label:'South Ecliptic Pole'}};
+   const centre=centres[value];if(!centre)return;
+   ra.value=centre.ra.toFixed(4);dec.value=centre.dec.toFixed(4);target.value='custom';saveControls();
+   if(announce)status.textContent=centre.label+' selected. Approximate centre coordinates filled in; tap Search live observations to query this region.';
+  }
+  sector.addEventListener('change',()=>selectSector(sector.value));
+  target.addEventListener('change',()=>{
+   if(target.value!=='custom'){const [a,d]=target.value.split(',');ra.value=a;dec.value=d;}
+   saveControls();
+  });
+  [ra,dec,radius,band,lapseSpeed].forEach(el=>{el.addEventListener('input',saveControls);el.addEventListener('change',saveControls)});
+  sector.addEventListener('change',saveControls);
+  if(sector.value)$('sectorHint').textContent='Approximate sector centre · tap Search to load its archive records';
  function stopTimelapse(message='Time-lapse stopped.'){
   lapseRunning=false;if(lapseTimer)clearTimeout(lapseTimer);lapseTimer=null;
   lapsePlay.disabled=rows.length<2;lapsePlay.textContent='▶ Play real-data time-lapse';
