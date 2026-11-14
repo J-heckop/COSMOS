@@ -45,6 +45,19 @@
 
     <section class="section explorer-section" id="explore">
       <div class="section-heading"><div><div class="eyebrow">YOUR WINDOW INTO SPACE</div><h2>Explore the <em>cosmos.</em></h2></div><p>Pick a cosmic destination and start discovering what infrared light can reveal.</p></div>
+      <div class="live-search-panel">
+        <div class="live-heading"><div><span class="eyebrow">REAL ARCHIVE SEARCH</span><h3>Find observations in the sky.</h3><p>Enter J2000 sky coordinates to search real SPHEREx image observations at NASA/IPAC IRSA.</p></div><span class="live-tag"><i></i> IRSA DATA</span></div>
+        <form id="archive-form" class="coordinate-form">
+          <label>Right ascension (RA)<input id="ra-input" type="number" min="0" max="360" step="any" placeholder="e.g. 10.6847" required><small>Degrees · 0 to 360</small></label>
+          <label>Declination (Dec)<input id="dec-input" type="number" min="-90" max="90" step="any" placeholder="e.g. 41.2690" required><small>Degrees · −90 to +90</small></label>
+          <label>Search radius<select id="radius-input"><option value="0.05">3 arcmin</option><option value="0.1" selected>6 arcmin</option><option value="0.25">15 arcmin</option><option value="0.5">30 arcmin</option><option value="1">1 degree</option></select><small>Radius around your coordinates</small></label>
+          <button class="button primary archive-submit" id="archive-submit" type="submit">Search SPHEREx <span>→</span></button>
+        </form>
+        <div class="coordinate-example"><span>TRY AN EXAMPLE</span><button type="button" id="example-coords">Andromeda Galaxy · 10.6847°, 41.2690°</button></div>
+        <div id="archive-status" class="archive-status" role="status" aria-live="polite">Search results will come directly from the official SPHEREx archive.</div>
+        <div id="archive-results" class="archive-results"></div>
+        <a id="archive-fallback" class="archive-fallback" href="https://irsa.ipac.caltech.edu/Missions/spherex.html" target="_blank" rel="noreferrer">Open the official SPHEREx archive ↗</a>
+      </div>
       <div class="search-panel">
         <label for="space-search">What are you curious about?</label>
         <div class="search-row"><span class="search-icon">⌕</span><input id="space-search" type="search" placeholder="Try galaxies, nebulae, stars..." autocomplete="off"><button id="search-button" class="button primary">Search <span>→</span></button></div>
