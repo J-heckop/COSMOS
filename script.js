@@ -45,10 +45,11 @@ if (archiveForm) {
   function parseVOTable(xmlText) {
     const doc = new DOMParser().parseFromString(xmlText, "application/xml");
     if (doc.querySelector("parsererror")) throw new Error("The archive returned an unreadable table.");
-    const fields = [...doc.querySelectorAll("FIELD")].map(field => (field.getAttribute("name") || field.getAttribute("ID") || "").toLowerCase());
-    const tableRows = [...doc.querySelectorAll("TABLEDATA TR")];
+    const byTag = name => [...doc.getElementsByTagNameNS("*", name)];
+    const fields = byTag("FIELD").map(field => (field.getAttribute("name") || field.getAttribute("ID") || "").toLowerCase());
+    const tableRows = byTag("TR").filter(row => row.parentNode && (row.parentNode.localName || row.parentNode.nodeName).toLowerCase() === "tabledata");
     return tableRows.map(row => {
-      const values = [...row.querySelectorAll("TD")].map(cell => cell.textContent.trim());
+      const values = byTag("TD").filter(cell => cell.parentNode === row).map(cell => cell.textContent.trim());
       return Object.fromEntries(fields.map((field, index) => [field, values[index] || ""]));
     });
   }
@@ -216,6 +217,50 @@ if (timeForm) {
       target.append(item);
     });
   }
+  const positionTestButton = document.querySelector("#position-only-test");
+  if (positionTestButton) {
+    positionTestButton.addEventListener("click", async () => {
+      const ra = Number(document.querySelector("#ra-input").value);
+      const dec = Number(document.querySelector("#dec-input").value);
+      const radius = Number(document.querySelector("#radius-input").value);
+      const status = document.querySelector("#position-only-status");
+      const output = document.querySelector("#position-only-results");
+      if (!Number.isFinite(ra) || ra < 0 || ra > 360 || !Number.isFinite(dec) || dec < -90 || dec > 90) {
+        status.textContent = "Enter valid RA and Dec coordinates in the archive search above first.";
+        status.className = "archive-status error";
+        return;
+      }
+      positionTestButton.disabled = true;
+      positionTestButton.textContent = "Checking position…";
+      output.replaceChildren();
+      status.textContent = "Checking both SPHEREx collections without any date filter…";
+      status.className = "archive-status";
+      try {
+        const url = new URL("/api/spherex", window.location.origin);
+        url.search = new URLSearchParams({ra:String(ra),dec:String(dec),radius:String(radius)}).toString();
+        const response = await fetch(url);
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.detail || payload.error || "Archive proxy failed");
+        const sets = payload.results.map(result => ({collection:result.collection,rows:parseVOTable(result.xml)}));
+        const total = sets.reduce((sum,set)=>sum+set.rows.length,0);
+        if (!total) {
+          status.textContent = "The archive returned zero rows even without a date filter. This points to a position/collection query issue, not your selected dates.";
+          status.className = "archive-status error";
+        } else {
+          status.textContent = "Position-only test found " + total + " observation record(s). The sky position works; now we can isolate the date filter.";
+          status.className = "archive-status success";
+          sets.forEach(set => appendTimeRecords(output,set.rows,set.collection));
+        }
+      } catch (error) {
+        status.textContent = "Position-only test failed: " + error.message;
+        status.className = "archive-status error";
+      } finally {
+        positionTestButton.disabled = false;
+        positionTestButton.textContent = "Test this sky position (ignore dates)";
+      }
+    });
+  }
+
   timeForm.addEventListener("submit", async event => {
     event.preventDefault();
     const ra = Number(document.querySelector("#ra-input").value);
