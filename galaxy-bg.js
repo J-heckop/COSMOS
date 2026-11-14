@@ -23,7 +23,7 @@ varying float vShell;varying float vId;
 void main(){vShell=shell;vId=id;float ph=id*6.2831853;
 vec3 wob=vec3(sin(iTime*uWobbleSpeed+ph),cos(iTime*uWobbleSpeed*1.3+ph),sin(iTime*uWobbleSpeed*.7+ph))*uWobbleAmount;
 vec3 p=(position+wob)*uExpand;vec4 mv=modelViewMatrix*vec4(p,1.);
-gl_PointSize=size/-mv.z*(.5+.5*iAnimate);vec4 res=projectionMatrix*mv;float a=pow(iAnimate,.6);
+gl_PointSize=size/-mv.z*(.5+.5*iAnimate)*2.4;vec4 res=projectionMatrix*mv;float a=pow(iAnimate,.6);
 res.xy*=clamp(2.*a+pow(id,.7)-1.,0.,1.);gl_Position=res;}`;
 const fragment=`
 uniform float iTime;uniform float uOpacity;uniform vec3 uCore;uniform vec3 uMid;uniform vec3 uRim;uniform vec3 uTwinkle;
@@ -31,7 +31,7 @@ uniform float uGradientPow;uniform float uTwinkleAmount;uniform float uTwinkleSp
 vec3 grad3(vec3 a,vec3 b,vec3 c,float t){return t<.5?mix(a,b,t*2.):mix(b,c,clamp((t-.5)*2.,0.,1.));}
 void main(){float t=pow(vShell,uGradientPow);vec3 col=grad3(uCore,uMid,uRim,t);
 float tw=.5+.5*sin(iTime*uTwinkleSpeed+vId*100.);col=mix(col,uTwinkle,tw*uTwinkleAmount*(1.-t));
-col*=.45+.85*(1.-t);float tex=1.-smoothstep(.5,1.,length(2.*gl_PointCoord-1.));gl_FragColor=vec4(col*tex,tex*uOpacity);}`;
+col*=.7+1.05*(1.-t);float tex=1.-smoothstep(.5,1.,length(2.*gl_PointCoord-1.));gl_FragColor=vec4(col*tex*1.35,tex*uOpacity);}`;
 const N=90000,K=79,R=1.7,SP=13;
 const pos=new Float32Array(N*3),shell=new Float32Array(N),sizes=new Float32Array(N),ids=new Float32Array(N),frames=[];
 for(let k=0;k<K;k++)frames.push({m:new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(Math.random()*Math.PI,Math.random()*Math.PI,Math.random()*Math.PI)),size:.18+.34*Math.random(),ecc:.45+.42*Math.random(),thick:.06+.05*Math.random(),ox:(Math.random()-.5)*2*SP,oy:(Math.random()-.5)*2*SP,oz:(Math.random()-.5)*2*SP*.6});
@@ -57,7 +57,7 @@ const finalDef={uniforms:{iTime:{value:0},tDiffuse:{value:null},bloomTexture:{va
 vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,1.);}`,
 fragmentShader:`uniform float iTime;uniform sampler2D tDiffuse;uniform sampler2D bloomTexture;uniform sampler2D torusTexture;uniform sampler2D haloTexture;uniform vec3 iCornerBlue;uniform vec3 iCornerOrange;varying vec2 vUv;
 vec3 warp3d(vec3 pos,float t){float curv=.8,a=1.9,b=.7;pos*=2.;pos.x+=curv*sin(t+a*pos.y)+t*b;pos.y+=curv*cos(t+a*pos.x);pos.y+=curv*sin(t+a*pos.z)+t*b;pos.z+=curv*cos(t+a*pos.y);pos.z+=curv*sin(t+a*pos.x)+t*b;pos.x+=curv*cos(t+a*pos.z);return .5+.5*cos(pos.xyz+vec3(1,2,4));}
-void main(){vec2 uv=2.*vUv-1.;vec3 w=pow(warp3d(vec3(uv.x,sin(uv.y),uv.y),iTime*1.5),vec3(1.5));vec3 col=1.5*iCornerBlue*w.x;col*=w.y;col+=iCornerOrange*w.z;col*=smoothstep(.6,1.,abs(uv.y));col*=smoothstep(-.5,1.,-uv.y*uv.x);col*=smoothstep(-.5,1.,-uv.y*uv.x);vec3 halo=texture2D(haloTexture,vUv).xyz;vec3 atmoBg=vec3(.02,.03,.10)*(1.-.4*length(uv));gl_FragColor=vec4(atmoBg+col*.2+texture2D(bloomTexture,vUv).xyz+texture2D(torusTexture,vUv).xyz+texture2D(tDiffuse,vUv).xyz+halo,1.);}`};
+void main(){vec2 uv=2.*vUv-1.;vec3 w=pow(warp3d(vec3(uv.x,sin(uv.y),uv.y),iTime*1.5),vec3(1.5));vec3 col=1.5*iCornerBlue*w.x;col*=w.y;col+=iCornerOrange*w.z;col*=smoothstep(.6,1.,abs(uv.y));col*=smoothstep(-.5,1.,-uv.y*uv.x);col*=smoothstep(-.5,1.,-uv.y*uv.x);vec3 halo=texture2D(haloTexture,vUv).xyz;vec3 atmoBg=vec3(.02,.03,.10)*(1.-.4*length(uv));gl_FragColor=vec4(atmoBg+col*.34+texture2D(bloomTexture,vUv).xyz+texture2D(torusTexture,vUv).xyz+texture2D(tDiffuse,vUv).xyz+halo,1.);}`};
 const renderScene=new RenderPass(scene,camera);
 const torusComposer=new EffectComposer(renderer);torusComposer.renderToScreen=false;torusComposer.addPass(renderScene);torusComposer.addPass(new ShaderPass(GammaCorrectionShader));torusComposer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.22,.2,0));torusComposer.addPass(new ShaderPass(CopyShader));
 const bloomComposer=new EffectComposer(renderer);bloomComposer.renderToScreen=false;bloomComposer.addPass(renderScene);bloomComposer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.35,.5,0));bloomComposer.addPass(new ShaderPass(GammaCorrectionShader));
