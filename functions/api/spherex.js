@@ -50,15 +50,20 @@ export async function onRequest({request}) {
     const releasePath=selected==="spherex_dr1"?"/dr1/":"/qr3/";
     // Date discovery needs one row per UTC day, not thousands of image planes.
     // Full product URLs and plane metadata are returned only for comparisons.
+    // Use the observation table to filter releases. Date discovery does not
+    // need the artifact table, so avoid joining every image product just to
+    // obtain a list of distinct observation days.
     const select=dateOnly
       ?"SELECT DISTINCT TOP "+maxrec+" FLOOR(p.time_bounds_lower) AS t_min "
       :"SELECT DISTINCT TOP "+maxrec+" 'https://irsa.ipac.caltech.edu/' || a.uri AS access_url, "+
        "p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max, a.planeid AS obs_id, p.energy_bandpassname AS band ";
+    const from=dateOnly
+      ?"FROM spherex.plane p JOIN spherex.observation o ON o.obsid = p.obsid "
+      :"FROM spherex.artifact a JOIN spherex.plane p ON a.planeid = p.planeid JOIN spherex.observation o ON o.obsid = p.obsid ";
     const orderBy=dateOnly?" ORDER BY FLOOR(p.time_bounds_lower)":" ORDER BY p.time_bounds_lower";
-    const query=select+
-      "FROM spherex.artifact a JOIN spherex.plane p ON a.planeid = p.planeid "+
+    const query=select+from+
       "WHERE 1 = CONTAINS(POINT('ICRS', "+ra+", "+dec+"), p.poly) "+
-      "AND a.uri LIKE '%"+releasePath+"%'"+timeClause+orderBy;
+      "AND o.collection = '"+selected+"'"+timeClause+orderBy;
     const body=new URLSearchParams({REQUEST:"doQuery",LANG:"ADQL",FORMAT:"votable",QUERY:query});
     const response=await fetch("https://irsa.ipac.caltech.edu/TAP/sync",{
       method:"POST",
