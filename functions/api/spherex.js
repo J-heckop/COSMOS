@@ -55,9 +55,8 @@ export async function onRequest({request}) {
       "p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max, "+
       "a.uri AS obs_id, p.energy_bandpassname AS band "+
       "FROM spherex.artifact a JOIN spherex.plane p ON a.planeid = p.planeid "+
-      "WHERE CONTAINS(POINT('ICRS', "+ra+", "+dec+"), p.poly) = 1"+
-      timeFilter+
-      " ORDER BY p.time_bounds_lower";
+      "WHERE 1 = CONTAINS(POINT('ICRS', "+ra+", "+dec+"), p.poly)"+
+      timeFilter;
     const params=new URLSearchParams({
       REQUEST:"doQuery",LANG:"ADQL",QUERY:query,FORMAT:"votable",MAXREC:String(maxrec)
     });
