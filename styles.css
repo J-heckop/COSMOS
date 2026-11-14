@@ -59,3 +59,19 @@
 /* Animated Three.js galaxy background */
 #galaxy-scene{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0;pointer-events:none}
 .topbar,main,footer{position:relative;z-index:1}
+
+/* Contrast and background visibility tune */
+:root{--muted:#c0c9df;--line:rgba(190,205,255,.2)}
+.hero-text,.section-heading>p,.mission-copy p,.compare p{color:#c0c9df}
+.hero-note,.stats span,.data-note,.empty-state{color:#aebbd6}
+.live-search-panel,.time-machine-panel,.search-panel,.mission{
+  background:linear-gradient(125deg,rgba(19,29,55,.78),rgba(13,17,38,.72));
+  backdrop-filter:blur(7px);
+}
+.image-comparison{background:rgba(12,19,40,.78)}
+.archive-status,.time-side,.image-pane,.diagnostics-panel{background:rgba(7,13,30,.76)}
+.coordinate-form small,.time-hint,.time-disclaimer,.archive-result span{color:#aebbd2}
+#galaxy-scene{opacity:1}
+@media(max-width:760px){
+  .live-search-panel,.time-machine-panel,.search-panel{backdrop-filter:blur(5px)}
+}
