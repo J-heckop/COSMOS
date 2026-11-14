@@ -315,7 +315,7 @@ if (timeForm) {
   let loadMoreRequested = false;
   if (loadMoreDatesButton) {
     loadMoreDatesButton.addEventListener("click", () => {
-      archiveMaxRecords = Math.min(100, archiveMaxRecords + 10);
+      archiveMaxRecords = Math.min(500, archiveMaxRecords + 100);
       loadMoreRequested = true;
       loadMoreDatesButton.disabled = true;
       discoverButton.click();
@@ -344,7 +344,7 @@ if (timeForm) {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive query failed.");
       const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml));      if (loadMoreDatesButton) {
-        loadMoreDatesButton.hidden = records.length < archiveMaxRecords || archiveMaxRecords >= 100;
+        loadMoreDatesButton.hidden = records.length < archiveMaxRecords || archiveMaxRecords >= 500;
         loadMoreDatesButton.disabled = false;
       }
       const unique = new Map();
@@ -431,7 +431,7 @@ if (timeForm) {
         const finish = (fn, value) => { if (!settled) { settled = true; fn(value); } };
         const fits = new astro.FITS(blob, function() {
           try {
-            const imageHdu = (this.hdus || []).find(hdu => hdu.data instanceof astro.FITS.Image);
+            const imageHdu = (this.hdus || []).find(hdu => hdu.data instanceof astro.FITS.Image && String(hdu.header?.get?.("EXTNAME") || "").trim().toUpperCase() === "IMAGE") || (this.hdus || []).find(hdu => hdu.data instanceof astro.FITS.Image);
             if (!imageHdu) throw new Error("No image plane was found in this FITS product.");
             const image = imageHdu.data;
             image.getFrame(0, pixels => {
@@ -483,7 +483,7 @@ if (timeForm) {
                 }
                 context.putImageData(pixelsOut, 0, 0);
                 placeholder.hidden = true;
-                status.textContent = "Showing original FITS · " + width + " × " + height + " native pixels · " + timeSafeText(row.obs_id, "SPHEREx observation");
+                status.textContent = "Showing science IMAGE extension · " + width + " × " + height + " native pixels · " + timeSafeText(row.obs_id, "SPHEREx observation");
                 finish(resolve);
               } catch (error) { finish(reject, error); }
             });
