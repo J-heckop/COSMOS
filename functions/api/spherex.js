@@ -62,7 +62,7 @@ export async function onRequest({request}) {
       method:"POST",
       headers:{"Content-Type":"application/x-www-form-urlencoded","Accept":"application/x-votable+xml, application/xml, text/xml"},
       body,
-      signal:AbortSignal.timeout(19000)
+      signal:AbortSignal.timeout(28000)
     });
     const xml=await response.text();
     if(!response.ok) return json({error:"IRSA SPHEREx TAP query failed.",detail:"IRSA TAP returned HTTP "+response.status},502);
