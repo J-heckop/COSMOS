@@ -3,6 +3,9 @@
   "functions": {
     "api/spherex.js": {
       "maxDuration": 60
+    },
+    "api/spherex-image.js": {
+      "maxDuration": 60
     }
   }
 }
