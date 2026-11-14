@@ -74,6 +74,10 @@
         <div class="time-discovery">
           <button class="button secondary" id="discover-dates" type="button">Find available observation dates</button>
           <p class="time-hint">COSMOS checks the official archive for this sky position and lists only dates returned by SPHEREx.</p>
+          <div class="archive-loading-facts" id="archive-loading-facts" hidden role="status" aria-live="polite">
+            <span class="archive-loading-spinner" aria-hidden="true"></span>
+            <div><span class="loading-kicker">WHILE WE SEARCH THE SKY</span><p id="archive-loading-fact">SPHEREx maps the entire sky in 102 near-infrared wavelength bands.</p></div>
+          </div>
         </div>
         <form id="time-compare-form" class="time-form">
           <div class="time-side"><span class="time-side-title">PERIOD A</span><label>Observation date<select id="date-a" required disabled><option value="">Discover dates first</option></select></label></div>
