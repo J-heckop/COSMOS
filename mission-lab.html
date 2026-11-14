@@ -174,9 +174,9 @@
   stopTimelapse('Waiting for archive observations…');
   search.disabled=true;search.textContent='Searching IRSA…';status.textContent='Searching the official SPHEREx image archive…';results.replaceChildren();panel.classList.add('hide');lapsePanel.classList.add('hide');rows=[];
   try{
-   const params=new URLSearchParams({ra:String(r),dec:String(d),radius:String(rad),band:selectedBand,maxrec:'5'});
+   const params=new URLSearchParams({ra:String(r),dec:String(d),radius:String(rad),band:selectedBand,maxrec:'150'});
    const url=new URL('/api/spherex',location.origin);url.search=params.toString();
-   let response=await fetch(url,{signal:AbortSignal.timeout(25000)});let payload=await response.json();
+   let response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(25000)});let payload=await response.json();
    if(!response.ok)throw new Error(payload.detail||payload.errors?.map(x=>x.collection+': '+x.error).join('; ')||payload.error||'Could not start the archive search.');
    if(payload.jobId){
     search.textContent='Checking IRSA job…';
@@ -191,7 +191,7 @@
     }
     if(!complete)throw new Error('The IRSA background job is still running. Search again shortly to check for results.');
    }
-   rows=(payload.results||[]).flatMap(set=>parseVOTable(set.xml).map(row=>({...row,_collection:set.collection})));
+   rows=(payload.results||[]).flatMap(set=>parseVOTable(set.xml).map(row=>({...row,_collection:set.collection,_queryRa:r,_queryDec:d})));
    const bandLimits={
     'SPHEREx-D1':[0.75e-6,1.11e-6],
     'SPHEREx-D2':[1.11e-6,1.64e-6],
@@ -206,7 +206,7 @@
     if(known)rows=rows.filter(row=>!Number.isFinite(Number(row.em_min))||!Number.isFinite(Number(row.em_max))||(Number(row.em_min)<wantedHi&&Number(row.em_max)>wantedLo));
    }
    rows.sort((a,b)=>Number(a.t_min)-Number(b.t_min));
-   const unique=[...new Map(rows.map(row=>[[row._collection,row.obs_id||row.access_url||'',row.t_min||''].join('|'),row])).values()];
+   const unique=[...new Map(rows.map(row=>[row.access_url||[row.obs_id||'',row.t_min||''].join('|'),row])).values()];
    rows=unique;
    if(!rows.length){status.textContent='No released observations were returned for this position and band. Try another band or a wider radius.';return}
    status.textContent='Found '+rows.length+' real archive image records · '+selectedBand+' · sorted oldest to newest.';
@@ -216,13 +216,14 @@
     const name=document.createElement('b');name.className='text-xs text-slate-100';name.textContent=row.obs_id?'SPHEREx plane '+row.obs_id:'SPHEREx archive image '+(index+1);
     const meta=document.createElement('p');meta.className='text-xs text-slate-400';meta.textContent=(row._collection||'SPHEREx').toUpperCase()+' · '+mjdDate(row.t_min)+' · '+(row.band||row.energy_bandpassname||selectedBand);
     const btn=document.createElement('button');btn.className='action active text-xs mt-auto';btn.textContent='Load real sky image';btn.addEventListener('click',()=>loadImage(row,btn));
-    card.append(name,meta,btn);if(index>=4)card.hidden=true;cards.push(card);results.append(card);
+    card.append(name,meta,btn);card.hidden=index>=5;cards.push(card);results.append(card);
    });
-   if(cards.length>4){
+   if(cards.length>5){
+    let visibleCount=5;
     const more=document.createElement('button');more.type='button';more.className='action w-full text-sm mt-2';
-    more.textContent='View more observations ('+(cards.length-4)+' more)';more.setAttribute('aria-expanded','false');
-    more.addEventListener('click',()=>{const expanded=more.getAttribute('aria-expanded')==='true';cards.slice(4).forEach(card=>{card.hidden=expanded});more.setAttribute('aria-expanded',String(!expanded));more.textContent=expanded?'View more observations ('+(cards.length-4)+' more)':'Show fewer observations'});
-    results.append(more);
+    const updateMore=()=>{const remaining=cards.length-visibleCount;more.textContent=remaining>0?'Load 5 more observations ('+remaining+' remaining)':'All '+cards.length+' observations shown';more.disabled=remaining===0};
+    more.addEventListener('click',()=>{const next=Math.min(cards.length,visibleCount+5);cards.slice(visibleCount,next).forEach(card=>card.hidden=false);visibleCount=next;updateMore()});
+    updateMore();results.append(more);
    }
    if(rows.length>1){lapsePanel.classList.remove('hide');lapsePlay.disabled=false;lapseStatus.textContent='Play the real FITS observations chronologically.'}
   }catch(error){
@@ -254,7 +255,7 @@
   if(!quiet)panel.scrollIntoView({behavior:'smooth',block:'start'});canvas.width=0;canvas.height=0;placeholder.classList.remove('hide');placeholder.textContent=isRetry?'Retrying real SPHEREx FITS preview…':'Loading real SPHEREx FITS cutout…';imageStatus.textContent=isRetry?'Retrying the IRSA image request…':'Requesting a quick 0.1° cutout from IRSA…';title.textContent=(row.obs_id||'SPHEREx observation')+' · '+mjdDate(row.t_min);original.href=row.access_url;
   if(button){button.disabled=true;button.textContent='Loading…'}
   try{
-   const url=new URL('/api/spherex-image',location.origin);url.search=new URLSearchParams({url:row.access_url,center:String(Number(ra.value))+','+String(Number(dec.value)),size:'0.1'}).toString();
+   const imageRa=Number.isFinite(Number(row._queryRa))?Number(row._queryRa):Number(ra.value),imageDec=Number.isFinite(Number(row._queryDec))?Number(row._queryDec):Number(dec.value);const url=new URL('/api/spherex-image',location.origin);url.search=new URLSearchParams({url:row.access_url,center:String(imageRa)+','+String(imageDec),size:'0.1'}).toString();
    const response=await fetch(url,{signal:AbortSignal.timeout(45000)});if(!response.ok){const problem=await response.json().catch(()=>({}));throw new Error(problem.detail||problem.error||'Image request failed (HTTP '+response.status+')')}
    const blob=await response.blob();if(blob.size<2880)throw new Error('IRSA returned an empty FITS file.');
    if(!window.astro?.FITS)throw new Error('FITS viewer library did not load.');
