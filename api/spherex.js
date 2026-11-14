@@ -42,6 +42,44 @@ module.exports = async function handler(req, res) {
   const adql = "SELECT TOP " + maxrec + " p.planeid AS obs_id, p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max, p.energy_bandpassname AS band, " + accessUrl + " AS access_url FROM spherex.artifact AS a JOIN spherex.plane AS p ON a.planeid = p.planeid WHERE " + where.join(" AND ");
 
   try {
+    // For position-only searches use IRSA's documented SIA2 service. It is
+    // purpose-built for spatial image discovery and avoids the expensive TAP
+    // polygon join that was timing out for ordinary searches.
+    if (ranges.length === 0) {
+      const collections = ["spherex_dr1", "spherex_qr3"];
+      const settled = await Promise.allSettled(collections.map(async collection => {
+        const url = new URL("https://irsa.ipac.caltech.edu/SIA");
+        url.search = new URLSearchParams({
+          COLLECTION: collection,
+          POS: "CIRCLE " + ra + " " + dec + " " + radius,
+          RESPONSEFORMAT: "VOTABLE",
+          MAXREC: String(Math.min(maxrec, 100))
+        }).toString();
+        const response = await fetch(url.toString(), {
+          headers: {Accept:"application/x-votable+xml, application/xml, text/xml"},
+          signal: AbortSignal.timeout(25000)
+        });
+        const xml = await response.text();
+        if (!response.ok) throw new Error(collection + " returned HTTP " + response.status);
+        if (!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml)) {
+          throw new Error(collection + " returned an unreadable VOTable response.");
+        }
+        return {collection,xml};
+      }));
+      const results = settled.filter(item=>item.status==="fulfilled").map(item=>item.value);
+      const errors = settled.filter(item=>item.status==="rejected").map((item,index)=>({
+        collection: collections[settled.findIndex(value=>value===item)] || "unknown",
+        detail: item.reason && item.reason.message ? item.reason.message : "Archive request failed."
+      }));
+      if (!results.length) return send(res,502,{
+        error:"IRSA SIA2 could not complete the SPHEREx position search.",
+        detail:errors.map(item=>item.collection+": "+item.detail).join("; "),
+        errors
+      });
+      return send(res,200,{results,errors,source:"IRSA SIA2"});
+    }
+
+    // Keep the date-constrained TAP path for Period A / Period B comparisons.
     const body = new URLSearchParams({REQUEST:"doQuery",LANG:"ADQL",FORMAT:"votable",QUERY:adql});
     const response = await fetch("https://irsa.ipac.caltech.edu/TAP/sync", {
       method:"POST",
