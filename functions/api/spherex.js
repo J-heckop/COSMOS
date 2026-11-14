@@ -18,7 +18,7 @@ export async function onRequest({request}) {
   if(!Number.isFinite(ra)||ra<0||ra>360||!Number.isFinite(dec)||dec< -90||dec>90||!Number.isFinite(radius)||radius<=0||radius>1)
     return json({error:"Invalid sky position or search radius."},400);
   const parsed=Number.parseInt(q.get("maxrec")||"10",10);
-  const maxrec=Number.isFinite(parsed)?Math.min(500,Math.max(1,parsed)):10;
+  const maxrec=Number.isFinite(parsed)?Math.min(5000,Math.max(1,parsed)):10;
   const collection=String(q.get("collection")||"spherex_qr3").toLowerCase();
   if(!["spherex_qr3","spherex_dr1"].includes(collection))
     return json({error:"Choose the QR3 or DR1 SPHEREx collection."},400);
@@ -42,14 +42,18 @@ export async function onRequest({request}) {
   // The release is filtered using the documented product URI directory;
   // avoid joining an additional table that the official example does not use.
   const releasePath=collection==="spherex_dr1"?"/dr1/":"/qr3/";
-  const query="SELECT TOP "+maxrec+" "+
-    "'https://irsa.ipac.caltech.edu/' || a.uri AS access_url, "+
-    "p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max, "+
-    "a.planeid AS obs_id, p.energy_bandpassname AS band "+
+  // Date discovery returns distinct observation time ranges, not one row per band.
+  // Comparison requests return actual product URLs for every available band.
+  const dateOnly = ranges.length === 0;
+  const select = dateOnly
+    ? "SELECT DISTINCT TOP "+maxrec+" p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max "
+    : "SELECT TOP "+maxrec+" 'https://irsa.ipac.caltech.edu/' || a.uri AS access_url, "+
+      "p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max, "+
+      "a.planeid AS obs_id, p.energy_bandpassname AS band ";
+  const query=select+
     "FROM spherex.artifact a "+
     "JOIN spherex.plane p ON a.planeid = p.planeid "+
     "WHERE 1 = CONTAINS(POINT('ICRS', "+ra+", "+dec+"), p.poly) "+
-    "AND p.energy_bandpassname = 'SPHEREx-D2' "+
     "AND a.uri LIKE '%"+releasePath+"%'"+timeClause+
     " ORDER BY p.time_bounds_lower";
   try {
