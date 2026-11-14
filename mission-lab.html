@@ -257,7 +257,7 @@
   if(!quiet)panel.scrollIntoView({behavior:'smooth',block:'start'});canvas.width=0;canvas.height=0;placeholder.classList.remove('hide');placeholder.textContent=isRetry?'Retrying real SPHEREx FITS preview…':'Loading real SPHEREx FITS cutout…';imageStatus.textContent=isRetry?'Retrying the IRSA image request…':'Requesting a quick 0.1° cutout from IRSA…';title.textContent=(row.obs_id||'SPHEREx observation')+' · '+mjdDate(row.t_min);original.href=row.access_url;
   if(button){button.disabled=true;button.textContent='Loading…'}
   try{
-   const imageRa=Number.isFinite(Number(row._queryRa))?Number(row._queryRa):Number(ra.value),imageDec=Number.isFinite(Number(row._queryDec))?Number(row._queryDec):Number(dec.value);const url=new URL('/api/spherex-image',location.origin);url.search=new URLSearchParams({url:row.access_url,center:String(imageRa)+','+String(imageDec),size:'0.1'}).toString();
+   const imageRa=Number.isFinite(Number(row._queryRa))?Number(row._queryRa):Number(ra.value),imageDec=Number.isFinite(Number(row._queryDec))?Number(row._queryDec):Number(dec.value);const url=new URL('/api/spherex-image',location.origin);url.search=new URLSearchParams({url:row.access_url,center:String(imageRa)+','+String(imageDec),size:'0.5'}).toString();
    const response=await fetch(url,{signal:AbortSignal.timeout(45000)});if(!response.ok){const problem=await response.json().catch(()=>({}));throw new Error(problem.detail||problem.error||'Image request failed (HTTP '+response.status+')')}
    const blob=await response.blob();if(blob.size<2880)throw new Error('IRSA returned an empty FITS file.');
    if(!window.astro?.FITS)throw new Error('FITS viewer library did not load.');
