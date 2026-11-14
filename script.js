@@ -77,6 +77,12 @@ document.querySelectorAll(".popular-searches [data-query]").forEach(button => bu
     }
   }
   button.addEventListener("click", resolveName);
+  document.querySelectorAll("[data-object-name]").forEach(chip => {
+    chip.addEventListener("click", () => {
+      input.value = chip.getAttribute("data-object-name") || "";
+      resolveName();
+    });
+  });
   input.addEventListener("keydown", event => {
     if (event.key === "Enter") { event.preventDefault(); resolveName(); }
   });
