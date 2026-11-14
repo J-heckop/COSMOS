@@ -190,6 +190,103 @@ if (timeForm) {
   function dateLabel(value) {
     return new Date(value + "T00:00:00Z").toLocaleDateString(undefined, {year:"numeric",month:"short",day:"numeric",timeZone:"UTC"});
   }
+  function setImageMessage(period, message) {
+    const canvas = document.querySelector("#image-" + period);
+    const placeholder = document.querySelector("#image-" + period + "-placeholder");
+    const status = document.querySelector("#image-" + period + "-status");
+    if (canvas) { canvas.width = 0; canvas.height = 0; }
+    if (placeholder) { placeholder.hidden = false; placeholder.textContent = message; }
+    if (status) status.textContent = message;
+  }
+
+  async function renderSpherexImage(period, row, ra, dec, radius) {
+    const canvas = document.querySelector("#image-" + period);
+    const placeholder = document.querySelector("#image-" + period + "-placeholder");
+    const status = document.querySelector("#image-" + period + "-status");
+    if (!row || !row.access_url) {
+      setImageMessage(period, "No image product is available for this period.");
+      return;
+    }
+    if (!window.astro || !window.astro.FITS) {
+      setImageMessage(period, "The FITS image viewer could not load. Use the original data link.");
+      return;
+    }
+    placeholder.hidden = false;
+    placeholder.textContent = "Loading real SPHEREx image…";
+    status.textContent = "Retrieving FITS cutout from IRSA…";
+    try {
+      const url = new URL("/api/spherex-image", window.location.origin);
+      url.search = new URLSearchParams({
+        url: row.access_url,
+        ra: String(ra),
+        dec: String(dec),
+        size: String(Math.min(0.5, Math.max(0.03, radius * 2)))
+      }).toString();
+      const response = await fetch(url, {signal: AbortSignal.timeout(60000)});
+      if (!response.ok) {
+        const problem = await response.json().catch(() => ({}));
+        throw new Error(problem.detail || problem.error || "Image request failed (HTTP " + response.status + ")");
+      }
+      const blob = await response.blob();
+      if (blob.size < 2880) throw new Error("The archive returned an empty FITS cutout.");
+      await new Promise((resolve, reject) => {
+        let settled = false;
+        const finish = (fn, value) => { if (!settled) { settled = true; fn(value); } };
+        const fits = new astro.FITS(blob, function() {
+          try {
+            const imageHdu = (this.hdus || []).find(hdu => hdu.data instanceof astro.FITS.Image);
+            if (!imageHdu) throw new Error("No image plane was found in this FITS product.");
+            const image = imageHdu.data;
+            image.getFrame(0, pixels => {
+              try {
+                const width = image.width;
+                const height = image.height;
+                if (!width || !height || !pixels || !pixels.length) throw new Error("The FITS image contains no displayable pixels.");
+                const valid = [];
+                const stride = Math.max(1, Math.floor(pixels.length / 12000));
+                for (let i = 0; i < pixels.length; i += stride) {
+                  const value = Number(pixels[i]);
+                  if (Number.isFinite(value)) valid.push(value);
+                }
+                valid.sort((a,b) => a-b);
+                if (!valid.length) throw new Error("No finite pixel values were found.");
+                const low = valid[Math.floor((valid.length - 1) * 0.02)];
+                const high = valid[Math.floor((valid.length - 1) * 0.985)];
+                const span = high > low ? high - low : 1;
+                canvas.width = width;
+                canvas.height = height;
+                const context = canvas.getContext("2d");
+                const pixelsOut = context.createImageData(width, height);
+                for (let y = 0; y < height; y++) {
+                  for (let x = 0; x < width; x++) {
+                    const sourceIndex = y * width + x;
+                    const value = Number(pixels[sourceIndex]);
+                    const normalized = Number.isFinite(value) ? Math.max(0, Math.min(1, (value - low) / span)) : 0;
+                    const shade = Math.round(Math.pow(normalized, 0.72) * 255);
+                    const targetIndex = ((height - 1 - y) * width + x) * 4;
+                    pixelsOut.data[targetIndex] = shade;
+                    pixelsOut.data[targetIndex + 1] = Math.min(255, Math.round(shade * 1.03));
+                    pixelsOut.data[targetIndex + 2] = Math.min(255, Math.round(shade * 1.12));
+                    pixelsOut.data[targetIndex + 3] = 255;
+                  }
+                }
+                context.putImageData(pixelsOut, 0, 0);
+                placeholder.hidden = true;
+                status.textContent = "Showing FITS cutout · " + timeSafeText(row.obs_id, "SPHEREx observation");
+                finish(resolve);
+              } catch (error) { finish(reject, error); }
+            });
+          } catch (error) { finish(reject, error); }
+        });
+        window.setTimeout(() => finish(reject, new Error("FITS image parsing timed out.")), 55000);
+      });
+    } catch (error) {
+      placeholder.hidden = false;
+      placeholder.textContent = "Image preview unavailable. Open the original FITS data instead.";
+      status.textContent = error.message;
+    }
+  }
+
   function appendTimeRecords(target, rows, collection) {
     target.replaceChildren();
     const unique = [...new Map(rows.map(row => {
@@ -217,12 +314,23 @@ if (timeForm) {
       const date = Number.isFinite(mjd) ? new Date((mjd - 40587) * 86400000).toISOString().slice(0,10) : "Date not listed";
       meta.textContent = collection.toUpperCase() + " · " + timeSafeText(row.band, "Band not listed") + " · " + date;
       info.append(name, meta);
+      const preview = document.createElement("button");
+      preview.type = "button";
+      preview.className = "preview-image-button";
+      preview.textContent = "Preview image";
+      preview.addEventListener("click", () => {
+        const period = target.id === "period-a-results" ? "a" : "b";
+        const ra = Number(document.querySelector("#ra-input").value);
+        const dec = Number(document.querySelector("#dec-input").value);
+        const radius = Number(document.querySelector("#radius-input").value);
+        renderSpherexImage(period, row, ra, dec, radius);
+      });
       const link = document.createElement("a");
       link.textContent = "Open FITS data ↗";
       link.href = row.access_url || "https://irsa.ipac.caltech.edu/applications/spherex/";
       link.target = "_blank";
       link.rel = "noopener noreferrer";
-      item.append(info, link);
+      item.append(info, preview, link);
       list.append(item);
     });
     target.append(list);
@@ -337,6 +445,11 @@ if (timeForm) {
       const [a,b] = await Promise.all([queryWindow(aStart,aEnd),queryWindow(bStart,bEnd)]);
       appendTimeRecords(outputA,a.map(x=>x.row),"DR1 / QR3");
       appendTimeRecords(outputB,b.map(x=>x.row),"DR1 / QR3");
+      const radiusForImage = Number(document.querySelector("#radius-input").value);
+      if (a.length) renderSpherexImage("a", a[0].row, ra, dec, radiusForImage);
+      else setImageMessage("a", "No matching observation image in Period A.");
+      if (b.length) renderSpherexImage("b", b[0].row, ra, dec, radiusForImage);
+      else setImageMessage("b", "No matching observation image in Period B.");
       // Replace generic collection labels with the actual release for each result row.
       [ [outputA,a], [outputB,b] ].forEach(([container,sets]) => {
         const links=[...container.querySelectorAll(".archive-result")];
