@@ -53,7 +53,7 @@
    <div class="mt-3 bg-black rounded-lg min-h-48 grid place-items-center overflow-auto"><canvas id="liveFitsCanvas" class="max-w-full h-auto"></canvas><p id="liveImagePlaceholder" class="text-xs text-slate-400 p-6">Choose an observation to load its image.</p></div>
    <p id="liveImageStatus" class="text-xs text-slate-400 mt-2" aria-live="polite"></p>
   </div>
-  <div id="liveResults" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"></div>
+  <div id="liveResults" class="hide max-h-[28rem] overflow-y-auto overscroll-contain rounded-xl border border-slate-700 bg-slate-950/70 p-2 grid grid-cols-1 gap-2" aria-label="Scrollable SPHEREx observations"></div>
 
   <p class="text-xs text-slate-500">Archive metadata and FITS previews are live IRSA data. The preview uses an automatic display stretch; it is not a calibrated change-detection result. Coverage depends on the selected coordinates and released data.</p>
  </section>
@@ -210,8 +210,8 @@
    rows.sort((a,b)=>Number(a.t_min)-Number(b.t_min));
    const unique=[...new Map(rows.map(row=>[row.access_url||[row.obs_id||'',row.t_min||''].join('|'),row])).values()];
    rows=unique;
-   if(!rows.length){results.replaceChildren();panel.classList.add('hide');lapsePanel.classList.add('hide');status.textContent='No released observations were returned for these coordinates and band. Previous results are cleared because this search completed successfully with zero matches.';return}
-   results.replaceChildren();panel.classList.add('hide');lapsePanel.classList.add('hide');
+   if(!rows.length){results.replaceChildren();results.classList.add('hide');panel.classList.add('hide');lapsePanel.classList.add('hide');status.textContent='No released observations were returned for these coordinates and band. Previous results are cleared because this search completed successfully with zero matches.';return}
+   results.replaceChildren();results.classList.remove('hide');panel.classList.add('hide');lapsePanel.classList.add('hide');
    status.textContent='Found '+rows.length+' real archive image records for RA '+r.toFixed(4)+'°, Dec '+d.toFixed(4)+'° · '+selectedBand+' · sorted oldest to newest.'+(payload.partial?' (Some archive releases were unavailable.)':'');
    const cards=[];
    rows.forEach((row,index)=>{
