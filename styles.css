@@ -75,3 +75,38 @@
 @media(max-width:760px){
   .live-search-panel,.time-machine-panel,.search-panel{backdrop-filter:blur(5px)}
 }
+
+
+/* Warm stellar palette — tuned to the gold/amber galaxy field */
+:root{
+  --text:#fff8e9;
+  --muted:#d4c8b5;
+  --purple:#ffc15a;
+  --cyan:#ffd27a;
+  --line:rgba(255,204,120,.19);
+}
+.brand-mark,.card-arrow,.text-link span,.data-note span{color:#ffd27a}
+.topbar nav a:hover,.text-link:hover{color:#ffd27a}
+.eyebrow{color:#ffd27a}
+.pulse{background:#ffd27a;box-shadow:0 0 12px #ffb52a}
+.hero h1 em,h2 em{color:#ffc15a}
+.primary{background:linear-gradient(110deg,#ffb52a,#ffe09a);color:#211407}
+.primary:hover{filter:brightness(1.08)}
+.nav-cta span{color:#ffd27a}
+.nav-cta:hover{border-color:#ffd27a88}
+.chip.active,.chip:hover{background:#ffbf3a18;border-color:#ffc15a;color:#ffe2ad}
+.coordinate-form input:focus,.coordinate-form select:focus{border-color:#ffc15a}
+.live-tag{border-color:#ffd27a55;color:#ffe0a0}
+.live-tag i{background:#ffd27a;box-shadow:0 0 8px #ffd27a}
+.coordinate-example button{background:#ffbf3a12;border-color:#ffc15a55;color:#ffe0a0}
+.archive-result a,.image-fallback-link{color:#ffd27a}
+.time-side-title,.time-results-grid h4{color:#ffcf80}
+.preview-image-button,.results-toggle{border-color:#ffc15a55;background:#241b16;color:#ffe0ad}
+.position-test-button{border-color:#ffc15a55;background:#241b16;color:#ffe0ad}
+.diagnostics-panel summary{color:#ffcf80}
+.dialog-fact strong{color:#ffd27a}
+.outline{border-color:#ffc15a88;color:#ffe3b4}
+.scan-core{background:radial-gradient(circle at 35% 30%,#fff0c4,#d49a43 42%,#3b281d 75%);box-shadow:0 0 55px #d49a4377}
+@media(max-width:760px){
+  .hero-note,.stats span,.data-note,.empty-state,.coordinate-form small,.time-hint,.time-disclaimer,.archive-result span{color:#c9bba5}
+}
