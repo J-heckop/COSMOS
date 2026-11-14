@@ -91,6 +91,56 @@
         </section>
         <div class="time-results-grid"><section><h4>PERIOD A <span id="period-a-label"></span></h4><div id="period-a-results" class="archive-results"></div></section><section><h4>PERIOD B <span id="period-b-label"></span></h4><div id="period-b-results" class="archive-results"></div></section></div>
         <p class="time-disclaimer">The records above link to original SPHEREx FITS products. The image previews show small cutouts when the archive provides a compatible image product.</p>
+      <section class="cosmos-lab" id="sky-lab">
+        <div class="lab-heading"><span class="eyebrow">THE COSMOS DISCOVERY LAB</span><h3>Go beyond the image.</h3><p>Compare loaded observations, explore the survey timeline and inspect an educational 102-band spectrum.</p></div>
+        <div class="lab-tool-grid">
+          <article class="lab-tool">
+            <span class="lab-kicker">01 / BLINK COMPARATOR</span><h4>Switch between two periods</h4>
+            <p>Load a sky image in both Period A and Period B above, then switch between them here.</p>
+            <div class="lab-actions"><button type="button" id="blink-a" class="button secondary" disabled>Show Period A</button><button type="button" id="blink-b" class="button secondary" disabled>Show Period B</button></div>
+            <div id="blink-status" class="lab-note">Load both FITS previews to activate the blink comparator.</div>
+          </article>
+          <article class="lab-tool">
+            <span class="lab-kicker">02 / SPLIT-SCREEN WIPE</span><h4>Reveal one image over another</h4>
+            <p>Move the divider to reveal more of Period A or Period B. Both previews must be loaded.</p>
+            <div class="wipe-frame"><canvas id="wipe-canvas" aria-label="Wipe comparison of two SPHEREx images"></canvas><div id="wipe-empty">Load both sky images to use the wipe.</div></div>
+            <label class="lab-range-label" for="wipe-range">Comparison divider</label><input id="wipe-range" type="range" min="0" max="100" value="50" disabled>
+          </article>
+          <article class="lab-tool">
+            <span class="lab-kicker">03 / SURVEY TIMELINE</span><h4>Scrub through available dates</h4>
+            <p>Use dates discovered from the real archive. Select a date, then compare it with Period A.</p>
+            <input id="timeline-range" type="range" min="0" max="0" value="0" disabled>
+            <div class="timeline-readout" id="timeline-readout">Discover dates to build your timeline.</div>
+            <button type="button" id="timeline-compare" class="button secondary" disabled>Use this as Period B</button>
+          </article>
+          <article class="lab-tool">
+            <span class="lab-kicker">04 / 102-BAND SPECTRAL EXPLORER</span><h4>Explore infrared wavelengths</h4>
+            <p>This educational spectrum illustrates how a source’s brightness can vary with wavelength. It is not measured SPHEREx flux data.</p>
+            <div class="spectrum-wrap"><canvas id="spectrum-canvas" aria-label="Illustrative 102-band spectrum chart"></canvas></div>
+            <div class="spectrum-scale"><span>0.75 μm</span><span>Near-infrared</span><span>5.0 μm</span></div>
+            <div class="lab-note">Illustrative learning model · 102 wavelength bands</div>
+          </article>
+        </div>
+        <div class="lab-tool-grid lab-bottom-grid">
+          <article class="lab-tool target-tool">
+            <span class="lab-kicker">05 / TARGET TELEMETRY</span><h4>Sky position details</h4>
+            <p>Label the region you are investigating. Coordinates are taken from the archive search fields.</p>
+            <label>Target / region name<input id="target-name" type="text" maxlength="70" placeholder="e.g. Andromeda Galaxy"></label>
+            <div class="target-coordinates"><span>RA <strong id="target-ra">—</strong></span><span>Dec <strong id="target-dec">—</strong></span><span>Radius <strong id="target-radius">—</strong></span></div>
+            <button type="button" id="refresh-target" class="button secondary">Refresh coordinates</button>
+          </article>
+          <article class="lab-tool discovery-tool">
+            <span class="lab-kicker">06 / DISCOVERY LOG</span><h4>Save an interesting finding</h4>
+            <p>Record a note about the region you explored. Entries stay in this browser on this device.</p>
+            <label>Observation note<textarea id="discovery-note" rows="3" maxlength="240" placeholder="What caught your attention?"></textarea></label>
+            <button type="button" id="save-discovery" class="button primary">Save to discovery log</button>
+            <div id="discovery-status" class="lab-note" role="status">No discovery saved yet.</div>
+            <div id="discovery-list" class="discovery-list"></div>
+          </article>
+        </div>
+        <p class="lab-disclaimer">Scientific note: the archive images are real when successfully loaded. The spectrum is illustrative, and the discovery log records your own notes; COSMOS does not automatically identify asteroids, comets, variable stars or other anomalies.</p>
+      </section>
+
         <details class="diagnostics-panel">
           <summary>Advanced diagnostics · Test all observations at this sky position</summary>
           <p class="time-hint">This optional check ignores dates and is mainly for troubleshooting whether the selected coordinates have any archive observations.</p>
