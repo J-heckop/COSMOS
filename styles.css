@@ -187,3 +187,14 @@
 .time-side select{width:100%;min-height:54px;padding:0 14px;border:1px solid rgba(255,202,130,.16);border-radius:13px;background:rgba(9,10,18,.82);color:#fff0d5;font:inherit}
 .time-side select:disabled{opacity:.6;cursor:not-allowed}
 .time-submit:disabled,.time-discovery .button:disabled{opacity:.6;cursor:wait}
+
+/* Clear next-step instructions for first-time visitors */
+.image-howto{
+  display:flex;flex-direction:column;gap:7px;margin:16px 0 20px;padding:15px 17px;
+  border:1px solid rgba(255,202,130,.25);border-radius:14px;
+  background:linear-gradient(120deg,rgba(92,57,25,.24),rgba(18,18,29,.72));
+  color:#e9ddc8;font-size:.94rem;line-height:1.65
+}
+.image-howto strong{color:#ffd27a;letter-spacing:.02em}
+.image-howto b{color:#ffe2a8}
+.preview-image-button{min-width:132px}
