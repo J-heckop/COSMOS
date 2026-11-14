@@ -26,10 +26,29 @@ module.exports = async function handler(req, res) {
         !Number.isFinite(size) || size <= 0 || size > 0.5) {
       return send(res, 400, { error: "Invalid image cutout coordinates or size." });
     }
-    source.searchParams.set("center", ra + "," + dec);
-    source.searchParams.set("size", String(size));
-    const upstream = await fetch(source.toString(), { signal: AbortSignal.timeout(55000) });
-    if (!upstream.ok) return send(res, 502, { error: "IRSA image cutout failed.", detail: "HTTP " + upstream.status });
+    // IRSA's documented cutout service accepts J2000 coordinates in degrees.
+    source.searchParams.set("center", ra + "," + dec + "deg");
+    source.searchParams.set("size", size + "deg");
+    source.searchParams.set("gzip", "false");
+
+    // Retry brief upstream outages (503/504) before returning a useful error.
+    let upstream;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      upstream = await fetch(source.toString(), {
+        headers: { Accept: "application/fits, application/octet-stream" },
+        signal: AbortSignal.timeout(55000)
+      });
+      if (upstream.ok || ![502, 503, 504].includes(upstream.status) || attempt === 2) break;
+      await new Promise(resolve => setTimeout(resolve, 700 * (attempt + 1)));
+    }
+    if (!upstream.ok) {
+      res.setHeader("Retry-After", "30");
+      return send(res, upstream.status === 503 ? 503 : 502, {
+        error: "The IRSA image service is temporarily unavailable.",
+        detail: "IRSA returned HTTP " + upstream.status + ". Your observation search still worked; try the image preview again shortly.",
+        retryable: [502, 503, 504].includes(upstream.status)
+      });
+    }
     const bytes = Buffer.from(await upstream.arrayBuffer());
     if (bytes.length < 2880 || bytes.toString("ascii", 0, 8).indexOf("SIMPLE") !== 0) {
       return send(res, 502, { error: "IRSA did not return a readable FITS image." });
