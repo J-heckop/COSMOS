@@ -110,3 +110,27 @@
 @media(max-width:760px){
   .hero-note,.stats span,.data-note,.empty-state,.coordinate-form small,.time-hint,.time-disclaimer,.archive-result span{color:#c9bba5}
 }
+
+/* Warm translucent glass panels to harmonize with the galaxy */
+.live-search-panel,
+.time-machine-panel,
+.search-panel,
+.mission{
+  background:linear-gradient(135deg,rgba(35,27,29,.76),rgba(17,18,31,.78));
+  border-color:rgba(255,196,112,.22);
+  box-shadow:0 18px 55px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,225,175,.045);
+  backdrop-filter:blur(10px);
+}
+.archive-status,
+.coordinate-form input,
+.coordinate-form select,
+.time-side,
+.image-pane,
+.diagnostics-panel,
+.dialog-fact{
+  background:rgba(13,13,23,.78);
+  border-color:rgba(255,202,130,.16);
+}
+.coordinate-form input,.coordinate-form select,.time-side input{
+  background:rgba(9,10,18,.82);
+}
