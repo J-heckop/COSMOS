@@ -187,6 +187,19 @@
     if(!complete)throw new Error('The IRSA background job is still running. Search again shortly to check for results.');
    }
    rows=(payload.results||[]).flatMap(set=>parseVOTable(set.xml).map(row=>({...row,_collection:set.collection})));
+   const bandLimits={
+    'SPHEREx-D1':[0.75e-6,1.11e-6],
+    'SPHEREx-D2':[1.11e-6,1.64e-6],
+    'SPHEREx-D3':[1.64e-6,2.42e-6],
+    'SPHEREx-D4':[2.42e-6,3.82e-6],
+    'SPHEREx-D5':[3.82e-6,4.42e-6],
+    'SPHEREx-D6':[4.42e-6,5.00e-6]
+   };
+   if(selectedBand!=='all'&&bandLimits[selectedBand]){
+    const [wantedLo,wantedHi]=bandLimits[selectedBand];
+    const known=rows.some(row=>Number.isFinite(Number(row.em_min))&&Number.isFinite(Number(row.em_max)));
+    if(known)rows=rows.filter(row=>!Number.isFinite(Number(row.em_min))||!Number.isFinite(Number(row.em_max))||(Number(row.em_min)<wantedHi&&Number(row.em_max)>wantedLo));
+   }
    rows.sort((a,b)=>Number(a.t_min)-Number(b.t_min));
    const unique=[...new Map(rows.map(row=>[[row._collection,row.obs_id||row.access_url||'',row.t_min||''].join('|'),row])).values()];
    rows=unique;
