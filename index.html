@@ -10,9 +10,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <script type="importmap">
+    {"imports":{"three":"https://unpkg.com/three@0.143.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.143.0/examples/jsm/"}}
+  </script>
+
 </head>
 <body>
-  <div class="starfield" aria-hidden="true"></div>
+  <canvas id="galaxy-scene" aria-hidden="true"></canvas>
   <header class="topbar">
     <a class="brand" href="#" aria-label="COSMOS home"><span class="brand-mark">✳</span> COSMOS</a>
     <nav><a href="#explore">Explore</a><a href="#mission">The mission</a><a href="#about">About</a></nav>
@@ -118,6 +122,7 @@
   </main>
 
   <footer><a class="brand" href="#"><span class="brand-mark">✳</span> COSMOS</a><span>Made for curious minds. Built around NASA SPHEREx.</span><a href="https://www.nasa.gov/" target="_blank" rel="noreferrer">NASA ↗</a></footer>
+  <script type="module" src="galaxy-bg.js"></script>
   <script src="vendor/fits.js"></script>
   <script src="script.js"></script>
 </body>
