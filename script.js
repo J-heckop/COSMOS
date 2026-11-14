@@ -340,7 +340,7 @@ if (timeForm) {
     try {
       const url = new URL("/api/spherex", window.location.origin);
       url.search = new URLSearchParams({ra:String(ra),dec:String(dec),radius:String(radius),collection:document.querySelector("#collection-input")?.value || "spherex_qr3",maxrec:String(archiveMaxRecords)}).toString();
-      const response = await fetch(url, {signal: AbortSignal.timeout(65000)});
+      const response = await fetch(url, {signal: AbortSignal.timeout(26000)});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive query failed.");
       const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml));      if (loadMoreDatesButton) {
