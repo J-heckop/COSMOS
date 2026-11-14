@@ -501,14 +501,33 @@ if (timeForm) {
       placeholder.textContent = "Image preview is temporarily unavailable.";
       status.textContent = error.message;
       const pane = canvas && canvas.closest(".image-pane");
-      if (pane && row.access_url && !pane.querySelector(".image-fallback-link")) {
-        const fallback = document.createElement("a");
-        fallback.className = "image-fallback-link";
-        fallback.href = row.access_url;
-        fallback.target = "_blank";
-        fallback.rel = "noopener noreferrer";
-        fallback.textContent = "Open original SPHEREx FITS product ↗";
-        pane.append(fallback);
+      if (pane && row.access_url) {
+        let retry = pane.querySelector(".image-retry-button");
+        if (!retry) {
+          retry = document.createElement("button");
+          retry.type = "button";
+          retry.className = "image-retry-button";
+          retry.textContent = "Retry image preview";
+          retry.addEventListener("click", () => {
+            retry.disabled = true;
+            retry.textContent = "Retrying…";
+            renderSpherexImage(period, row, ra, dec, radius).finally(() => {
+              retry.disabled = false;
+              retry.textContent = "Retry image preview";
+            });
+          });
+          pane.append(retry);
+        }
+        let fallback = pane.querySelector(".image-fallback-link");
+        if (!fallback) {
+          fallback = document.createElement("a");
+          fallback.className = "image-fallback-link";
+          fallback.href = row.access_url;
+          fallback.target = "_blank";
+          fallback.rel = "noopener noreferrer";
+          fallback.textContent = "Open original SPHEREx FITS product ↗";
+          pane.append(fallback);
+        }
       }
     }
   }
