@@ -226,6 +226,38 @@ if (timeForm) {
     select.disabled = dates.length === 0;
     if (selected && dates.includes(selected)) select.value = selected;
   }
+  const loadingFacts = document.querySelector("#archive-loading-facts");
+  const loadingFact = document.querySelector("#archive-loading-fact");
+  const loadingFactDeck = [
+    "SPHEREx maps the entire sky in 102 near-infrared wavelength bands.",
+    "Its wavelength coverage runs from about 0.75 to 5 micrometres.",
+    "The mission studies galaxies, cosmic history, and the ingredients for life.",
+    "SPHEREx launched in March 2025 and began nominal science operations in May 2025.",
+    "IRSA receives new SPHEREx data on an approximately weekly basis.",
+    "A single sky position can be observed in different wavelength bands and at different times."
+  ];
+  let loadingFactTimer = null;
+  let loadingFactIndex = 0;
+  function startArchiveLoadingFacts() {
+    if (!loadingFacts || !loadingFact) return;
+    loadingFactIndex = 0;
+    loadingFact.textContent = loadingFactDeck[loadingFactIndex];
+    loadingFacts.hidden = false;
+    loadingFactTimer = window.setInterval(() => {
+      loadingFactIndex = (loadingFactIndex + 1) % loadingFactDeck.length;
+      loadingFact.classList.add("fact-changing");
+      window.setTimeout(() => {
+        loadingFact.textContent = loadingFactDeck[loadingFactIndex];
+        loadingFact.classList.remove("fact-changing");
+      }, 180);
+    }, 4200);
+  }
+  function stopArchiveLoadingFacts() {
+    if (loadingFactTimer !== null) window.clearInterval(loadingFactTimer);
+    loadingFactTimer = null;
+    if (loadingFacts) loadingFacts.hidden = true;
+  }
+
   discoverButton.addEventListener("click", async () => {
     const ra = Number(document.querySelector("#ra-input").value);
     const dec = Number(document.querySelector("#dec-input").value);
@@ -239,10 +271,11 @@ if (timeForm) {
     discoverButton.textContent = "Discovering archive dates…";
     timeStatus.textContent = "Querying the SPHEREx observation catalogue…";
     timeStatus.className = "archive-status";
+    startArchiveLoadingFacts();
     try {
       const url = new URL("/api/spherex", window.location.origin);
       url.search = new URLSearchParams({ra:String(ra),dec:String(dec),radius:String(radius),collection:document.querySelector("#collection-input")?.value || "spherex_qr3",maxrec:"30"}).toString();
-      const response = await fetch(url, {signal: AbortSignal.timeout(23000)});
+      const response = await fetch(url, {signal: AbortSignal.timeout(32000)});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive query failed.");
       const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml));
@@ -288,6 +321,7 @@ if (timeForm) {
       timeStatus.textContent = error.name === "TimeoutError" || error.name === "AbortError" ? "The SPHEREx archive is taking too long to respond. Try again in a moment; this is not a zero-observation result." : "Could not discover observation dates: " + error.message;
       timeStatus.className = "archive-status error";
     } finally {
+      stopArchiveLoadingFacts();
       discoverButton.disabled = false;
       discoverButton.textContent = "Find available observation dates";
     }
