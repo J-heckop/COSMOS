@@ -57,6 +57,11 @@
       <div class="section-heading"><div><div class="eyebrow">YOUR WINDOW INTO SPACE</div><h2>Explore the <em>cosmos.</em></h2></div><p>Pick a cosmic destination and start discovering what infrared light can reveal.</p></div>
       <div class="live-search-panel">
         <div class="live-heading"><div><span class="eyebrow">REAL ARCHIVE SEARCH</span><h3>Find observations in the sky.</h3><p>Enter J2000 sky coordinates and open the official NASA/IPAC IRSA explorer with your search pre-filled.</p></div><span class="live-tag"><i></i> IRSA DATA</span></div>
+        <div class="object-lookup">
+          <label for="object-name-input">Search by object name</label>
+          <div class="object-lookup-row"><input id="object-name-input" type="search" maxlength="100" placeholder="Try Andromeda, Orion Nebula, Sirius…" autocomplete="off"><button type="button" id="resolve-object" class="button secondary">Find coordinates</button></div>
+          <small>We'll look up its astronomical position and fill RA and Dec for you.</small>
+        </div>
         <form id="archive-form" class="coordinate-form">
           <label>Right ascension (RA)<input id="ra-input" type="number" min="0" max="360" step="any" placeholder="e.g. 10.6847" required><small>Degrees · 0 to 360</small></label>
           <label>Declination (Dec)<input id="dec-input" type="number" min="-90" max="90" step="any" placeholder="e.g. 41.2690" required><small>Degrees · −90 to +90</small></label>
