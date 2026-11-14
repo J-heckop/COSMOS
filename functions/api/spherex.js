@@ -74,16 +74,19 @@ export async function onRequest({request}){
   }
   const requestedRanges=ranges.length?ranges:[null];
   const results=[],errors=[];
-  // Sequential requests reduce load on IRSA and preserve partial successes.
-  for(const collection of ["spherex_qr3","spherex_dr1"]){
-    for(const range of requestedRanges){
-      try{
-        results.push(await queryCollection(collection,ra,dec,radius,range,requestedBand));
-      }catch(error){
-        errors.push({collection,period:range?.label||null,error:error.message});
-      }
-    }
-  }
+  // Query releases in parallel so the browser does not time out while
+  // waiting for one slow collection. Each collection has its own host fallback.
+  const jobs=["spherex_qr3","spherex_dr1"].flatMap(collection=>
+    requestedRanges.map(range=>({collection,range}))
+  );
+  const settled=await Promise.allSettled(jobs.map(job=>
+    queryCollection(job.collection,ra,dec,radius,job.range)
+  ));
+  settled.forEach((item,index)=>{
+    const job=jobs[index];
+    if(item.status==="fulfilled") results.push(item.value);
+    else errors.push({collection:job.collection,period:job.range?.label||null,error:item.reason?.message||"Archive query failed"});
+  });
   if(!results.length){
     return json({
       error:"IRSA's SPHEREx image-search service did not return a usable response.",
