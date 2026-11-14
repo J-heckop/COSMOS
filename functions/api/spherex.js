@@ -1,6 +1,6 @@
 // Cloudflare Pages Function: GET /api/spherex
-// Uses IRSA TAP for time-aware SPHEREx position searches. TAP is the
-// documented route used by IRSA's own SPHEREx cutout tutorial.
+// A focused TAP query: constrain by release and one calibrated bandpass so
+// date discovery does not scan every spectral plane for the sky position.
 function json(body,status=200,extra={}) {
   return new Response(JSON.stringify(body),{
     status,
@@ -11,13 +11,10 @@ function json(body,status=200,extra={}) {
     }
   });
 }
-function xmlEscape(value) {
-  return String(value).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-}
 export async function onRequest({request}) {
   if(request.method!=="GET") return json({error:"Use GET for archive searches."},405,{Allow:"GET"});
   const q=new URL(request.url).searchParams;
-  const ra=Number(q.get("ra")), dec=Number(q.get("dec")), radius=Number(q.get("radius"));
+  const ra=Number(q.get("ra")),dec=Number(q.get("dec")),radius=Number(q.get("radius"));
   if(!Number.isFinite(ra)||ra<0||ra>360||!Number.isFinite(dec)||dec< -90||dec>90||!Number.isFinite(radius)||radius<=0||radius>1)
     return json({error:"Invalid sky position or search radius."},400);
   const parsed=Number.parseInt(q.get("maxrec")||"30",10);
@@ -25,37 +22,32 @@ export async function onRequest({request}) {
   const collection=String(q.get("collection")||"spherex_qr3").toLowerCase();
   if(!["spherex_qr3","spherex_dr1"].includes(collection))
     return json({error:"Choose the QR3 or DR1 SPHEREx collection."},400);
-
   const ranges=[];
   const hasA=q.has("startA")||q.has("endA")||q.has("start")||q.has("end");
   const hasB=q.has("startB")||q.has("endB");
   if(hasA){
     const start=Number(q.has("startA")?q.get("startA"):q.get("start"));
     const end=Number(q.has("endA")?q.get("endA"):q.get("end"));
-    if(!Number.isFinite(start)||!Number.isFinite(end)||start<=0||end<start) return json({error:"Invalid Period A observation time range."},400);
+    if(!Number.isFinite(start)||!Number.isFinite(end)||start<=0||end<start)return json({error:"Invalid Period A observation time range."},400);
     ranges.push({label:"A",start,end});
   }
   if(hasB){
     const start=Number(q.get("startB")),end=Number(q.get("endB"));
-    if(!Number.isFinite(start)||!Number.isFinite(end)||start<=0||end<start) return json({error:"Invalid Period B observation time range."},400);
+    if(!Number.isFinite(start)||!Number.isFinite(end)||start<=0||end<start)return json({error:"Invalid Period B observation time range."},400);
     ranges.push({label:"B",start,end});
   }
-
-  // The official IRSA SPHEREx tutorial uses these artifact/plane tables,
-  // the same spatial CONTAINS expression, and p.time_bounds_lower.
-  const release=collection==="spherex_dr1"?"dr1":"qr3";
-  const timeClause=ranges.length
-    ? " AND ("+ranges.map(x=>"(p.time_bounds_lower <= "+x.end+" AND p.time_bounds_upper >= "+x.start+")").join(" OR ")+")"
-    : "";
+  const timeClause=ranges.length?" AND ("+ranges.map(x=>"(p.time_bounds_lower <= "+x.end+" AND p.time_bounds_upper >= "+x.start+")").join(" OR ")+")":"";
   const query="SELECT TOP "+maxrec+" "+
     "'https://irsa.ipac.caltech.edu/' || a.uri AS access_url, "+
     "p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max, "+
     "a.planeid AS obs_id, p.energy_bandpassname AS band "+
-    "FROM spherex.artifact a JOIN spherex.plane p ON a.planeid = p.planeid "+
-    "WHERE CONTAINS(POINT('ICRS', "+ra+", "+dec+"), p.poly) = 1 "+
-    "AND a.uri LIKE '%/"+release+"/%'"+timeClause+
+    "FROM spherex.artifact a "+
+    "JOIN spherex.plane p ON a.planeid = p.planeid "+
+    "JOIN spherex.observation o ON o.obsid = p.obsid "+
+    "WHERE 1 = CONTAINS(POINT('ICRS', "+ra+", "+dec+"), p.poly) "+
+    "AND o.collection = '"+collection+"' "+
+    "AND p.energy_bandpassname = 'SPHEREx-D2'"+timeClause+
     " ORDER BY p.time_bounds_lower";
-
   try {
     const body=new URLSearchParams({REQUEST:"doQuery",LANG:"ADQL",FORMAT:"votable",QUERY:query});
     const response=await fetch("https://irsa.ipac.caltech.edu/TAP/sync",{
@@ -65,17 +57,13 @@ export async function onRequest({request}) {
       signal:AbortSignal.timeout(28000)
     });
     const xml=await response.text();
-    if(!response.ok) return json({error:"IRSA SPHEREx TAP query failed.",detail:"IRSA TAP returned HTTP "+response.status},502);
-    if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml)) {
+    if(!response.ok)return json({error:"IRSA SPHEREx TAP query failed.",detail:"IRSA TAP returned HTTP "+response.status},502);
+    if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml)){
       const detail=xml.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,500);
       return json({error:"IRSA TAP returned an unexpected response.",detail},502);
     }
-    return json({results:[{collection,period:null,xml}],errors:[],source:"IRSA TAP",partial:false});
-  } catch(error) {
-    return json({
-      error:"The IRSA SPHEREx archive could not complete the position search.",
-      detail:error?.name==="TimeoutError"?"IRSA TAP request timed out. Please retry shortly.":(error?.message||"Unknown archive error."),
-      source:"IRSA TAP"
-    },502);
+    return json({results:[{collection,period:null,xml}],errors:[],source:"IRSA TAP",partial:false,bandpass:"SPHEREx-D2"});
+  }catch(error){
+    return json({error:"The IRSA SPHEREx archive could not complete the position search.",detail:error?.name==="TimeoutError"?"The focused IRSA TAP query timed out. Try again shortly.":(error?.message||"Unknown archive error."),source:"IRSA TAP"},502);
   }
 }
