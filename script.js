@@ -533,41 +533,41 @@ if (timeForm) {
     timeButton.textContent = "Comparing…";
     timeStatus.textContent = "Searching the archive for both periods… Image previews will load only when you request them.";
     timeStatus.className = "archive-status";
-    async function queryWindow(start, end) {
+    try {
       const url = new URL("/api/spherex", window.location.origin);
       url.search = new URLSearchParams({
         ra:String(ra), dec:String(dec), radius:String(radius),
-        start:String(dateToMJD(start)), end:String(dateToMJD(end, true))
+        startA:String(dateToMJD(aDate)), endA:String(dateToMJD(aDate,true)),
+        startB:String(dateToMJD(bDate)), endB:String(dateToMJD(bDate,true)),
+        maxrec:"300"
       }).toString();
-      const response = await fetch(url, {signal:AbortSignal.timeout(58000)});
+      timeStatus.textContent = "Running one combined archive query for both dates…";
+      const response = await fetch(url,{signal:AbortSignal.timeout(52000)});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive proxy failed");
-      const resultSets = (payload.results || []).map(result => ({collection:result.collection, rows:timeParseVOTable(result.xml)}));
-      const combined = resultSets.flatMap(set => set.rows.map(row => ({row, collection:set.collection})));
-      const unique = new Map();
-      combined.forEach(item => {
-        const key = [item.collection, item.row.obs_id || "", item.row.access_url || "", item.row.t_min || ""].join("|");
-        if (!unique.has(key)) unique.set(key, item);
-      });
-      return [...unique.values()];
-    }
-    try {
-      const [a,b] = await Promise.all([queryWindow(aDate,aDate),queryWindow(bDate,bDate)]);
-      appendTimeRecords(outputA,a.map(x=>x.row),"SPHEREx archive");
-      appendTimeRecords(outputB,b.map(x=>x.row),"DR1 / QR3");
-      // Keep the comparison fast: never download or parse FITS images during metadata search.
-      // Users can request a preview with the individual "Preview image" button on any result.
-      if (a.length) setImageMessage("a", "Comparison ready. Tap Preview image on a Period A observation below to load its FITS cutout.");
+      const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml).map(row=>({...row,_collection:result.collection})));
+      const overlaps = (row,date) => {
+        const lower=Number(row.t_min), upper=Number(row.t_max || row.t_min);
+        const lo=dateToMJD(date), hi=dateToMJD(date,true);
+        return Number.isFinite(lower) && lower<=hi && Number.isFinite(upper) && upper>=lo;
+      };
+      const uniqueRows = rows => [...new Map(rows.map(row=>[[row._collection,row.obs_id||"",row.access_url||"",row.t_min||""].join("|"),row])).values()];
+      const a=uniqueRows(records.filter(row=>overlaps(row,aDate)));
+      const b=uniqueRows(records.filter(row=>overlaps(row,bDate)));
+      appendTimeRecords(outputA,a,"SPHEREx archive");
+      appendTimeRecords(outputB,b,"SPHEREx archive");
+      if (a.length) setImageMessage("a", "Comparison ready. Tap View sky image on a Period A observation below to load its FITS cutout.");
       else setImageMessage("a", "No matching observation image in Period A.");
-      if (b.length) setImageMessage("b", "Comparison ready. Tap Preview image on a Period B observation below to load its FITS cutout.");
+      if (b.length) setImageMessage("b", "Comparison ready. Tap View sky image on a Period B observation below to load its FITS cutout.");
       else setImageMessage("b", "No matching observation image in Period B.");
-      // Replace generic collection labels with the actual release for each result row.
-      [ [outputA,a], [outputB,b] ].forEach(([container,sets]) => {
-        const links=[...container.querySelectorAll(".archive-result")];
-        links.forEach((item,index) => { const meta=item.querySelector("span"); if(meta && sets[index]) meta.textContent=sets[index].collection.toUpperCase()+" · "+timeSafeText(sets[index].row.band || sets[index].row.energy_bandpassname,"Band not listed")+" · "+(Number.isFinite(Number(sets[index].row.t_min))?new Date((Number(sets[index].row.t_min)-40587)*86400000).toISOString().slice(0,10):"Date not listed"); });
+      [[outputA,a],[outputB,b]].forEach(([container,rows])=>{
+        [...container.querySelectorAll(".archive-result")].forEach((item,index)=>{
+          const row=rows[index], meta=item.querySelector("span");
+          if(meta&&row) meta.textContent=row._collection.toUpperCase()+" · "+timeSafeText(row.band,"Band not listed")+" · "+(Number.isFinite(Number(row.t_min))?new Date((Number(row.t_min)-40587)*86400000).toISOString().slice(0,10):"Date not listed");
+        });
       });
-      timeStatus.textContent = "Comparison ready: " + a.length + " observation(s) in Period A and " + b.length + " in Period B. Images are not loaded automatically. Scroll to each period’s observation list and tap “View sky image” on a record to display it in the matching panel above.";
-      timeStatus.className = "archive-status success";
+      timeStatus.textContent="Comparison ready: "+a.length+" observation(s) in Period A and "+b.length+" in Period B. One combined archive query was used; images load only when requested.";
+      timeStatus.className="archive-status success";
     } catch (error) {
       timeStatus.textContent = "The archive proxy could not complete the request (" + error.message + "). Try the official SPHEREx Data Explorer, which supports position and timing constraints.";
       timeStatus.className = "archive-status error";
