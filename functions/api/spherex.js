@@ -53,9 +53,9 @@ export async function onRequest({request}) {
     const response=await fetch("https://irsa.ipac.caltech.edu/TAP/sync",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded","Accept":"application/x-votable+xml, application/xml, text/xml"},body,signal:AbortSignal.timeout(28000)});
     const xml=await response.text();
     if(!response.ok)throw new Error("IRSA TAP returned HTTP "+response.status);
-    const queryError=xml.match(/<INFO\\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\\s\\S]*?)<\\/INFO>/i);
-    if(queryError){const detail=queryError[1].replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim().slice(0,400);throw new Error(detail||"IRSA TAP rejected the query.");}
-    if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\\b/i.test(xml))throw new Error("IRSA TAP returned an unexpected response.");
+    const queryError=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\\S]*?)<\/INFO>/i);
+    if(queryError){const detail=queryError[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400);throw new Error(detail||"IRSA TAP rejected the query.");}
+    if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml))throw new Error("IRSA TAP returned an unexpected response.");
     return {collection:selected,period:null,xml};
   }
   try {
