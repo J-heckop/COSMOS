@@ -312,7 +312,7 @@ if (timeForm) {
       const meta = document.createElement("span");
       const mjd = Number(row.t_min);
       const date = Number.isFinite(mjd) ? new Date((mjd - 40587) * 86400000).toISOString().slice(0,10) : "Date not listed";
-      meta.textContent = collection.toUpperCase() + " · " + timeSafeText(row.band, "Band not listed") + " · " + date;
+      meta.textContent = collection.toUpperCase() + " · " + timeSafeText(row.band || row.energy_bandpassname, "Band not listed") + " · " + date;
       info.append(name, meta);
       const preview = document.createElement("button");
       preview.type = "button";
@@ -453,7 +453,7 @@ if (timeForm) {
       // Replace generic collection labels with the actual release for each result row.
       [ [outputA,a], [outputB,b] ].forEach(([container,sets]) => {
         const links=[...container.querySelectorAll(".archive-result")];
-        links.forEach((item,index) => { const meta=item.querySelector("span"); if(meta && sets[index]) meta.textContent=sets[index].collection.toUpperCase()+" · "+timeSafeText(sets[index].row.band,"Band not listed")+" · "+(Number.isFinite(Number(sets[index].row.t_min))?new Date((Number(sets[index].row.t_min)-40587)*86400000).toISOString().slice(0,10):"Date not listed"); });
+        links.forEach((item,index) => { const meta=item.querySelector("span"); if(meta && sets[index]) meta.textContent=sets[index].collection.toUpperCase()+" · "+timeSafeText(sets[index].row.band || sets[index].row.energy_bandpassname,"Band not listed")+" · "+(Number.isFinite(Number(sets[index].row.t_min))?new Date((Number(sets[index].row.t_min)-40587)*86400000).toISOString().slice(0,10):"Date not listed"); });
       });
       timeStatus.textContent = "Comparison complete: " + a.length + " observation(s) in Period A and " + b.length + " in Period B. Compare their dates and bands, then open the original FITS data to inspect each observation.";
       timeStatus.className = "archive-status success";
