@@ -226,16 +226,30 @@ if (timeForm) {
       const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml));
       const unique = new Map();
       records.forEach(row => {
-        const mjd = Number(row.t_min || row.t_max || row.mjd_obs || row.obs_mjd);
-        if (!Number.isFinite(mjd) || mjd < 40000 || mjd > 100000) return;
-        const date = new Date((mjd - 40587) * 86400000).toISOString().slice(0,10);
-        if (date >= "2025-05-01" && date <= today) unique.set(date, date);
+        const candidates = [row.t_min,row.t_max,row.mjd_obs,row.obs_mjd,row.date_obs,row.obs_date,row.date].filter(value => value !== undefined && value !== null && String(value).trim() !== "");
+        let date = "";
+        for (const raw of candidates) {
+          const value = String(raw).trim();
+          const numeric = Number(value);
+          if (Number.isFinite(numeric) && numeric >= 40000 && numeric <= 100000) {
+            date = new Date((numeric - 40587) * 86400000).toISOString().slice(0,10);
+            break;
+          }
+          const parsed = Date.parse(value);
+          if (Number.isFinite(parsed)) {
+            date = new Date(parsed).toISOString().slice(0,10);
+            break;
+          }
+        }
+        if (date && date >= "2025-05-01" && date <= today) unique.set(date, date);
       });
       discoveredDates = [...unique.keys()].sort();
       discoveredPosition = [ra, dec, radius].join("|");
       fillDateSelect(dateA, discoveredDates, discoveredDates[0]);
       fillDateSelect(dateB, discoveredDates, discoveredDates.length > 1 ? discoveredDates[discoveredDates.length - 1] : discoveredDates[0]);
       timeButton.disabled = discoveredDates.length < 2;
+      dateA.disabled = discoveredDates.length === 0;
+      dateB.disabled = discoveredDates.length === 0;
       if (discoveredDates.length >= 2) {
         timeStatus.textContent = "Found " + records.length + " archive record(s) across " + discoveredDates.length + " distinct observation date(s). Choose two dates to compare." + (payload.errors && payload.errors.length ? " Some archive collections did not respond, so the date list may be incomplete." : "");
         timeStatus.className = "archive-status success";
