@@ -215,12 +215,12 @@ if (timeForm) {
     }
     discoverButton.disabled = true;
     discoverButton.textContent = "Discovering archive dates…";
-    timeStatus.textContent = "Searching both SPHEREx collections… If the archive is busy, COSMOS will stop and let you retry.";
+    timeStatus.textContent = "Searching SPHEREx archive… This should finish within a few seconds.";
     timeStatus.className = "archive-status";
     try {
       const url = new URL("/api/spherex", window.location.origin);
       url.search = new URLSearchParams({ra:String(ra),dec:String(dec),radius:String(radius),maxrec:"100"}).toString();
-      const response = await fetch(url, {signal: AbortSignal.timeout(22000)});
+      const response = await fetch(url, {signal: AbortSignal.timeout(10000)});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive query failed.");
       const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml));
@@ -263,7 +263,7 @@ if (timeForm) {
         timeStatus.className = "archive-status";
       }
     } catch (error) {
-      timeStatus.textContent = error.name === "TimeoutError" || error.name === "AbortError" ? "The archive is taking too long to respond. Please retry in a moment, or use a smaller search radius." : "Could not discover observation dates: " + error.message;
+      timeStatus.textContent = error.name === "TimeoutError" || error.name === "AbortError" ? "The SPHEREx archive did not respond within 10 seconds. Search stopped so you can retry; this is not a zero-observation result." : "Could not discover observation dates: " + error.message;
       timeStatus.className = "archive-status error";
     } finally {
       discoverButton.disabled = false;
