@@ -86,33 +86,55 @@ export async function onRequest({request}) {
     " ORDER BY p.time_bounds_lower";
   const params=new URLSearchParams({REQUEST:"doQuery",LANG:"ADQL",QUERY:query,FORMAT:"votable",MAXREC:String(maxrec)});
   try{
-    const response=await fetch(IRSA+"/TAP/async",{
-      method:"POST",
-      headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8","Accept":"text/plain"},
-      body:params.toString(),
-      redirect:"follow",
-      signal:AbortSignal.timeout(15000)
-    });
-    // Cloudflare Workers can expose manual redirects as opaque responses with
-    // no readable Location header. Follow the TAP 303 and use the final URL.
-    const location=response.headers.get("Location");
-    const jobUrl=location||response.url;
-    if(!response.ok) {
-      const detail=(await response.text()).replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim().slice(0,400);
-      throw new Error("IRSA rejected the async request (HTTP "+response.status+"). "+detail);
+    let response=null,lastAsyncError=null;
+    try{
+      response=await fetch(IRSA+"/TAP/async",{
+        method:"POST",
+        headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8","Accept":"text/plain, application/xml, text/xml"},
+        body:params.toString(),
+        redirect:"follow",
+        signal:AbortSignal.timeout(15000)
+      });
+      if(!response.ok) {
+        const detail=(await response.text()).replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim().slice(0,300);
+        lastAsyncError="IRSA async returned HTTP "+response.status+(detail?": "+detail:"");
+      } else {
+        const jobUrl=response.url;
+        const parsed=new URL(jobUrl,IRSA);
+        const match=parsed.pathname.match(/^\\/TAP\\/async\\/(\\d+)\\/?$/);
+        if(match){
+          const jobId=match[1];
+          const run=await fetch(IRSA+"/TAP/async/"+jobId+"/phase",{
+            method:"POST",
+            headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},
+            body:"PHASE=RUN",
+            signal:AbortSignal.timeout(12000)
+          });
+          if(!run.ok&&run.status!==303) throw new Error("Could not start IRSA job (HTTP "+run.status+").");
+          return json({done:false,phase:"QUEUED",jobId,source:"IRSA TAP async",band:requestedBand},202);
+        }
+        lastAsyncError="IRSA async did not redirect to a job URL (final URL: "+(response.url||"unavailable")+")";
+      }
+    }catch(error){
+      lastAsyncError=error?.name==="TimeoutError"?"IRSA async submission timed out":(error?.message||"IRSA async submission failed");
     }
-    if(!jobUrl||jobUrl===IRSA+"/TAP/async") throw new Error("IRSA did not provide a job URL. Final URL: "+(response.url||"unavailable"));
-    const parsed=new URL(jobUrl,IRSA);
-    if(parsed.origin!==IRSA||!/^\/TAP\/async\/\d+\/?$/.test(parsed.pathname))throw new Error("IRSA returned an invalid job URL.");
-    const jobId=parsed.pathname.match(/\/(\d+)\/?$/)[1];
-    const run=await fetch(IRSA+"/TAP/async/"+jobId+"/phase",{
+
+    // Fallback: IRSA's synchronous TAP endpoint supports small, spatially
+    // constrained queries. With one selected band and TOP 150 this often
+    // succeeds even when async job creation is temporarily unavailable.
+    const syncResponse=await fetch(IRSA+"/TAP/sync",{
       method:"POST",
-      headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},
-      body:"PHASE=RUN",
-      signal:AbortSignal.timeout(12000)
+      headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8","Accept":"application/x-votable+xml, application/xml, text/xml"},
+      body:params.toString(),
+      signal:AbortSignal.timeout(27000)
     });
-    if(!run.ok&&run.status!==303)throw new Error("Could not start IRSA job (HTTP "+run.status+").");
-    return json({done:false,phase:"QUEUED",jobId,source:"IRSA TAP async",band:requestedBand},202);
+    const xml=await syncResponse.text();
+    if(!syncResponse.ok) throw new Error("IRSA async failed ("+lastAsyncError+"); sync fallback returned HTTP "+syncResponse.status+".");
+    const queryError=errorFromXml(xml);
+    if(queryError) throw new Error("IRSA query error: "+queryError);
+    if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\\b/i.test(xml)) throw new Error("IRSA returned an unexpected response. Async: "+lastAsyncError);
+    return json({done:true,phase:"COMPLETED",results:[{collection:"spherex_tap_sync",period:null,xml}],source:"IRSA TAP sync fallback",band:requestedBand});
+
   }catch(error){
     return json({error:error.name==="TimeoutError"?"Could not start the IRSA background job in time.":error.message||"Could not start the IRSA archive search."},502);
   }
