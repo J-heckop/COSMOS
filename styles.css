@@ -285,3 +285,8 @@
 .object-lookup-row button{white-space:nowrap;padding:0 16px}
 .object-lookup>small{display:block;margin-top:8px;color:#aebbd2;font-size:10px;line-height:1.5}
 @media(max-width:420px){.object-lookup-row{flex-direction:column}.object-lookup-row button{min-height:42px;width:100%}}
+
+
+.object-suggestions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.object-suggestions button{border:1px solid rgba(255,210,122,.28);background:rgba(255,210,122,.07);color:#f1d9a7;border-radius:999px;padding:7px 12px;font:500 11px "DM Sans";cursor:pointer;transition:background .2s,border-color .2s}
+.object-suggestions button:hover,.object-suggestions button:focus-visible{background:rgba(255,210,122,.16);border-color:rgba(255,210,122,.65);outline:none}
