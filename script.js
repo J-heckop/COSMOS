@@ -242,31 +242,45 @@ if (timeForm) {
                 const width = image.width;
                 const height = image.height;
                 if (!width || !height || !pixels || !pixels.length) throw new Error("The FITS image contains no displayable pixels.");
-                const valid = [];
-                const stride = Math.max(1, Math.floor(pixels.length / 12000));
+                // Robust astronomical stretch: estimate the sky background and noise
+                // with the median + MAD, then map the useful signal with an asinh curve.
+                // This suppresses grain without changing the underlying FITS data.
+                const sample = [];
+                const stride = Math.max(1, Math.floor(pixels.length / 24000));
                 for (let i = 0; i < pixels.length; i += stride) {
                   const value = Number(pixels[i]);
-                  if (Number.isFinite(value)) valid.push(value);
+                  if (Number.isFinite(value)) sample.push(value);
                 }
-                valid.sort((a,b) => a-b);
-                if (!valid.length) throw new Error("No finite pixel values were found.");
-                const low = valid[Math.floor((valid.length - 1) * 0.02)];
-                const high = valid[Math.floor((valid.length - 1) * 0.985)];
-                const span = high > low ? high - low : 1;
+                sample.sort((a,b) => a-b);
+                if (!sample.length) throw new Error("No finite pixel values were found.");
+                const percentile = p => sample[Math.min(sample.length - 1, Math.max(0, Math.floor((sample.length - 1) * p)))];
+                const median = percentile(0.5);
+                const deviations = sample.map(value => Math.abs(value - median)).sort((a,b) => a-b);
+                const mad = deviations[Math.floor((deviations.length - 1) * 0.5)] || 0;
+                const sigma = Math.max(mad * 1.4826, (percentile(0.75) - percentile(0.25)) / 1.349, 1e-12);
+                const low = median + sigma * 0.35;
+                const high = Math.max(percentile(0.997), low + sigma * 3.5);
+                const span = high - low;
+                const asinhMax = Math.asinh(8);
                 canvas.width = width;
                 canvas.height = height;
-                const context = canvas.getContext("2d");
+                const context = canvas.getContext("2d", { willReadFrequently: false });
                 const pixelsOut = context.createImageData(width, height);
                 for (let y = 0; y < height; y++) {
                   for (let x = 0; x < width; x++) {
                     const sourceIndex = y * width + x;
                     const value = Number(pixels[sourceIndex]);
-                    const normalized = Number.isFinite(value) ? Math.max(0, Math.min(1, (value - low) / span)) : 0;
-                    const shade = Math.round(Math.pow(normalized, 0.72) * 255);
+                    let normalized = 0;
+                    if (Number.isFinite(value) && value > low) {
+                      const linear = Math.max(0, Math.min(1, (value - low) / span));
+                      normalized = Math.asinh(linear * 8) / asinhMax;
+                    }
+                    // A gentle display gamma preserves faint sources while keeping the sky dark.
+                    const shade = Math.round(Math.pow(normalized, 0.82) * 255);
                     const targetIndex = ((height - 1 - y) * width + x) * 4;
                     pixelsOut.data[targetIndex] = shade;
-                    pixelsOut.data[targetIndex + 1] = Math.min(255, Math.round(shade * 1.03));
-                    pixelsOut.data[targetIndex + 2] = Math.min(255, Math.round(shade * 1.12));
+                    pixelsOut.data[targetIndex + 1] = Math.min(255, Math.round(shade * 0.96));
+                    pixelsOut.data[targetIndex + 2] = Math.min(255, Math.round(shade * 0.86));
                     pixelsOut.data[targetIndex + 3] = 255;
                   }
                 }
