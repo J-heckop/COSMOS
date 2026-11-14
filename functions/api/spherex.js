@@ -48,7 +48,7 @@ export async function onRequest({request}) {
     "a.planeid AS obs_id, p.energy_bandpassname AS band "+
     "FROM spherex.artifact a "+
     "JOIN spherex.plane p ON a.planeid = p.planeid "+
-    "WHERE INTERSECTS(CIRCLE('ICRS', "+ra+", "+dec+", "+radius+"), p.poly) = 1 "+
+    "WHERE 1 = CONTAINS(POINT('ICRS', "+ra+", "+dec+"), p.poly) "+
     "AND p.energy_bandpassname = 'SPHEREx-D2' "+
     "AND a.uri LIKE '%"+releasePath+"%'"+timeClause+
     " ORDER BY p.time_bounds_lower";
@@ -62,6 +62,11 @@ export async function onRequest({request}) {
     });
     const xml=await response.text();
     if(!response.ok)return json({error:"IRSA SPHEREx TAP query failed.",detail:"IRSA TAP returned HTTP "+response.status},502);
+    const queryError=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
+    if(queryError){
+      const detail=queryError[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,500);
+      return json({error:"IRSA rejected the SPHEREx archive query.",detail:detail||"The TAP service reported a query error."},502);
+    }
     if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml)){
       const detail=xml.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,500);
       return json({error:"IRSA TAP returned an unexpected response.",detail},502);
