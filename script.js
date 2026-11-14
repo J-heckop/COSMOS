@@ -161,13 +161,11 @@ const timeForm = document.querySelector("#time-compare-form");
 if (timeForm) {
   const timeStatus = document.querySelector("#time-status");
   const timeButton = document.querySelector("#time-submit");
-  const dateInputs = ["#date-a-start", "#date-a-end", "#date-b-start", "#date-b-end"].map(selector => document.querySelector(selector));
+  const dateA = document.querySelector("#date-a");
+  const dateB = document.querySelector("#date-b");
+  const discoverButton = document.querySelector("#discover-dates");
   const today = new Date().toISOString().slice(0, 10);
-  dateInputs.forEach(input => input.max = today);
-  dateInputs[0].value = "2025-05-01";
-  dateInputs[1].value = "2025-06-01";
-  dateInputs[2].value = "2025-11-01";
-  dateInputs[3].value = "2025-12-01";
+  let discoveredDates = [];
 
   function timeSafeText(value, fallback = "Not supplied") {
     return value && value !== "null" && value !== "undefined" ? value : fallback;
@@ -190,6 +188,66 @@ if (timeForm) {
   function dateLabel(value) {
     return new Date(value + "T00:00:00Z").toLocaleDateString(undefined, {year:"numeric",month:"short",day:"numeric",timeZone:"UTC"});
   }
+  function fillDateSelect(select, dates, selected) {
+    select.replaceChildren();
+    dates.forEach(date => {
+      const option = document.createElement("option");
+      option.value = date;
+      option.textContent = dateLabel(date);
+      select.append(option);
+    });
+    select.disabled = dates.length === 0;
+    if (selected && dates.includes(selected)) select.value = selected;
+  }
+  discoverButton.addEventListener("click", async () => {
+    const ra = Number(document.querySelector("#ra-input").value);
+    const dec = Number(document.querySelector("#dec-input").value);
+    const radius = Number(document.querySelector("#radius-input").value);
+    if (!Number.isFinite(ra) || ra < 0 || ra > 360 || !Number.isFinite(dec) || dec < -90 || dec > 90) {
+      timeStatus.textContent = "Enter valid RA and Dec coordinates in the archive search above first.";
+      timeStatus.className = "archive-status error";
+      return;
+    }
+    discoverButton.disabled = true;
+    discoverButton.textContent = "Discovering archive dates…";
+    timeStatus.textContent = "Checking the official SPHEREx archive for observation timestamps at this position…";
+    timeStatus.className = "archive-status";
+    try {
+      const url = new URL("/api/spherex", window.location.origin);
+      url.search = new URLSearchParams({ra:String(ra),dec:String(dec),radius:String(radius)}).toString();
+      const response = await fetch(url);
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.detail || payload.error || "Archive query failed.");
+      const records = payload.results.flatMap(result => timeParseVOTable(result.xml));
+      const unique = new Map();
+      records.forEach(row => {
+        const mjd = Number(row.t_min);
+        if (!Number.isFinite(mjd) || mjd <= 0) return;
+        const date = new Date((mjd - 40587) * 86400000).toISOString().slice(0,10);
+        if (date >= "2025-05-01" && date <= today) unique.set(date, date);
+      });
+      discoveredDates = [...unique.keys()].sort();
+      fillDateSelect(dateA, discoveredDates, discoveredDates[0]);
+      fillDateSelect(dateB, discoveredDates, discoveredDates.length > 1 ? discoveredDates[discoveredDates.length - 1] : discoveredDates[0]);
+      timeButton.disabled = discoveredDates.length < 2;
+      if (discoveredDates.length >= 2) {
+        timeStatus.textContent = "Found " + records.length + " archive record(s) across " + discoveredDates.length + " distinct observation date(s). Choose two dates to compare.";
+        timeStatus.className = "archive-status success";
+      } else if (discoveredDates.length === 1) {
+        timeStatus.textContent = "The archive returned observations on only one distinct date for this position. A date-to-date comparison needs at least two dates.";
+        timeStatus.className = "archive-status";
+      } else {
+        timeStatus.textContent = "No dated observations were returned for this position. Try a wider search radius or another sky position.";
+        timeStatus.className = "archive-status";
+      }
+    } catch (error) {
+      timeStatus.textContent = "Could not discover observation dates: " + error.message;
+      timeStatus.className = "archive-status error";
+    } finally {
+      discoverButton.disabled = false;
+      discoverButton.textContent = "Find available observation dates";
+    }
+  });
   function setImageMessage(period, message) {
     const canvas = document.querySelector("#image-" + period);
     const placeholder = document.querySelector("#image-" + period + "-placeholder");
@@ -422,24 +480,25 @@ if (timeForm) {
     const ra = Number(document.querySelector("#ra-input").value);
     const dec = Number(document.querySelector("#dec-input").value);
     const radius = Number(document.querySelector("#radius-input").value);
-    const [aStart,aEnd,bStart,bEnd] = dateInputs.map(input => input.value);
+    const aDate = dateA.value;
+    const bDate = dateB.value;
     if (!Number.isFinite(ra) || !Number.isFinite(dec) || ra < 0 || ra > 360 || dec < -90 || dec > 90) {
       timeStatus.textContent = "Enter valid RA and Dec coordinates in the archive search above first.";
       timeStatus.className = "archive-status error";
       return;
     }
-    if (dateInputs.some(input => !input.value) || aStart > aEnd || bStart > bEnd || aStart < "2025-05-01" || bStart < "2025-05-01" || aEnd > today || bEnd > today) {
-      timeStatus.textContent = "Check the dates: start must be before end, dates must be from 1 May 2025 onwards, and not in the future.";
+    if (!aDate || !bDate || !discoveredDates.includes(aDate) || !discoveredDates.includes(bDate)) {
+      timeStatus.textContent = "Discover available observation dates first.";
       timeStatus.className = "archive-status error";
       return;
     }
-    if (!(aEnd < bStart || bEnd < aStart)) {
-      timeStatus.textContent = "Choose two separate date windows so Period A and Period B do not overlap.";
+    if (aDate === bDate) {
+      timeStatus.textContent = "Choose two different observation dates to compare.";
       timeStatus.className = "archive-status error";
       return;
     }
-    document.querySelector("#period-a-label").textContent = dateLabel(aStart) + " – " + dateLabel(aEnd);
-    document.querySelector("#period-b-label").textContent = dateLabel(bStart) + " – " + dateLabel(bEnd);
+    document.querySelector("#period-a-label").textContent = dateLabel(aDate);
+    document.querySelector("#period-b-label").textContent = dateLabel(bDate);
     const outputA = document.querySelector("#period-a-results");
     const outputB = document.querySelector("#period-b-results");
     outputA.replaceChildren(); outputB.replaceChildren();
@@ -466,7 +525,7 @@ if (timeForm) {
       return [...unique.values()];
     }
     try {
-      const [a,b] = await Promise.all([queryWindow(aStart,aEnd),queryWindow(bStart,bEnd)]);
+      const [a,b] = await Promise.all([queryWindow(aDate,aDate),queryWindow(bDate,bDate)]);
       appendTimeRecords(outputA,a.map(x=>x.row),"DR1 / QR3");
       appendTimeRecords(outputB,b.map(x=>x.row),"DR1 / QR3");
       // Keep the comparison fast: never download or parse FITS images during metadata search.
