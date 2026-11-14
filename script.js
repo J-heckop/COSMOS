@@ -340,7 +340,7 @@ if (timeForm) {
     try {
       const url = new URL("/api/spherex", window.location.origin);
       url.search = new URLSearchParams({ra:String(ra),dec:String(dec),radius:String(radius),collection:document.querySelector("#collection-input")?.value || "spherex_qr3",maxrec:String(archiveMaxRecords)}).toString();
-      const response = await fetch(url, {signal: AbortSignal.timeout(30000)});
+      const response = await fetch(url, {signal: AbortSignal.timeout(65000)});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive query failed.");
       const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml));      if (loadMoreDatesButton) {
@@ -643,7 +643,7 @@ if (timeForm) {
       try {
         const url = new URL("/api/spherex", window.location.origin);
         url.search = new URLSearchParams({ra:String(ra),dec:String(dec),radius:String(radius),collection:document.querySelector("#collection-input")?.value || "spherex_qr3",maxrec:"12"}).toString();
-        const response = await fetch(url,{signal:AbortSignal.timeout(23000)});
+        const response = await fetch(url,{signal:AbortSignal.timeout(65000)});
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.detail || payload.error || "Archive proxy failed");
         const sets = (payload.results || []).map(result => ({collection:result.collection,rows:parseVOTable(result.xml)}));
