@@ -94,7 +94,7 @@ if (archiveForm) {
           const title = document.createElement("strong");
           title.textContent = safeText(row.obs_id, "SPHEREx observation " + (index + 1));
           const meta = document.createElement("span");
-          const band = timeSafeText(row.band, "Band not listed");
+          const band = safeText(row.band, "Band not listed");
           const date = row.t_min ? " · MJD " + row.t_min : "";
           meta.textContent = row._collection.toUpperCase() + " · " + band + date;
           details.append(title, meta);
@@ -108,7 +108,7 @@ if (archiveForm) {
         });
       }
     } catch (error) {
-      setArchiveStatus("The direct archive query could not be read in this browser (" + error.message + "). You can still run the same coordinate search in IRSA's official SPHEREx Explorer using the button below.", "error");
+      setArchiveStatus("The Vercel archive proxy could not complete the query (" + error.message + "). You can still run the same coordinate search in IRSA's official SPHEREx Explorer using the button below.", "error");
     } finally {
       submitButton.disabled = false;
       submitButton.innerHTML = 'Search SPHEREx <span>→</span>';
