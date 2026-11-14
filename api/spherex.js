@@ -69,7 +69,7 @@ module.exports = async function handler(req, res) {
       if (!response.ok) {
         return { ok: false, collection: job.collection, period: job.range && job.range.label, error: "IRSA SIA2 returned HTTP " + response.status };
       }
-      if (!/<(?:[A-Za-z0-9_]+:)?VOTABLE\\b/i.test(xml)) {
+      if (!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml)) {
         return { ok: false, collection: job.collection, period: job.range && job.range.label, error: "IRSA returned an unexpected SIA2 response." };
       }
       return { ok: true, collection: job.collection, period: job.range && job.range.label, xml };
