@@ -11,7 +11,7 @@ function json(body,status=200){
   });
 }
 const IRSA="https://irsa.ipac.caltech.edu";
-async function queryCollection(collection,ra,dec,radius,range,requestedBand){
+async function queryCollection(collection,ra,dec,radius,range){
   const params=new URLSearchParams({
     COLLECTION:collection,
     POS:"CIRCLE "+ra+" "+dec+" "+radius,
@@ -19,30 +19,35 @@ async function queryCollection(collection,ra,dec,radius,range,requestedBand){
     RESPONSEFORMAT:"VOTABLE"
   });
   if(range) params.set("TIME",range.start+" "+range.end);
-  let lastError=null;
-  for(let attempt=0;attempt<2;attempt++){
+  const hosts=["https://irsa.ipac.caltech.edu","https://irsawebops2.ipac.caltech.edu"];
+  let lastError="No response from IRSA";
+  // Try the primary archive, then IRSA's alternate image-server host.
+  for(const host of hosts){
     try{
-      const response=await fetch(IRSA+"/SIA?"+params.toString(),{
+      const response=await fetch(host+"/SIA?"+params.toString(),{
         headers:{Accept:"application/x-votable+xml, application/xml, text/xml"},
-        signal:AbortSignal.timeout(15000)
+        signal:AbortSignal.timeout(10000)
       });
       const xml=await response.text();
-      if(response.status===502||response.status===503||response.status===504){
-        lastError="IRSA SIA2 returned HTTP "+response.status;
-        if(attempt===0) await new Promise(resolve=>setTimeout(resolve,500));
+      if(!response.ok){
+        lastError=host+" returned HTTP "+response.status;
         continue;
       }
-      if(!response.ok) throw new Error("IRSA SIA2 returned HTTP "+response.status);
-      if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml)) throw new Error("IRSA SIA2 returned an unexpected response for "+collection+".");
-      const error=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
-      if(error) throw new Error(error[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400)||"IRSA rejected the image query.");
-      return {collection,period:range?.label||null,xml};
+      if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\\b/i.test(xml)){
+        lastError=host+" returned a non-VOTable response";
+        continue;
+      }
+      const error=xml.match(/<INFO\\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\\s\\S]*?)<\\/INFO>/i);
+      if(error){
+        lastError=error[1].replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim().slice(0,400)||"IRSA rejected the image query";
+        continue;
+      }
+      return {collection,period:range?.label||null,xml,archiveHost:host};
     }catch(error){
-      lastError=error?.name==="TimeoutError"?"IRSA SIA2 timed out":error?.message||"IRSA query failed";
-      if(attempt===0) await new Promise(resolve=>setTimeout(resolve,500));
+      lastError=error?.name==="TimeoutError"?host+" timed out":(error?.message||"IRSA request failed");
     }
   }
-  throw new Error(lastError||"IRSA SIA2 failed");
+  throw new Error(lastError);
 }
 export async function onRequest({request}){
   if(request.method!=="GET") return json({error:"Use GET for archive searches."},405);
