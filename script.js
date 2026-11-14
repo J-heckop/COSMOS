@@ -562,3 +562,136 @@ if (timeForm) {
     }
   });
 }
+
+
+/* COSMOS Discovery Lab: visual comparison and clearly labelled learning tools. */
+(() => {
+  const byId = id => document.getElementById(id);
+  const imageA = byId("image-a"), imageB = byId("image-b");
+  if (!imageA || !imageB || !byId("sky-lab")) return;
+  const blinkA = byId("blink-a"), blinkB = byId("blink-b");
+  const blinkStatus = byId("blink-status");
+  const wipeCanvas = byId("wipe-canvas"), wipeRange = byId("wipe-range");
+  let blinkPeriod = "a", blinkTimer = null;
+
+  function hasImage(canvas) { return canvas.width > 0 && canvas.height > 0; }
+  function syncLab() {
+    const ready = hasImage(imageA) && hasImage(imageB);
+    blinkA.disabled = blinkB.disabled = !ready;
+    wipeRange.disabled = !ready;
+    byId("wipe-empty").hidden = ready;
+    if (ready) drawWipe();
+    else { wipeCanvas.width = 0; wipeCanvas.height = 0; }
+    if (!ready) blinkStatus.textContent = "Load both FITS previews to activate the blink comparator.";
+  }
+  function showPeriod(which) {
+    blinkPeriod = which;
+    imageA.closest(".image-pane").classList.toggle("blink-muted", which !== "a");
+    imageB.closest(".image-pane").classList.toggle("blink-muted", which !== "b");
+    blinkStatus.textContent = "Currently highlighting Period " + which.toUpperCase() + ".";
+  }
+  blinkA.addEventListener("click", () => showPeriod("a"));
+  blinkB.addEventListener("click", () => showPeriod("b"));
+  function drawWipe() {
+    if (!hasImage(imageA) || !hasImage(imageB)) return;
+    const width = Math.max(imageA.width,imageB.width), height = Math.max(imageA.height,imageB.height);
+    wipeCanvas.width = width; wipeCanvas.height = height;
+    const ctx = wipeCanvas.getContext("2d");
+    ctx.fillStyle = "#05070c"; ctx.fillRect(0,0,width,height);
+    ctx.drawImage(imageB,0,0,width,height);
+    ctx.save(); ctx.beginPath(); ctx.rect(0,0,width*Number(wipeRange.value)/100,height); ctx.clip();
+    ctx.drawImage(imageA,0,0,width,height); ctx.restore();
+    const x=width*Number(wipeRange.value)/100;
+    ctx.strokeStyle="#ffd27a";ctx.lineWidth=Math.max(2,width/300);ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,height);ctx.stroke();
+  }
+  wipeRange.addEventListener("input",drawWipe);
+  const observer = new MutationObserver(syncLab);
+  observer.observe(imageA,{attributes:true,attributeFilter:["width","height"]});
+  observer.observe(imageB,{attributes:true,attributeFilter:["width","height"]});
+  const originalPutImageData = CanvasRenderingContext2D.prototype.putImageData;
+  // Poll-free refresh after the FITS canvases have rendered: their image status changes.
+  ["image-a-status","image-b-status"].forEach(id => {
+    const node=byId(id); if(node) new MutationObserver(syncLab).observe(node,{childList:true,characterData:true,subtree:true});
+  });
+  window.addEventListener("resize",drawWipe);
+  const dates = () => [...byId("date-a").options].map(o=>o.value).filter(Boolean);
+  const timeline = byId("timeline-range");
+  const timelineReadout = byId("timeline-readout");
+  function updateTimeline() {
+    const list=dates();
+    timeline.max=Math.max(0,list.length-1);
+    timeline.disabled=list.length===0;
+    if(list.length){timeline.value=list.length-1;timelineReadout.textContent="Selected archive date: "+list[Number(timeline.value)];}
+    else timelineReadout.textContent="Discover dates to build your timeline.";
+    byId("timeline-compare").disabled=list.length<2;
+  }
+  timeline.addEventListener("input",()=>{
+    const list=dates(), date=list[Number(timeline.value)];
+    if(date) timelineReadout.textContent="Selected archive date: "+date;
+  });
+  byId("timeline-compare").addEventListener("click",()=>{
+    const list=dates(), date=list[Number(timeline.value)];
+    if(!date) return;
+    byId("date-b").value=date;
+    byId("time-status").textContent="Period B set to "+date+". Press Compare observations to load its archive records.";
+    byId("time-status").className="archive-status";
+    byId("time-compare-form").scrollIntoView({behavior:"smooth",block:"center"});
+  });
+  const dateObserver=new MutationObserver(updateTimeline);
+  dateObserver.observe(byId("date-a"),{childList:true});
+  byId("date-a").addEventListener("change",updateTimeline);
+
+  function drawSpectrum() {
+    const canvas=byId("spectrum-canvas"), rect=canvas.getBoundingClientRect();
+    const dpr=Math.min(window.devicePixelRatio||1,2), w=Math.max(320,Math.floor(rect.width*dpr)), h=Math.max(120,Math.floor(rect.height*dpr));
+    canvas.width=w;canvas.height=h;
+    const ctx=canvas.getContext("2d");ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle="rgba(255,210,122,.15)";ctx.lineWidth=1;
+    for(let i=1;i<4;i++){const y=h*i/4;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+    const values=Array.from({length:102},(_,i)=>{
+      const x=i/101;
+      return .18+.48*Math.exp(-Math.pow((x-.32)/.17,2))+.25*Math.exp(-Math.pow((x-.76)/.1,2))+.035*Math.sin(i*.42)+.02*Math.cos(i*.17);
+    });
+    ctx.beginPath();
+    values.forEach((v,i)=>{const x=i/(values.length-1)*w,y=h-(.08+v*.78)*h;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+    ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.closePath();
+    const grad=ctx.createLinearGradient(0,0,0,h);grad.addColorStop(0,"rgba(255,190,80,.36)");grad.addColorStop(1,"rgba(255,190,80,0)");
+    ctx.fillStyle=grad;ctx.fill();
+    ctx.beginPath();values.forEach((v,i)=>{const x=i/101*w,y=h-(.08+v*.78)*h;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+    ctx.strokeStyle="#ffd27a";ctx.lineWidth=2*dpr;ctx.stroke();
+  }
+  drawSpectrum();window.addEventListener("resize",drawSpectrum);
+
+  function refreshTarget(){
+    byId("target-ra").textContent=byId("ra-input").value||"—";
+    byId("target-dec").textContent=byId("dec-input").value||"—";
+    byId("target-radius").textContent=byId("radius-input").selectedOptions[0]?.textContent||"—";
+  }
+  byId("refresh-target").addEventListener("click",refreshTarget);
+  ["ra-input","dec-input","radius-input"].forEach(id=>byId(id).addEventListener("change",refreshTarget));
+  refreshTarget();
+  const storageKey="cosmos-discovery-log-v1";
+  function readLog(){try{return JSON.parse(localStorage.getItem(storageKey)||"[]").slice(0,20);}catch{return [];}}
+  function renderLog(){
+    const list=byId("discovery-list");list.replaceChildren();
+    readLog().forEach(entry=>{
+      const card=document.createElement("div");card.className="discovery-entry";
+      const note=document.createElement("div");note.textContent=entry.note;
+      const meta=document.createElement("small");meta.textContent=entry.name+" · RA "+entry.ra+" · Dec "+entry.dec+" · "+entry.date;
+      card.append(note,meta);list.append(card);
+    });
+  }
+  byId("save-discovery").addEventListener("click",()=>{
+    const note=byId("discovery-note").value.trim();
+    if(!note){byId("discovery-status").textContent="Add a short observation note first.";return;}
+    const entry={note,name:byId("target-name").value.trim()||"Unnamed sky region",ra:byId("ra-input").value||"—",dec:byId("dec-input").value||"—",date:new Date().toLocaleString()};
+    const log=readLog();log.unshift(entry);
+    try{localStorage.setItem(storageKey,JSON.stringify(log.slice(0,20)));byId("discovery-note").value="";byId("discovery-status").textContent="Saved in this browser. You can revisit this log on this device.";renderLog();}
+    catch{byId("discovery-status").textContent="This browser could not save the log. Check its local storage settings.";}
+  });
+  renderLog();
+  // Keep the wipe and blink tools in sync whenever a preview canvas is cleared or drawn.
+  const imageStatusObserver=new MutationObserver(syncLab);
+  [byId("image-a-status"),byId("image-b-status")].forEach(node=>node&&imageStatusObserver.observe(node,{childList:true,characterData:true,subtree:true}));
+  syncLab();updateTimeline();
+})();
