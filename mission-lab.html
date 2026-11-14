@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box}body{margin:0;background:#070b14;color:#e2e8f0;font-family:Inter,sans-serif}button,select,input{font:inherit}button,select{cursor:pointer}.mono{font-family:"JetBrains Mono",monospace}.panel{background:rgba(12,18,32,.91);border:1px solid rgba(56,189,248,.17);backdrop-filter:blur(12px)}.tab{border:1px solid transparent;color:#94a3b8}.tab.active{background:rgba(0,229,255,.13);border-color:rgba(0,229,255,.4);color:#a5f3fc}.control{background:#070b14;border:1px solid #26364f;border-radius:11px;color:#cbd5e1;padding:9px 11px}.action{border:1px solid #334155;background:#172338;color:#dbeafe;border-radius:11px;padding:9px 13px}.action.active{background:#0e4855;border-color:#06b6d4;color:#a5f3fc}.sky-wrap{height:min(64vh,620px);min-height:390px;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,#101f33,#050a13 72%);border:1px solid #26364f;border-radius:18px}.sky-wrap canvas{width:100%;height:100%;display:block}.hud{position:absolute;top:12px;left:12px;right:12px;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none}.hud span{background:#0b1422df;border:1px solid #334155;border-radius:9px;padding:7px 9px;font:10px "JetBrains Mono",monospace;color:#a5f3fc}.sky-toast{position:absolute;left:12px;right:12px;bottom:12px;background:#0b1422e8;border:1px solid #334155;border-radius:10px;padding:10px;font-size:12px;color:#cbd5e1}.range{accent-color:#00e5ff;width:100%}.small-label{font:10px "JetBrains Mono",monospace;letter-spacing:.13em;color:#94a3b8}.metric{color:#67e8f9}.hide{display:none!important}@media(max-width:700px){.sky-wrap{height:440px;min-height:360px}.header-inner{align-items:flex-start;flex-direction:column}.top-controls{width:100%}.mode-tabs{overflow-x:auto}.epoch-row{display:grid;grid-template-columns:1fr}.epoch-row select{width:100%}.band-labels span:nth-child(2),.band-labels span:nth-child(4){display:none}}
+*{box-sizing:border-box}body{margin:0;background:#070b14;color:#e2e8f0;font-family:Inter,sans-serif}button,select,input{font:inherit}button,select{cursor:pointer}.mono{font-family:"JetBrains Mono",monospace}.panel{background:rgba(12,18,32,.91);border:1px solid rgba(56,189,248,.17);backdrop-filter:blur(12px)}.tab{border:1px solid transparent;color:#94a3b8}.tab.active{background:rgba(0,229,255,.13);border-color:rgba(0,229,255,.4);color:#a5f3fc}.control{background:#070b14;border:1px solid #26364f;border-radius:11px;color:#cbd5e1;padding:9px 11px}.action{border:1px solid #334155;background:#172338;color:#dbeafe;border-radius:11px;padding:9px 13px}.action.active{background:#0e4855;border-color:#06b6d4;color:#a5f3fc}.sky-wrap{height:min(64vh,620px);min-height:390px;position:relative;overflow:hidden;background:radial-gradient(ellipse at 24% 32%,rgba(91,55,117,.28),transparent 34%),radial-gradient(ellipse at 72% 64%,rgba(30,91,116,.22),transparent 38%),radial-gradient(ellipse at 52% 46%,#101a2d 0%,#070d19 55%,#02050b 100%);border:1px solid #26364f;border-radius:18px;box-shadow:inset 0 0 90px rgba(0,0,0,.55)}.sky-wrap canvas{width:100%;height:100%;display:block}.hud{position:absolute;top:12px;left:12px;right:12px;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none}.hud span{background:#0b1422df;border:1px solid #334155;border-radius:9px;padding:7px 9px;font:10px "JetBrains Mono",monospace;color:#a5f3fc}.sky-toast{position:absolute;left:12px;right:12px;bottom:12px;background:#0b1422e8;border:1px solid #334155;border-radius:10px;padding:10px;font-size:12px;color:#cbd5e1}.range{accent-color:#00e5ff;width:100%}.small-label{font:10px "JetBrains Mono",monospace;letter-spacing:.13em;color:#94a3b8}.metric{color:#67e8f9}.hide{display:none!important}@media(max-width:700px){.sky-wrap{height:440px;min-height:360px}.header-inner{align-items:flex-start;flex-direction:column}.top-controls{width:100%}.mode-tabs{overflow-x:auto}.epoch-row{display:grid;grid-template-columns:1fr}.epoch-row select{width:100%}.band-labels span:nth-child(2),.band-labels span:nth-child(4){display:none}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -85,9 +85,9 @@
   </div>
   <div class="sky-wrap" id="skyWrap">
    <canvas id="skyCanvas" aria-label="Illustrative simulated star field"></canvas>
-   <div class="hud"><span id="hudSector">SEC-04 · ECLIPTIC PLANE</span><span id="hudBand">2.15 µm · BAND 042</span><span>SIMULATED LEARNING FIELD</span></div>
+   <div class="hud"><span id="hudSector">SEC-04 · ECLIPTIC PLANE</span><span id="hudBand">2.15 µm · BAND 042</span><span>ILLUSTRATIVE DEEP-SPACE BACKDROP</span></div>
    <div class="absolute right-3 top-16 flex flex-col gap-2"><button id="zoomIn" class="action w-10 h-10 text-lg">+</button><button id="zoomOut" class="action w-10 h-10 text-lg">−</button><button id="reset" class="action w-10 h-10">↻</button></div>
-   <div id="toast" class="sky-toast">Select a source below to inspect its illustrative properties. This canvas is a simulation. Use the Live SPHEREx Archive panel above for real observations.</div>
+   <div id="toast" class="sky-toast">Illustrative deep-space scene · source positions and epoch changes are simulated. Use the Live SPHEREx Archive panel above to inspect real observations.</div>
   </div>
   <div class="panel rounded-2xl p-4">
    <div class="flex justify-between items-center gap-2"><h2 class="font-semibold">Near-infrared wavelength filter</h2><span class="small-label">102 BAND MODEL</span></div>
@@ -288,9 +288,33 @@
  const epochNames=['E1 · H1 2025','E2 · H2 2025','E3 · H1 2026','E4 · H2 2026'];
  function resize(){const r=canvas.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,1.5);width=r.width;height=r.height;canvas.width=Math.round(width*d);canvas.height=Math.round(height*d);ctx.setTransform(d,0,0,d,0,0);stars=Array.from({length:Math.max(100,Math.min(260,Math.round(width*height/2300)))},()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.25+.25,a:Math.random()*.65+.15,t:Math.random()*6.28}));}
  function pos(s,e){return {x:s.x+s.dx*e,y:s.y+s.dy*e}}
- function drawStars(){for(const s of stars){ctx.globalAlpha=s.a*(.75+.25*Math.sin(performance.now()*.0007+s.t));ctx.fillStyle='#b7d9ef';ctx.beginPath();ctx.arc(s.x*width,s.y*height,s.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1}
+ function drawNebula(){
+  // Decorative procedural nebula layers: atmosphere only, never scientific data.
+  const clouds=[
+   [.20,.27,.44,.30,'rgba(115,65,139,.16)'],
+   [.72,.58,.48,.34,'rgba(27,111,139,.13)'],
+   [.48,.82,.38,.22,'rgba(167,91,83,.07)'],
+   [.83,.18,.24,.18,'rgba(79,82,153,.08)']
+  ];
+  clouds.forEach(([x,y,rx,ry,color])=>{
+   const g=ctx.createRadialGradient(x*width,y*height,0,x*width,y*height,Math.max(rx*width,ry*height));
+   g.addColorStop(0,color);g.addColorStop(.48,color.replace(/\.\d+\)/,'.045)'));g.addColorStop(1,'rgba(0,0,0,0)');
+   ctx.fillStyle=g;ctx.fillRect(0,0,width,height);
+  });
+ }
+ function drawStars(){
+  for(const s of stars){
+   const twinkle=.72+.28*Math.sin(performance.now()*.00045+s.t);
+   ctx.globalAlpha=s.a*twinkle;
+   ctx.fillStyle=s.r>1.05?'#f5e8d2':'#c8d8ed';
+   ctx.shadowBlur=s.r>1.05?9:2;ctx.shadowColor='#b8d7ee';
+   ctx.beginPath();ctx.arc(s.x*width,s.y*height,s.r,0,Math.PI*2);ctx.fill();
+   if(s.r>1.15){ctx.globalAlpha*=.35;ctx.fillRect(s.x*width-5,s.y*height,.5+10,0.7);ctx.fillRect(s.x*width,s.y*height-5,.7,.5+10)}
+  }
+  ctx.shadowBlur=0;ctx.globalAlpha=1;
+ }
  function drawSources(e,color='#e7f7ff',offset=0){sources.forEach((s,i)=>{const p=pos(s,e);const x=(p.x-.5)*width*zoom+width/2,y=(p.y-.5)*height*zoom+height/2;ctx.save();ctx.shadowBlur=selected===i?22:12;ctx.shadowColor=color;ctx.fillStyle=color;ctx.globalAlpha=.9;ctx.beginPath();ctx.arc(x,y,selected===i?4.5:2.8,0,Math.PI*2);ctx.fill();ctx.globalAlpha=.55;ctx.fillRect(x-9,y,18,1);ctx.fillRect(x,y-9,1,18);ctx.restore();})}
- function frame(){ctx.clearRect(0,0,width,height);drawStars();if(mode==='rgb'){drawSources(+$('epochA').value,'#22d3ee');drawSources(+$('epochB').value,'#f59e0b')}else if(mode==='split'){const cut=width*wipe/100;ctx.save();ctx.beginPath();ctx.rect(0,0,cut,height);ctx.clip();drawSources(+$('epochA').value,'#67e8f9');ctx.restore();ctx.save();ctx.beginPath();ctx.rect(cut,0,width-cut,height);ctx.clip();drawSources(+$('epochB').value,'#fbbf24');ctx.restore();ctx.strokeStyle='#f8fafc';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cut,0);ctx.lineTo(cut,height);ctx.stroke()}else{const e=mode==='scrub'?+$('timeline').value:epoch;drawSources(e,e===+$('epochA').value?'#67e8f9':'#fbbf24')}requestAnimationFrame(frame)}
+ function frame(){ctx.clearRect(0,0,width,height);drawNebula();drawStars();if(mode==='rgb'){drawSources(+$('epochA').value,'#22d3ee');drawSources(+$('epochB').value,'#f59e0b')}else if(mode==='split'){const cut=width*wipe/100;ctx.save();ctx.beginPath();ctx.rect(0,0,cut,height);ctx.clip();drawSources(+$('epochA').value,'#67e8f9');ctx.restore();ctx.save();ctx.beginPath();ctx.rect(cut,0,width-cut,height);ctx.clip();drawSources(+$('epochB').value,'#fbbf24');ctx.restore();ctx.strokeStyle='#f8fafc';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cut,0);ctx.lineTo(cut,height);ctx.stroke()}else{const e=mode==='scrub'?+$('timeline').value:epoch;drawSources(e,e===+$('epochA').value?'#67e8f9':'#fbbf24')}requestAnimationFrame(frame)}
  function updateSource(i){selected=i;if(i<0)return;const s=sources[i],a=pos(s,+$('epochA').value),b=pos(s,+$('epochB').value);$('sourceId').textContent='SRC-'+String(i+1).padStart(2,'0');$('sourceName').textContent=s.name+' · illustrative object';$('sourceType').textContent=s.type;$('sourcePosA').textContent=(a.x*100).toFixed(1)+'%, '+(a.y*100).toFixed(1)+'%';$('sourcePosB').textContent=(b.x*100).toFixed(1)+'%, '+(b.y*100).toFixed(1)+'%';$('sourceBand').textContent=(.75+(band-1)*4.25/101).toFixed(2)+' µm';$('toast').textContent=s.name+' selected. These coordinates are simulated for demonstration.'}
  function setMode(m){mode=m;document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));['blink','split','rgb','scrub'].forEach(k=>$((k==='blink'?'blink':k)+'Controls').classList.toggle('hide',k!==m));$('epochPairControls')?.classList.toggle('hide',m==='scrub');$('toast').textContent=({blink:'Blink mode alternates between the selected illustrative epochs.',split:'Move the wipe slider to reveal each simulated epoch.',rgb:'Cyan and amber show simulated source positions in two epochs.',scrub:'Scrub through four illustrative survey epochs.'})[m]}
  document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
