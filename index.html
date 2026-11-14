@@ -60,7 +60,13 @@
         <div class="object-lookup">
           <label for="object-name-input">Search by object name</label>
           <div class="object-lookup-row"><input id="object-name-input" type="search" maxlength="100" placeholder="Try Andromeda, Orion Nebula, Sirius…" autocomplete="off"><button type="button" id="resolve-object" class="button secondary">Find coordinates</button></div>
-          <small>We'll look up its astronomical position and fill RA and Dec for you.</small>
+          <small>Search a familiar object instead of entering coordinates manually. COSMOS will find its sky position and fill RA and Dec.</small>
+          <div class="object-suggestions" aria-label="Popular astronomical object examples">
+            <button type="button" data-object-name="Andromeda Galaxy">Andromeda</button>
+            <button type="button" data-object-name="Orion Nebula">Orion Nebula</button>
+            <button type="button" data-object-name="Pleiades">Pleiades</button>
+            <button type="button" data-object-name="Sirius">Sirius</button>
+          </div>
         </div>
         <form id="archive-form" class="coordinate-form">
           <label>Right ascension (RA)<input id="ra-input" type="number" min="0" max="360" step="any" placeholder="e.g. 10.6847" required><small>Degrees · 0 to 360</small></label>
