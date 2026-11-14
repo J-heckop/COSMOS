@@ -15,7 +15,6 @@ async function queryCollection(collection,ra,dec,radius,range,requestedBand){
   const params=new URLSearchParams({
     COLLECTION:collection,
     POS:"CIRCLE "+ra+" "+dec+" "+radius,
-    DPTYPE:"image",
     MAXREC:"150",
     RESPONSEFORMAT:"VOTABLE"
   });
@@ -25,7 +24,7 @@ async function queryCollection(collection,ra,dec,radius,range,requestedBand){
     try{
       const response=await fetch(IRSA+"/SIA?"+params.toString(),{
         headers:{Accept:"application/x-votable+xml, application/xml, text/xml"},
-        signal:AbortSignal.timeout(8000)
+        signal:AbortSignal.timeout(15000)
       });
       const xml=await response.text();
       if(response.status===502||response.status===503||response.status===504){
