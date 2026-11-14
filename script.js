@@ -82,12 +82,12 @@ if (archiveForm) {
     resultsBox.replaceChildren();
     submitButton.disabled = true;
     submitButton.textContent = "Searching archive…";
-    setArchiveStatus("Querying NASA/IPAC IRSA for SPHEREx observations near " + ra + "°, " + dec + "°.");
+    setArchiveStatus("Searching IRSA SIA2 for SPHEREx observations near " + ra + "°, " + dec + "°.");
 
     try {
       const proxyUrl = new URL("/api/spherex", window.location.origin);
       proxyUrl.search = new URLSearchParams({ra:String(ra), dec:String(dec), radius:String(radius)}).toString();
-      const response = await fetch(proxyUrl);
+      const response = await fetch(proxyUrl, {signal: AbortSignal.timeout(55000)});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive proxy failed");
       const responses = (payload.results || []).map(result => ({collection:result.collection, rows:parseVOTable(result.xml)}));
@@ -97,7 +97,7 @@ if (archiveForm) {
           ? "The archive search was incomplete: no rows came back from the responding collection, and another collection failed. Please retry in a moment."
           : "No matching public observations were returned for this position and radius. Try a larger radius or open the official IRSA explorer.", payload.errors && payload.errors.length ? "error" : "success");
       } else {
-        setArchiveStatus("Found " + allRows.length + " archive result(s). These are real archive records; open a data link to inspect a file." + (payload.errors && payload.errors.length ? " Note: one archive collection did not respond, so these results may be partial." : ""), "success");
+        setArchiveStatus("Found " + allRows.length + " archive result(s). These are real archive records from IRSA SIA2; open a data link to inspect a file." + (payload.errors && payload.errors.length ? " Note: one archive collection did not respond, so these results may be partial." : ""), "success");
         allRows.slice(0, 30).forEach((row, index) => {
           const card = document.createElement("article");
           card.className = "archive-result";
