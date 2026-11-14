@@ -83,6 +83,13 @@
       <div class="time-machine-panel">
         <div class="live-heading"><div><span class="eyebrow">COSMIC TIME MACHINE</span><h3>Did the sky change?</h3><p>Search the same sky position in two different date windows. COSMOS compares real SPHEREx archive observations and links each result to its original data.</p></div><span class="live-tag"><i></i> TIME COMPARISON</span></div>
         <div class="time-discovery">
+          <label class="release-picker-label" for="collection-input">SPHEREx data releases
+            <select id="collection-input">
+              <option value="both" selected>DR1 + QR3 · Combined (recommended)</option>
+              <option value="spherex_dr1">DR1 · Earlier survey data</option>
+              <option value="spherex_qr3">QR3 · Later survey data</option>
+            </select>
+          </label>
           <button class="button secondary" id="discover-dates" type="button">Find available observation dates</button>
           <p class="time-hint">COSMOS checks the official archive for this sky position and lists only dates returned by SPHEREx.</p>
           <div class="archive-loading-facts" id="archive-loading-facts" hidden role="status" aria-live="polite">
@@ -96,7 +103,7 @@
           <button class="button primary time-submit" id="time-submit" type="submit" disabled>Compare observations <span>→</span></button>
         </form>
         <div id="time-status" class="archive-status" role="status" aria-live="polite">Enter sky coordinates above, then discover the observation dates available for that position.</div>
-        <button class="button secondary load-more-dates" id="load-more-dates" type="button" hidden>Load 10 more observations <span>↓</span></button>
+        <button class="button secondary load-more-dates" id="load-more-dates" type="button" hidden>Load 500 more observations <span>↓</span></button>
         <section class="image-comparison" aria-label="SPHEREx image comparison">
           <div class="image-comparison-heading"><span class="eyebrow">REAL SPHEREx IMAGERY</span><h4>See the sky in both periods</h4><p>Compare real observations from the official SPHEREx archive.</p></div>
           <div class="image-howto" id="image-howto"><strong>Your images are not loaded yet.</strong><span>After comparing, scroll down to the observation lists. Tap <b>View sky image</b> on a record in Period A or Period B. Its image will appear in the matching panel above.</span></div>
