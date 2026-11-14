@@ -59,7 +59,7 @@ export async function onRequest({request}) {
         MAXREC:String(dateOnly?maxrec:30),
         RESPONSEFORMAT:"VOTABLE"
       });
-      if(range) params.set("TIME",range.start+" "+range.end);
+      if(range && Number.isFinite(range.start) && Number.isFinite(range.end)) params.set("TIME",range.start+" "+range.end);
       const response=await fetch("https://irsa.ipac.caltech.edu/SIA?"+params.toString(),{
         headers:{"Accept":"application/x-votable+xml, application/xml, text/xml"},
         signal:AbortSignal.timeout(18000)
