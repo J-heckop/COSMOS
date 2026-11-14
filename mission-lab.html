@@ -28,6 +28,27 @@
  </div>
 </header>
 <main class="max-w-7xl mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-3">
+
+ <section class="lg:col-span-12 panel rounded-2xl p-4 sm:p-5 flex flex-col gap-3" id="liveArchive">
+  <div class="flex flex-wrap items-start justify-between gap-2">
+   <div><div class="small-label">LIVE SPHEREX ARCHIVE · IRSA</div><h2 class="text-xl font-semibold mt-1">Explore real observations</h2><p class="text-sm text-slate-400 mt-1">Search a sky position in public DR1 and QR3 archive records, then load a real FITS preview.</p></div>
+   <span class="small-label text-emerald-300">LIVE ARCHIVE QUERY</span>
+  </div>
+  <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+   <label class="text-xs text-slate-400">Target preset<select id="liveTarget" class="control block w-full mt-1"><option value="10.6847,41.2690">Andromeda Galaxy</option><option value="83.8221,-5.3911">Orion Nebula</option><option value="56.75,24.1167">Pleiades</option><option value="266.4168,-29.0078">Galactic Centre</option><option value="custom">Custom coordinates</option></select></label>
+   <label class="text-xs text-slate-400">Right ascension (°)<input id="liveRA" class="control block w-full mt-1" type="number" min="0" max="360" step="0.0001" value="10.6847"></label>
+   <label class="text-xs text-slate-400">Declination (°)<input id="liveDec" class="control block w-full mt-1" type="number" min="-90" max="90" step="0.0001" value="41.2690"></label>
+   <label class="text-xs text-slate-400">Search radius<select id="liveRadius" class="control block w-full mt-1"><option value="0.05">3 arcmin</option><option value="0.1" selected>6 arcmin</option><option value="0.25">15 arcmin</option><option value="0.5">30 arcmin</option></select></label>
+  </div>
+  <div class="flex flex-wrap items-center gap-2"><button id="liveSearch" class="action active text-sm">⌕ Search live observations</button><span id="liveStatus" class="text-xs text-slate-400" role="status" aria-live="polite">Choose a target and search the official IRSA archive.</span></div>
+  <div id="liveResults" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"></div>
+  <div id="liveImagePanel" class="hide rounded-xl border border-slate-700 bg-slate-950 p-3">
+   <div class="flex flex-wrap justify-between gap-2"><b id="liveImageTitle" class="text-sm text-cyan-200">Selected SPHEREx observation</b><a id="liveOriginal" class="text-xs text-amber-300 underline" target="_blank" rel="noopener noreferrer">Open original FITS ↗</a></div>
+   <div class="mt-3 bg-black rounded-lg min-h-48 grid place-items-center overflow-auto"><canvas id="liveFitsCanvas" class="max-w-full h-auto"></canvas><p id="liveImagePlaceholder" class="text-xs text-slate-400 p-6">Choose an observation to load its image.</p></div>
+   <p id="liveImageStatus" class="text-xs text-slate-400 mt-2" aria-live="polite"></p>
+  </div>
+  <p class="text-xs text-slate-500">Archive metadata and FITS previews are live IRSA data. The preview uses an automatic display stretch; it is not a calibrated change-detection result. Coverage depends on the selected coordinates and released data.</p>
+ </section>
  <section class="lg:col-span-8 flex flex-col gap-3">
   <div class="panel rounded-2xl p-3 flex flex-col gap-3">
    <div class="flex flex-wrap justify-between items-center gap-2">
@@ -56,9 +77,9 @@
   </div>
   <div class="sky-wrap" id="skyWrap">
    <canvas id="skyCanvas" aria-label="Illustrative simulated star field"></canvas>
-   <div class="hud"><span id="hudSector">SEC-04 · ECLIPTIC PLANE</span><span id="hudBand">2.15 µm · BAND 042</span><span>SIMULATED FIELD</span></div>
+   <div class="hud"><span id="hudSector">SEC-04 · ECLIPTIC PLANE</span><span id="hudBand">2.15 µm · BAND 042</span><span>SIMULATED LEARNING FIELD</span></div>
    <div class="absolute right-3 top-16 flex flex-col gap-2"><button id="zoomIn" class="action w-10 h-10 text-lg">+</button><button id="zoomOut" class="action w-10 h-10 text-lg">−</button><button id="reset" class="action w-10 h-10">↻</button></div>
-   <div id="toast" class="sky-toast">Select a source below to inspect its illustrative properties. The star field is a simulation, not a live SPHEREx image.</div>
+   <div id="toast" class="sky-toast">Select a source below to inspect its illustrative properties. This canvas is a simulation. Use the Live SPHEREx Archive panel above for real observations.</div>
   </div>
   <div class="panel rounded-2xl p-4">
    <div class="flex justify-between items-center gap-2"><h2 class="font-semibold">Near-infrared wavelength filter</h2><span class="small-label">102 BAND MODEL</span></div>
@@ -91,6 +112,84 @@
  </aside>
  <div class="lg:col-span-12 panel rounded-xl p-3 text-xs text-slate-400 leading-6"><b class="text-amber-300">Scientific integrity note:</b> This Mission Lab is an educational simulation. The star field, source positions, epoch differences, RGB overlays and wavelength display are illustrative. They are not actual SPHEREx observations, measured spectra, or validated detections. For real archive data, use the official <a class="text-cyan-300 underline" href="https://irsa.ipac.caltech.edu/applications/spherex/" target="_blank" rel="noopener">SPHEREx Data Explorer</a>.</div>
 </main>
+
+<script src="vendor/fits.js"></script>
+<script>
+(()=> {
+ const $=id=>document.getElementById(id);
+ const target=$('liveTarget'),ra=$('liveRA'),dec=$('liveDec'),radius=$('liveRadius'),search=$('liveSearch'),status=$('liveStatus'),results=$('liveResults');
+ const panel=$('liveImagePanel'),canvas=$('liveFitsCanvas'),placeholder=$('liveImagePlaceholder'),imageStatus=$('liveImageStatus'),title=$('liveImageTitle'),original=$('liveOriginal');
+ let rows=[];
+ function parseVOTable(xmlText){
+  const doc=new DOMParser().parseFromString(xmlText,'application/xml');
+  if(doc.querySelector('parsererror'))throw new Error('IRSA returned an unreadable observation table.');
+  return [...doc.getElementsByTagNameNS('*','TR')].filter(row=>row.parentElement?.localName.toLowerCase()==='tabledata').map(row=>{
+   let table=row.parentElement;while(table&&table.localName.toLowerCase()!=='table')table=table.parentElement;
+   const fields=table?[...table.getElementsByTagNameNS('*','FIELD')].map(f=>(f.getAttribute('name')||f.getAttribute('ID')||'').toLowerCase()):[];
+   const values=[...row.children].map(cell=>cell.textContent.trim());
+   return Object.fromEntries(fields.map((field,i)=>[field,values[i]||'']));
+  });
+ }
+ function mjdDate(value){const n=Number(value);return Number.isFinite(n)?new Date((n-40587)*86400000).toISOString().slice(0,10):'Date not listed'}
+ target.addEventListener('change',()=>{if(target.value==='custom')return;const [a,d]=target.value.split(',');ra.value=a;dec.value=d;});
+ search.addEventListener('click',async()=>{
+  const r=Number(ra.value),d=Number(dec.value),rad=Number(radius.value);
+  if(!Number.isFinite(r)||r<0||r>360||!Number.isFinite(d)||d< -90||d>90){status.textContent='Enter valid RA (0–360°) and Dec (−90–90°).';return}
+  search.disabled=true;search.textContent='Searching IRSA…';status.textContent='Querying DR1 and QR3 observation records…';results.replaceChildren();panel.classList.add('hide');rows=[];
+  try{
+   const url=new URL('/api/spherex',location.origin);url.search=new URLSearchParams({ra:String(r),dec:String(d),radius:String(rad),collection:'both',maxrec:'100'}).toString();
+   const response=await fetch(url,{signal:AbortSignal.timeout(35000)});const payload=await response.json();
+   if(!response.ok)throw new Error(payload.detail||payload.error||'Archive query failed.');
+   rows=(payload.results||[]).flatMap(set=>parseVOTable(set.xml).map(row=>({...row,_collection:set.collection})));
+   rows.sort((a,b)=>Number(a.t_min)-Number(b.t_min));
+   const unique=[...new Map(rows.map(row=>[[row._collection,row.obs_id||row.access_url||'',row.t_min||''].join('|'),row])).values()];
+   rows=unique;
+   if(!rows.length){status.textContent='No released observations were returned for this position. Try a wider radius or another target.';return}
+   status.textContent='Found '+rows.length+' observation record(s)'+(payload.partial?' · Some release queries did not respond':'')+'. Select one to load its real FITS preview.';
+   rows.forEach((row,index)=>{
+    const card=document.createElement('article');card.className='rounded-xl border border-slate-700 bg-slate-950/70 p-3 flex flex-col gap-2';
+    const name=document.createElement('b');name.className='text-xs text-slate-100';name.textContent=row.obs_id||'SPHEREx observation '+(index+1);
+    const meta=document.createElement('p');meta.className='text-xs text-slate-400';meta.textContent=(row._collection||'SPHEREx').toUpperCase()+' · '+mjdDate(row.t_min)+' · '+(row.band||row.energy_bandpassname||'Band not listed');
+    const btn=document.createElement('button');btn.className='action active text-xs mt-auto';btn.textContent='Load real sky image';btn.addEventListener('click',()=>loadImage(row,btn));
+    card.append(name,meta,btn);results.append(card);
+   });
+  }catch(error){status.textContent='Could not search the live archive: '+error.message}
+  finally{search.disabled=false;search.textContent='⌕ Search live observations'}
+ });
+ async function loadImage(row,button){
+  if(!row.access_url){imageStatus.textContent='This record has no image URL.';return}
+  panel.classList.remove('hide');canvas.width=0;canvas.height=0;placeholder.classList.remove('hide');placeholder.textContent='Loading real SPHEREx FITS cutout…';imageStatus.textContent='Requesting a 0.3° cutout from IRSA…';title.textContent=(row.obs_id||'SPHEREx observation')+' · '+mjdDate(row.t_min);original.href=row.access_url;
+  button.disabled=true;button.textContent='Loading…';
+  try{
+   const url=new URL('/api/spherex-image',location.origin);url.search=new URLSearchParams({url:row.access_url,center:String(Number(ra.value))+','+String(Number(dec.value)),size:'0.3'}).toString();
+   const response=await fetch(url,{signal:AbortSignal.timeout(45000)});if(!response.ok){const problem=await response.json().catch(()=>({}));throw new Error(problem.detail||problem.error||'Image request failed (HTTP '+response.status+')')}
+   const blob=await response.blob();if(blob.size<2880)throw new Error('IRSA returned an empty FITS file.');
+   if(!window.astro?.FITS)throw new Error('FITS viewer library did not load.');
+   await new Promise((resolve,reject)=>{
+    let done=false;const finish=(fn,v)=>{if(!done){done=true;fn(v)}};
+    const fits=new astro.FITS(blob,function(){
+     try{
+      const hdu=(this.hdus||[]).find(x=>x.data instanceof astro.FITS.Image&&String(x.header?.get?.('EXTNAME')||'').trim().toUpperCase()==='IMAGE')||(this.hdus||[]).find(x=>x.data instanceof astro.FITS.Image);
+      if(!hdu)throw new Error('No image plane in this FITS file.');
+      hdu.data.getFrame(0,pixels=>{
+       try{
+        const w=hdu.data.width,h=hdu.data.height;if(!w||!h||!pixels?.length)throw new Error('FITS image has no pixels.');
+        const sample=[];const stride=Math.max(1,Math.floor(pixels.length/24000));for(let i=0;i<pixels.length;i+=stride){const v=Number(pixels[i]);if(Number.isFinite(v))sample.push(v)}sample.sort((a,b)=>a-b);
+        const pct=p=>sample[Math.min(sample.length-1,Math.max(0,Math.floor((sample.length-1)*p)))],median=pct(.5),dev=sample.map(v=>Math.abs(v-median)).sort((a,b)=>a-b),sigma=Math.max((dev[Math.floor(dev.length/2)]||0)*1.4826,(pct(.75)-pct(.25))/1.349,1e-12),low=median+sigma*.8,high=Math.max(pct(.998),low+sigma*5),span=high-low;
+        canvas.width=w;canvas.height=h;const c=canvas.getContext('2d'),out=c.createImageData(w,h);
+        for(let y=0;y<h;y++)for(let x=0;x<w;x++){const v=Number(pixels[y*w+x]),z=Number.isFinite(v)&&v>low?Math.asinh(Math.max(0,Math.min(1,(v-low)/span))*5)/Math.asinh(5):0,shade=Math.round(Math.pow(z,.9)*255),i=((h-1-y)*w+x)*4;out.data[i]=shade;out.data[i+1]=Math.round(shade*.96);out.data[i+2]=Math.round(shade*.86);out.data[i+3]=255}
+        c.putImageData(out,0,0);placeholder.classList.add('hide');imageStatus.textContent='Real SPHEREx FITS preview · '+w+' × '+h+' native pixels · automatic grayscale stretch';finish(resolve);
+       }catch(e){finish(reject,e)}
+      });
+     }catch(e){finish(reject,e)}
+    });
+    setTimeout(()=>finish(reject,new Error('FITS parsing timed out.')),55000);
+   });
+  }catch(error){placeholder.classList.remove('hide');placeholder.textContent='Preview unavailable. You can still open the original FITS product.';imageStatus.textContent=error.message}
+  finally{button.disabled=false;button.textContent='Load real sky image'}
+ }
+})();
+</script>
 <script>
 (()=> {
  const $=id=>document.getElementById(id), canvas=$('skyCanvas'),ctx=canvas.getContext('2d');
@@ -120,7 +219,7 @@
  $('sourceButtons').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>updateSource(+b.dataset.source)));
  canvas.addEventListener('click',e=>{const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;let best=0,dist=Infinity;sources.forEach((s,i)=>{const p=pos(s,epoch),d=Math.hypot(p.x-x,p.y-y);if(d<dist){dist=d;best=i}});updateSource(best)});
  $('saveNote').onclick=()=>{const v=$('note').value.trim();if(!v){$('noteStatus').textContent='Write a short note first.';return}try{const list=JSON.parse(sessionStorage.getItem('cosmosMissionNotes')||'[]');list.unshift(v);sessionStorage.setItem('cosmosMissionNotes',JSON.stringify(list.slice(0,10)));$('note').value='';$('noteStatus').textContent='Saved in this browser session.'}catch(e){$('noteStatus').textContent='Could not save this note in the current browser.'}};
- $('guideBtn').onclick=()=>alert('Mission Lab is an educational simulation. Its sky, sources, epoch differences and wavelength display are illustrative, not live SPHEREx data.');
+ $('guideBtn').onclick=()=>alert('Mission Lab has two parts: the live IRSA archive search above retrieves real observation metadata and FITS previews; the interactive sky canvas below is an educational simulation, not live telescope imagery.');
  window.addEventListener('keydown',e=>{if(e.code==='Space'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();$('stepBtn').click()}});
  function tick(t){if(playing&&mode==='blink'&&t-last>Number($('speed').value)*1000){epoch=epoch===+$('epochA').value?+$('epochB').value:+$('epochA').value;last=t;$('viewing').textContent='VIEWING · '+(epoch+1)}requestAnimationFrame(tick)}
  new ResizeObserver(resize).observe(canvas);resize();frame();tick(0);
