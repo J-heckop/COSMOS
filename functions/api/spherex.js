@@ -126,7 +126,7 @@ export async function onRequest({request}) {
       method:"POST",
       headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8","Accept":"application/x-votable+xml, application/xml, text/xml"},
       body:params.toString(),
-      signal:AbortSignal.timeout(27000)
+      signal:AbortSignal.timeout(18000)
     });
     const xml=await syncResponse.text();
     if(!syncResponse.ok) throw new Error("IRSA async failed ("+lastAsyncError+"); sync fallback returned HTTP "+syncResponse.status+".");
