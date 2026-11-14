@@ -82,12 +82,12 @@ if (archiveForm) {
       const response = await fetch(proxyUrl);
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive proxy failed");
-      const responses = payload.results.map(result => ({collection:result.collection, rows:parseVOTable(result.xml)}));
+      const responses = (payload.results || []).map(result => ({collection:result.collection, rows:parseVOTable(result.xml)}));
       const allRows = responses.flatMap(result => result.rows.map(row => ({...row, _collection:result.collection})));
       if (!allRows.length) {
         setArchiveStatus("No matching public observations were returned for this position and radius. Try a larger radius or open the official IRSA explorer.", "success");
       } else {
-        setArchiveStatus("Found " + allRows.length + " archive result(s) across DR1 and QR3. These are real archive records; open a data link to inspect a file.", "success");
+        setArchiveStatus("Found " + allRows.length + " archive result(s). These are real archive records; open a data link to inspect a file." + (payload.errors && payload.errors.length ? " Note: one archive collection did not respond, so these results may be partial." : ""), "success");
         allRows.slice(0, 30).forEach((row, index) => {
           const card = document.createElement("article");
           card.className = "archive-result";
@@ -215,11 +215,11 @@ if (timeForm) {
     timeStatus.className = "archive-status";
     try {
       const url = new URL("/api/spherex", window.location.origin);
-      url.search = new URLSearchParams({ra:String(ra),dec:String(dec),radius:String(radius)}).toString();
+      url.search = new URLSearchParams({ra:String(ra),dec:String(dec),radius:String(radius),maxrec:"1000"}).toString();
       const response = await fetch(url);
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive query failed.");
-      const records = payload.results.flatMap(result => timeParseVOTable(result.xml));
+      const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml));
       const unique = new Map();
       records.forEach(row => {
         const mjd = Number(row.t_min);
@@ -457,7 +457,7 @@ if (timeForm) {
         const response = await fetch(url);
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.detail || payload.error || "Archive proxy failed");
-        const sets = payload.results.map(result => ({collection:result.collection,rows:parseVOTable(result.xml)}));
+        const sets = (payload.results || []).map(result => ({collection:result.collection,rows:parseVOTable(result.xml)}));
         const total = sets.reduce((sum,set)=>sum+set.rows.length,0);
         if (!total) {
           status.textContent = "The archive returned zero rows even without a date filter. This points to a position/collection query issue, not your selected dates.";
@@ -522,7 +522,7 @@ if (timeForm) {
       const response = await fetch(url);
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive proxy failed");
-      const resultSets = payload.results.map(result => ({collection:result.collection, rows:timeParseVOTable(result.xml)}));
+      const resultSets = (payload.results || []).map(result => ({collection:result.collection, rows:timeParseVOTable(result.xml)}));
       const combined = resultSets.flatMap(set => set.rows.map(row => ({row, collection:set.collection})));
       const unique = new Map();
       combined.forEach(item => {
