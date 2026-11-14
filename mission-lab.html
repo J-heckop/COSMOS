@@ -83,11 +83,16 @@
     <span id="viewing" class="ml-auto text-xs mono text-cyan-300">VIEWING · EPOCH 1</span>
    </div>
   </div>
+  <div class="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 text-sm leading-6" id="viewerExplanation">
+   <b class="text-amber-200">What am I looking at?</b>
+   <p class="text-slate-300 mt-1"><b>This large star scene is a demonstration only.</b> The stars, colours and movement are computer-generated to show how the Blink / Split / Timeline controls work. They are <u>not</u> real SPHEREx photographs and do not show actual changes in space.</p>
+   <p class="text-slate-300 mt-2"><b>To see real NASA archive data:</b> use “Explore real observations” above → tap “Load real sky image” on a result. The actual FITS preview opens in the “Selected SPHEREx observation” panel above.</p>
+  </div>
   <div class="sky-wrap" id="skyWrap">
-   <canvas id="skyCanvas" aria-label="Illustrative simulated star field"></canvas>
-   <div class="hud"><span id="hudSector">SEC-04 · ECLIPTIC PLANE</span><span id="hudBand">2.15 µm · BAND 042</span><span>ILLUSTRATIVE DEEP-SPACE BACKDROP</span></div>
+   <canvas id="skyCanvas" aria-label="Computer-generated demonstration star field, not real SPHEREx data"></canvas>
+   <div class="hud"><span id="hudSector">SEC-04 · ECLIPTIC PLANE</span><span id="hudBand">2.15 µm · BAND 042</span><span>DEMO ONLY · NOT A NASA IMAGE</span></div>
    <div class="absolute right-3 top-16 flex flex-col gap-2"><button id="zoomIn" class="action w-10 h-10 text-lg">+</button><button id="zoomOut" class="action w-10 h-10 text-lg">−</button><button id="reset" class="action w-10 h-10">↻</button></div>
-   <div id="toast" class="sky-toast">Illustrative deep-space scene · source positions and epoch changes are simulated. Use the Live SPHEREx Archive panel above to inspect real observations.</div>
+   <div id="toast" class="sky-toast">DEMO VIEW ONLY: generated stars and simulated movement. Load an archive FITS image above to see real SPHEREx data.</div>
   </div>
   <div class="panel rounded-2xl p-4">
    <div class="flex justify-between items-center gap-2"><h2 class="font-semibold">Near-infrared wavelength filter</h2><span class="small-label">102 BAND MODEL</span></div>
