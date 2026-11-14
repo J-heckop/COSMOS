@@ -373,9 +373,9 @@ if (timeForm) {
         url: row.access_url,
         ra: String(ra),
         dec: String(dec),
-        size: String(Math.min(0.5, Math.max(0.03, radius * 2)))
+        size: String(Math.min(0.05, Math.max(0.03, radius)))
       }).toString();
-      const response = await fetch(url, {signal: AbortSignal.timeout(26000)});
+      const response = await fetch(url, {signal: AbortSignal.timeout(52000)});
       if (!response.ok) {
         const problem = await response.json().catch(() => ({}));
         throw new Error(problem.detail || problem.error || "Image request failed (HTTP " + response.status + ")");
