@@ -37,7 +37,7 @@ module.exports = async function handler(req, res) {
       attemptUrl.searchParams.delete("gzip");
       upstream = await fetch(attemptUrl.toString(), {
         headers: { Accept: "application/fits, application/octet-stream" },
-        signal: AbortSignal.timeout(50000)
+        signal: AbortSignal.timeout(16000)
       });
       if (upstream.ok) break;
       lastStatus = upstream.status;
