@@ -250,6 +250,5 @@
 @media(max-width:390px){.object-grid{grid-template-columns:1fr}.object-image{height:165px}}
 
 
-/* Hide archive-dependent comparison tools while the IRSA proxy route is unavailable. */
-.time-machine-panel, .diagnostics-panel { display: none !important; }
+/* Cloudflare Pages Functions now power the archive comparison tools. */
 .archive-release-note { grid-column: 1 / -1; margin: 0; color: var(--muted, #a9a5b9); font-size: .9rem; }
