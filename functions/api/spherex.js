@@ -42,10 +42,10 @@ export async function onRequest({request}) {
   const dateOnly = ranges.length === 0;
   async function queryCollection(selected){
     const releasePath=selected==="spherex_dr1"?"/dr1/":"/qr3/";
-    const select = dateOnly
-      ? "SELECT DISTINCT TOP "+maxrec+" p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max "
-      : "SELECT TOP "+maxrec+" 'https://irsa.ipac.caltech.edu/' || a.uri AS access_url, "+
-        "p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max, a.planeid AS obs_id, p.energy_bandpassname AS band ";
+    // Always return the product URI and plane metadata. Date discovery and
+    // Mission Lab both need access_url to load the actual FITS image.
+    const select = "SELECT DISTINCT TOP "+maxrec+" 'https://irsa.ipac.caltech.edu/' || a.uri AS access_url, "+
+      "p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max, a.planeid AS obs_id, p.energy_bandpassname AS band ";
     const query=select+"FROM spherex.artifact a JOIN spherex.plane p ON a.planeid = p.planeid "+
       "WHERE 1 = CONTAINS(POINT('ICRS', "+ra+", "+dec+"), p.poly) AND a.uri LIKE '%"+releasePath+"%'"+timeClause+
       " ORDER BY p.time_bounds_lower";
