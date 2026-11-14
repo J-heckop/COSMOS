@@ -298,21 +298,18 @@ if (timeForm) {
       const unique = new Map();
       records.forEach(row => {
         const candidates = [row.t_min,row.t_max,row.mjd_obs,row.obs_mjd,row.date_obs,row.obs_date,row.date].filter(value => value !== undefined && value !== null && String(value).trim() !== "");
-        let date = "";
         for (const raw of candidates) {
           const value = String(raw).trim();
           const numeric = Number(value);
+          let date = "";
           if (Number.isFinite(numeric) && numeric >= 40000 && numeric <= 100000) {
             date = new Date((numeric - 40587) * 86400000).toISOString().slice(0,10);
-            break;
+          } else {
+            const parsed = Date.parse(value);
+            if (Number.isFinite(parsed)) date = new Date(parsed).toISOString().slice(0,10);
           }
-          const parsed = Date.parse(value);
-          if (Number.isFinite(parsed)) {
-            date = new Date(parsed).toISOString().slice(0,10);
-            break;
-          }
+          if (date && date >= "2025-05-01" && date <= today) unique.set(date, date);
         }
-        if (date && date >= "2025-05-01" && date <= today) unique.set(date, date);
       });
       discoveredDates = [...unique.keys()].sort();
       discoveredPosition = [ra, dec, radius].join("|");
