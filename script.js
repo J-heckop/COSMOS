@@ -82,7 +82,7 @@ if (archiveForm) {
     resultsBox.replaceChildren();
     submitButton.disabled = true;
     submitButton.textContent = "Searching archive…";
-    setArchiveStatus("Searching IRSA SIA2 for SPHEREx observations near " + ra + "°, " + dec + "°.");
+    setArchiveStatus("Searching both SPHEREx collections at IRSA. This archive query can take up to 50 seconds.");
 
     try {
       const proxyUrl = new URL("/api/spherex", window.location.origin);
