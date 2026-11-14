@@ -64,7 +64,7 @@ export async function onRequest({request}) {
       method:"POST",
       headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8","Accept":"application/x-votable+xml, application/xml, text/xml"},
       body:params.toString(),
-      signal:AbortSignal.timeout(27000)
+      signal:AbortSignal.timeout(60000)
     });
     const xml=await response.text();
     if(!response.ok) throw new Error("IRSA TAP returned HTTP "+response.status);
