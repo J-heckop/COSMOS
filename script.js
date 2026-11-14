@@ -124,3 +124,34 @@ if (archiveForm) {
     document.querySelector("#ra-input").focus();
   });
 }
+
+// Topic cards open a real detail panel instead of behaving like static artwork.
+const topicDetails = {
+  galaxies: {kicker:"01 / GALAXIES", title:"Galaxies", description:"Galaxies are enormous systems of stars, gas, dust and dark matter. They come in many shapes, from spirals to ellipticals, and contain clues about how the universe has evolved.", fact:"Near-infrared observations help reveal stars and regions that visible light can miss, including areas affected by cosmic dust. SPHEREx maps the sky in 102 infrared bands to study galaxies and their history."},
+  nebulae: {kicker:"02 / NEBULAE", title:"Nebulae", description:"Nebulae are vast clouds of gas and dust. Some are stellar nurseries where new stars form; others are material shed by stars during later stages of their lives.", fact:"Infrared light can pass through some dust more effectively than visible light and can reveal emission from molecules and dusty regions. SPHEREx provides a wide-sky infrared view for studying these environments."},
+  stars: {kicker:"03 / STARS", title:"Stars", description:"Stars are hot, luminous spheres of plasma. Their light, temperature and life cycles help astronomers understand how galaxies form and change.", fact:"SPHEREx observes stars and other nearby objects across many near-infrared bands. Comparing their brightness across wavelengths helps scientists study their properties and the material around them."},
+  cosmology: {kicker:"04 / DEEP SPACE", title:"The deep universe", description:"Looking far across space also means looking back in time. Distant galaxies carry information about the early universe and how large-scale cosmic structure developed.", fact:"One of SPHEREx’s major goals is to map millions of galaxies and investigate the history of the universe, including the physics of cosmic inflation."}
+};
+const topicDialog = document.querySelector("#topic-dialog");
+if (topicDialog) {
+  const title = document.querySelector("#topic-dialog-title");
+  const kicker = document.querySelector("#topic-dialog-kicker");
+  const description = document.querySelector("#topic-dialog-description");
+  const fact = document.querySelector("#topic-dialog-fact");
+  const closeDialog = () => topicDialog.close();
+  cards.forEach(card => {
+    card.addEventListener("click", () => {
+      const detail = topicDetails[card.dataset.category];
+      if (!detail) return;
+      kicker.textContent = detail.kicker;
+      title.textContent = detail.title;
+      description.textContent = detail.description;
+      fact.textContent = detail.fact;
+      topicDialog.showModal();
+    });
+  });
+  document.querySelector("#topic-dialog-close").addEventListener("click", closeDialog);
+  topicDialog.addEventListener("click", event => {
+    if (event.target === topicDialog) closeDialog();
+  });
+}
