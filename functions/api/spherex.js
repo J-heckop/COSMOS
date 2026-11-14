@@ -1,57 +1,56 @@
 // Cloudflare Pages Function: GET /api/spherex
-// Uses IRSA asynchronous TAP jobs so long-running SPHEREx metadata searches
-// continue on IRSA instead of holding a Cloudflare request open.
-function json(body,status=200) {
+// Use IRSA's documented SPHEREx SIA2 image-search interface. Query one
+// release at a time so a temporary failure in one does not hide the other.
+function json(body,status=200){
   return new Response(JSON.stringify(body),{
     status,
     headers:{
       "Content-Type":"application/json; charset=utf-8",
-      "Cache-Control":status===200?"public, max-age=30, s-maxage=300, stale-while-revalidate=600":"no-store"
+      "Cache-Control":status===200?"public, max-age=30, s-maxage=180, stale-while-revalidate=300":"no-store"
     }
   });
 }
 const IRSA="https://irsa.ipac.caltech.edu";
-function errorFromXml(xml){
-  const match=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
-  return match?match[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,500):"";
-}
-async function pollJob(id){
-  if(!/^\d+$/.test(id)) throw new Error("Invalid archive job ID.");
-  const base=IRSA+"/TAP/async/"+id;
-  const phaseResponse=await fetch(base+"/phase",{signal:AbortSignal.timeout(12000)});
-  if(!phaseResponse.ok) throw new Error("IRSA job status returned HTTP "+phaseResponse.status);
-  const phase=(await phaseResponse.text()).trim().toUpperCase();
-  if(phase==="ERROR"||phase==="ABORT"){
-    const detailResponse=await fetch(base+"/error",{signal:AbortSignal.timeout(8000)});
-    const detail=detailResponse.ok?(await detailResponse.text()).slice(0,500):"";
-    throw new Error(detail||"IRSA TAP job "+phase.toLowerCase()+".");
+async function queryCollection(collection,ra,dec,radius,range){
+  const params=new URLSearchParams({
+    COLLECTION:collection,
+    POS:"CIRCLE "+ra+" "+dec+" "+radius,
+    DPTYPE:"image",
+    MAXREC:"150",
+    RESPONSEFORMAT:"VOTABLE"
+  });
+  if(range) params.set("TIME",range.start+" "+range.end);
+  let lastError=null;
+  for(let attempt=0;attempt<2;attempt++){
+    try{
+      const response=await fetch(IRSA+"/SIA?"+params.toString(),{
+        headers:{Accept:"application/x-votable+xml, application/xml, text/xml"},
+        signal:AbortSignal.timeout(8000)
+      });
+      const xml=await response.text();
+      if(response.status===502||response.status===503||response.status===504){
+        lastError="IRSA SIA2 returned HTTP "+response.status;
+        if(attempt===0) await new Promise(resolve=>setTimeout(resolve,500));
+        continue;
+      }
+      if(!response.ok) throw new Error("IRSA SIA2 returned HTTP "+response.status);
+      if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml)) throw new Error("IRSA SIA2 returned an unexpected response for "+collection+".");
+      const error=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
+      if(error) throw new Error(error[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400)||"IRSA rejected the image query.");
+      return {collection,period:range?.label||null,xml};
+    }catch(error){
+      lastError=error?.name==="TimeoutError"?"IRSA SIA2 timed out":error?.message||"IRSA query failed";
+      if(attempt===0) await new Promise(resolve=>setTimeout(resolve,500));
+    }
   }
-  if(phase!=="COMPLETED") return {id,phase};
-  const resultResponse=await fetch(base+"/results/result",{headers:{Accept:"application/x-votable+xml, application/xml, text/xml"},signal:AbortSignal.timeout(20000)});
-  const xml=await resultResponse.text();
-  if(!resultResponse.ok) throw new Error("IRSA result download returned HTTP "+resultResponse.status);
-  const queryError=errorFromXml(xml);
-  if(queryError) throw new Error(queryError);
-  if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml)) throw new Error("IRSA returned an unexpected result format.");
-  return {id,phase,xml};
+  throw new Error(lastError||"IRSA SIA2 failed");
 }
-export async function onRequest({request}) {
+export async function onRequest({request}){
   if(request.method!=="GET") return json({error:"Use GET for archive searches."},405);
   const q=new URL(request.url).searchParams;
-
-  // Poll an existing asynchronous TAP job.
-  if(q.has("job")){
-    try{
-      const job=await pollJob(q.get("job"));
-      if(job.xml) return json({done:true,phase:job.phase,results:[{collection:"spherex_tap",period:null,xml:job.xml}],source:"IRSA TAP async"});
-      return json({done:false,phase:job.phase,jobId:job.id},202);
-    }catch(error){return json({error:error.message||"Could not check the IRSA job."},502);}
-  }
-
   const ra=Number(q.get("ra")),dec=Number(q.get("dec")),radius=Number(q.get("radius"));
   if(!Number.isFinite(ra)||ra<0||ra>360||!Number.isFinite(dec)||dec< -90||dec>90||!Number.isFinite(radius)||radius<=0||radius>1)
     return json({error:"Invalid sky position or search radius."},400);
-  const maxrec=150;
   const requestedBand=String(q.get("band")||"SPHEREx-D2");
   if(requestedBand!=="all"&&!/^SPHEREx-D[1-6]$/.test(requestedBand))
     return json({error:"Choose a valid SPHEREx spectral band."},400);
@@ -69,73 +68,28 @@ export async function onRequest({request}) {
     if(!Number.isFinite(start)||!Number.isFinite(end)||start<=0||end<start)return json({error:"Invalid Period B observation time range."},400);
     ranges.push({label:"B",start,end});
   }
-  const bandFilter=requestedBand==="all"?"":" AND p.energy_bandpassname = '"+requestedBand+"'";
-  const dateFilter=ranges.length
-    ?" AND ("+ranges.map(x=>"(p.time_bounds_lower <= "+x.end+" AND p.time_bounds_upper >= "+x.start+")").join(" OR ")+")"
-    :"";
-  const size=Math.max(0.01,Math.min(2,radius*2));
-  const center=ra+","+dec;
-  const query=
-    "SELECT TOP "+maxrec+" "+
-    "'https://irsa.ipac.caltech.edu/' || a.uri || '?center="+center+"d&size="+size+"' AS access_url, "+
-    "p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max, "+
-    "a.uri AS obs_id, p.energy_bandpassname AS band "+
-    "FROM spherex.artifact a JOIN spherex.plane p ON a.planeid = p.planeid "+
-    "WHERE 1 = CONTAINS(POINT('ICRS', "+ra+", "+dec+"), p.poly)"+
-    bandFilter+dateFilter+
-    " ORDER BY p.time_bounds_lower";
-  const params=new URLSearchParams({REQUEST:"doQuery",LANG:"ADQL",QUERY:query,FORMAT:"votable",MAXREC:String(maxrec)});
-  try{
-    let response=null,lastAsyncError=null;
-    try{
-      response=await fetch(IRSA+"/TAP/async",{
-        method:"POST",
-        headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8","Accept":"text/plain, application/xml, text/xml"},
-        body:params.toString(),
-        redirect:"follow",
-        signal:AbortSignal.timeout(15000)
-      });
-      if(!response.ok) {
-        const detail=(await response.text()).replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,300);
-        lastAsyncError="IRSA async returned HTTP "+response.status+(detail?": "+detail:"");
-      } else {
-        const jobUrl=response.url;
-        const parsed=new URL(jobUrl,IRSA);
-        const match=parsed.pathname.match(/^\/TAP\/async\/(\d+)\/?$/);
-        if(match){
-          const jobId=match[1];
-          const run=await fetch(IRSA+"/TAP/async/"+jobId+"/phase",{
-            method:"POST",
-            headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},
-            body:"PHASE=RUN",
-            signal:AbortSignal.timeout(12000)
-          });
-          if(!run.ok&&run.status!==303) throw new Error("Could not start IRSA job (HTTP "+run.status+").");
-          return json({done:false,phase:"QUEUED",jobId,source:"IRSA TAP async",band:requestedBand},202);
-        }
-        lastAsyncError="IRSA async did not redirect to a job URL (final URL: "+(response.url||"unavailable")+")";
+  const requestedRanges=ranges.length?ranges:[null];
+  const results=[],errors=[];
+  // Sequential requests reduce load on IRSA and preserve partial successes.
+  for(const collection of ["spherex_qr3","spherex_dr1"]){
+    for(const range of requestedRanges){
+      try{
+        results.push(await queryCollection(collection,ra,dec,radius,range));
+      }catch(error){
+        errors.push({collection,period:range?.label||null,error:error.message});
       }
-    }catch(error){
-      lastAsyncError=error?.name==="TimeoutError"?"IRSA async submission timed out":(error?.message||"IRSA async submission failed");
     }
-
-    // Fallback: IRSA's synchronous TAP endpoint supports small, spatially
-    // constrained queries. With one selected band and TOP 150 this often
-    // succeeds even when async job creation is temporarily unavailable.
-    const syncResponse=await fetch(IRSA+"/TAP/sync",{
-      method:"POST",
-      headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8","Accept":"application/x-votable+xml, application/xml, text/xml"},
-      body:params.toString(),
-      signal:AbortSignal.timeout(18000)
-    });
-    const xml=await syncResponse.text();
-    if(!syncResponse.ok) throw new Error("IRSA async failed ("+lastAsyncError+"); sync fallback returned HTTP "+syncResponse.status+".");
-    const queryError=errorFromXml(xml);
-    if(queryError) throw new Error("IRSA query error: "+queryError);
-    if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml)) throw new Error("IRSA returned an unexpected response. Async: "+lastAsyncError);
-    return json({done:true,phase:"COMPLETED",results:[{collection:"spherex_tap_sync",period:null,xml}],source:"IRSA TAP sync fallback",band:requestedBand});
-
-  }catch(error){
-    return json({error:error.name==="TimeoutError"?"Could not start the IRSA background job in time.":error.message||"Could not start the IRSA archive search."},502);
   }
+  if(!results.length){
+    return json({
+      error:"IRSA's SPHEREx image-search service did not return a usable response.",
+      detail:errors.map(x=>x.collection+(x.period?" period "+x.period:"")+": "+x.error).join("; "),
+      errors,source:"IRSA SIA2",mode:ranges.length?"comparison":"observations"
+    },502);
+  }
+  return json({
+    done:true,results,errors,source:"IRSA SIA2",
+    partial:errors.length>0,band:requestedBand,
+    note:"SIA2 returns released image metadata. Spectral-band selection is applied by the viewer when rendering results."
+  });
 }
