@@ -45,11 +45,12 @@ if (archiveForm) {
   function parseVOTable(xmlText) {
     const doc = new DOMParser().parseFromString(xmlText, "application/xml");
     if (doc.querySelector("parsererror")) throw new Error("The archive returned an unreadable table.");
-    const byTag = name => [...doc.getElementsByTagNameNS("*", name)];
-    const fields = byTag("FIELD").map(field => (field.getAttribute("name") || field.getAttribute("ID") || "").toLowerCase());
-    const tableRows = byTag("TR").filter(row => row.parentNode && (row.parentNode.localName || row.parentNode.nodeName).toLowerCase() === "tabledata");
-    return tableRows.map(row => {
-      const values = byTag("TD").filter(cell => cell.parentNode === row).map(cell => cell.textContent.trim());
+    const all = name => [...doc.getElementsByTagNameNS("*", name)];
+    return all("TR").filter(row => row.parentElement && row.parentElement.localName.toLowerCase() === "tabledata").map(row => {
+      let table = row.parentElement;
+      while (table && table.localName.toLowerCase() !== "table") table = table.parentElement;
+      const fields = table ? [...table.getElementsByTagNameNS("*", "FIELD")].map(field => (field.getAttribute("name") || field.getAttribute("ID") || "").toLowerCase()) : [];
+      const values = [...row.children].filter(cell => cell.localName.toLowerCase() === "td").map(cell => cell.textContent.trim());
       return Object.fromEntries(fields.map((field, index) => [field, values[index] || ""]));
     });
   }
@@ -177,10 +178,11 @@ if (timeForm) {
     const doc = new DOMParser().parseFromString(xmlText, "application/xml");
     if (doc.querySelector("parsererror")) throw new Error("The archive returned an unreadable table.");
     const all = name => [...doc.getElementsByTagNameNS("*", name)];
-    const fields = all("FIELD").map(field => (field.getAttribute("name") || field.getAttribute("ID") || "").toLowerCase());
-    const rows = all("TR").filter(row => row.parentNode && (row.parentNode.localName || row.parentNode.nodeName).toLowerCase() === "tabledata");
-    return rows.map(row => {
-      const values = [...row.childNodes].filter(node => node.nodeType === 1 && (node.localName || node.nodeName).toLowerCase() === "td").map(cell => cell.textContent.trim());
+    return all("TR").filter(row => row.parentElement && row.parentElement.localName.toLowerCase() === "tabledata").map(row => {
+      let table = row.parentElement;
+      while (table && table.localName.toLowerCase() !== "table") table = table.parentElement;
+      const fields = table ? [...table.getElementsByTagNameNS("*", "FIELD")].map(field => (field.getAttribute("name") || field.getAttribute("ID") || "").toLowerCase()) : [];
+      const values = [...row.children].filter(cell => cell.localName.toLowerCase() === "td").map(cell => cell.textContent.trim());
       return Object.fromEntries(fields.map((field,index) => [field,values[index] || ""]));
     });
   }
@@ -224,8 +226,8 @@ if (timeForm) {
       const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml));
       const unique = new Map();
       records.forEach(row => {
-        const mjd = Number(row.t_min);
-        if (!Number.isFinite(mjd) || mjd <= 0) return;
+        const mjd = Number(row.t_min || row.t_max || row.mjd_obs || row.obs_mjd);
+        if (!Number.isFinite(mjd) || mjd < 40000 || mjd > 100000) return;
         const date = new Date((mjd - 40587) * 86400000).toISOString().slice(0,10);
         if (date >= "2025-05-01" && date <= today) unique.set(date, date);
       });
