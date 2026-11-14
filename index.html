@@ -67,6 +67,14 @@
         </form>
         <p class="time-hint">Uses the RA, Dec and radius above. Search dates must be on or after 1 May 2025.</p>
         <div id="time-status" class="archive-status" role="status" aria-live="polite">Enter coordinates above, then choose two date ranges.</div>
+        <section class="image-comparison" aria-label="SPHEREx image comparison">
+          <div class="image-comparison-heading"><span class="eyebrow">REAL SPHEREx IMAGERY</span><h4>See the sky in both periods</h4><p>COSMOS loads small FITS cutouts from the official archive when observations are available.</p></div>
+          <div class="image-panes">
+            <article class="image-pane"><h5>PERIOD A</h5><div class="fits-image-wrap"><canvas id="image-a" aria-label="Period A SPHEREx image preview"></canvas><span id="image-a-placeholder">Run a comparison to load an image</span></div><p id="image-a-status" class="image-status">Waiting for comparison…</p></article>
+            <article class="image-pane"><h5>PERIOD B</h5><div class="fits-image-wrap"><canvas id="image-b" aria-label="Period B SPHEREx image preview"></canvas><span id="image-b-placeholder">Run a comparison to load an image</span></div><p id="image-b-status" class="image-status">Waiting for comparison…</p></article>
+          </div>
+          <p class="time-disclaimer">Real archive FITS cutouts, shown with an automatic grayscale stretch. Different dates or bands can change the appearance; this is a visual comparison, not a calibrated change-detection measurement.</p>
+        </section>
         <div class="time-results-grid"><section><h4>PERIOD A <span id="period-a-label"></span></h4><div id="period-a-results" class="archive-results"></div></section><section><h4>PERIOD B <span id="period-b-label"></span></h4><div id="period-b-results" class="archive-results"></div></section></div>
         <p class="time-disclaimer">These are archive observation records, not a processed before-and-after animation. SPHEREx image products are FITS files; use the official viewer or download link to inspect the science image.</p>
         <details class="diagnostics-panel">
@@ -110,6 +118,7 @@
   </main>
 
   <footer><a class="brand" href="#"><span class="brand-mark">✳</span> COSMOS</a><span>Made for curious minds. Built around NASA SPHEREx.</span><a href="https://www.nasa.gov/" target="_blank" rel="noreferrer">NASA ↗</a></footer>
+  <script src="vendor/fits.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
