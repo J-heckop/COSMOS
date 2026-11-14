@@ -19,15 +19,6 @@ async function queryCollection(collection,ra,dec,radius,range,requestedBand){
     MAXREC:"150",
     RESPONSEFORMAT:"VOTABLE"
   });
-  const bandRanges={
-    "SPHEREx-D1":[0.75e-6,1.11e-6],
-    "SPHEREx-D2":[1.11e-6,1.64e-6],
-    "SPHEREx-D3":[1.64e-6,2.42e-6],
-    "SPHEREx-D4":[2.42e-6,3.82e-6],
-    "SPHEREx-D5":[3.82e-6,4.42e-6],
-    "SPHEREx-D6":[4.42e-6,5.00e-6]
-  };
-  if(requestedBand!=="all"&&bandRanges[requestedBand]) params.set("BAND",bandRanges[requestedBand].join(" "));
   if(range) params.set("TIME",range.start+" "+range.end);
   let lastError=null;
   for(let attempt=0;attempt<2;attempt++){
@@ -99,6 +90,6 @@ export async function onRequest({request}){
   return json({
     done:true,results,errors,source:"IRSA SIA2",
     partial:errors.length>0,band:requestedBand,
-    note:"SIA2 returns released image metadata filtered by sky position and selected wavelength range."
+    note:"SIA2 returns released image metadata filtered by sky position; spectral-band selection is applied to returned wavelength metadata in COSMOS."
   });
 }
