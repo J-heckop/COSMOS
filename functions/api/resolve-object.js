@@ -17,12 +17,23 @@ export async function onRequest({request}){
    const response=await fetch(base+encodeURIComponent(name),{headers:{Accept:"application/xml,text/xml"},signal:AbortSignal.timeout(9000)});
    if(!response.ok){lastError="Name resolver returned HTTP "+response.status;continue;}
    const xml=await response.text();
-   const ra=Number(tag(xml,"jradeg")),dec=Number(tag(xml,"jdedeg"));
-   if(!Number.isFinite(ra)||ra<0||ra>360||!Number.isFinite(dec)||dec< -90||dec>90){
-    lastError="No matching astronomical object was found. Check the name and try another designation.";
+   const raText=tag(xml,"jradeg"),decText=tag(xml,"jdedeg");
+   // Number("") is 0 in JavaScript. Never accept missing resolver fields as valid coordinates.
+   if(!raText||!decText){
+    lastError="The name resolver returned no coordinates for “"+name+"”. Try a more specific astronomical designation.";
     continue;
    }
-   return json({name:tag(xml,"oname")||name,ra,dec,source:"CDS Sesame"});
+   const ra=Number(raText),dec=Number(decText);
+   if(!Number.isFinite(ra)||ra<0||ra>360||!Number.isFinite(dec)||dec< -90||dec>90){
+    lastError="The resolver returned invalid coordinates. Check the object name and try again.";
+    continue;
+   }
+   const resolvedName=tag(xml,"oname");
+   if(!resolvedName){
+    lastError="The resolver did not confirm an object match for “"+name+"”. Try a catalogue designation.";
+    continue;
+   }
+   return json({name:resolvedName,ra,dec,source:"CDS Sesame"});
   }catch(error){lastError=error?.name==="TimeoutError"?"The astronomical name resolver timed out. Try again shortly.":(error?.message||lastError);}
  }
  return json({error:lastError},502);
