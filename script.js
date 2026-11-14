@@ -28,6 +28,13 @@ document.querySelector("#search-button").addEventListener("click", filterCards);
 searchInput.addEventListener("keydown", event => {
   if (event.key === "Enter") filterCards();
 });
+document.querySelectorAll(".popular-searches [data-query]").forEach(button => button.addEventListener("click", () => {
+  searchInput.value = button.dataset.query;
+  activeTopic = "all";
+  chips.forEach(chip => chip.classList.toggle("active", chip.dataset.topic === "all"));
+  filterCards();
+  document.querySelector("#object-grid").scrollIntoView({behavior:"smooth",block:"start"});
+}));
 /* Query the official IRSA SPHEREx Simple Image Access service (SIA2). */
 const archiveForm = document.querySelector("#archive-form");
 if (archiveForm) {
@@ -129,10 +136,13 @@ if (archiveForm) {
 
 // Topic cards open a real detail panel instead of behaving like static artwork.
 const topicDetails = {
-  galaxies: {kicker:"01 / GALAXIES", title:"Galaxies", description:"Galaxies are enormous systems of stars, gas, dust and dark matter. They come in many shapes, from spirals to ellipticals, and contain clues about how the universe has evolved.", fact:"Near-infrared observations help reveal stars and regions that visible light can miss, including areas affected by cosmic dust. SPHEREx maps the sky in 102 infrared bands to study galaxies and their history."},
-  nebulae: {kicker:"02 / NEBULAE", title:"Nebulae", description:"Nebulae are vast clouds of gas and dust. Some are stellar nurseries where new stars form; others are material shed by stars during later stages of their lives.", fact:"Infrared light can pass through some dust more effectively than visible light and can reveal emission from molecules and dusty regions. SPHEREx provides a wide-sky infrared view for studying these environments."},
-  stars: {kicker:"03 / STARS", title:"Stars", description:"Stars are hot, luminous spheres of plasma. Their light, temperature and life cycles help astronomers understand how galaxies form and change.", fact:"SPHEREx observes stars and other nearby objects across many near-infrared bands. Comparing their brightness across wavelengths helps scientists study their properties and the material around them."},
-  cosmology: {kicker:"04 / DEEP SPACE", title:"The deep universe", description:"Looking far across space also means looking back in time. Distant galaxies carry information about the early universe and how large-scale cosmic structure developed.", fact:"One of SPHEREx’s major goals is to map millions of galaxies and investigate the history of the universe, including the physics of cosmic inflation."}
+  galaxies: {kicker:"01 / GALAXIES",title:"Galaxies",description:"Galaxies are enormous systems of stars, gas, dust and dark matter. Explore nearby examples such as Andromeda (M31) and our own Milky Way.",fact:"SPHEREx maps the sky in 102 near-infrared bands to study galaxies and their history. Its broad spectral survey helps scientists investigate the light from millions of galaxies.",image:"https://images-assets.nasa.gov/image/PIA04921/PIA04921~medium.jpg",credit:"Andromeda Galaxy · NASA/JPL-Caltech · GALEX ultraviolet view",source:"https://science.nasa.gov/photojournal/andromeda-galaxy/",targets:[{name:"Andromeda Galaxy",ra:"10.6847",dec:"41.2690"},{name:"Milky Way Galactic Centre",ra:"266.4168",dec:"-29.0078"}]},
+  nebulae: {kicker:"02 / NEBULAE",title:"Nebulae",description:"Nebulae are clouds of gas and dust. Some are stellar nurseries; others are material released by stars late in their lives.",fact:"Infrared light can reveal structures within dusty regions. SPHEREx provides a wide-sky infrared view, although its archive search does not automatically classify a nebula.",image:"https://science.nasa.gov/wp-content/uploads/2023/09/web-first-images-release.png",credit:"Webb Reveals the Carina Nebula · NASA, ESA, CSA, STScI",source:"https://science.nasa.gov/image-detail/web-first-images-release/",targets:[{name:"Orion Nebula",ra:"83.8221",dec:"-5.3911"},{name:"Carina Nebula",ra:"161.05",dec:"-60.266"}]},
+  stars: {kicker:"03 / STARS",title:"Stars & clusters",description:"Stars are luminous spheres of plasma. Star clusters group stars that formed in related environments and help astronomers study stellar evolution.",fact:"SPHEREx observes stars across many near-infrared bands. The resulting spectral information helps scientists study stellar populations and material around them.",image:"",credit:"",source:"https://science.nasa.gov/universe/stars/",targets:[{name:"Pleiades star cluster",ra:"56.75",dec:"24.1167"},{name:"Orion Nebula star-forming region",ra:"83.8221",dec:"-5.3911"}]},
+  "brown-dwarfs": {kicker:"04 / BROWN DWARFS",title:"Brown dwarfs",description:"Brown dwarfs are objects that are more massive than most planets but do not sustain ordinary hydrogen fusion like stars.",fact:"Their cool atmospheres emit strongly in infrared wavelengths, making infrared surveys useful for finding and studying them. A coordinate search alone does not identify a brown dwarf.",image:"",credit:"",source:"https://science.nasa.gov/universe/stars/",targets:[{name:"Pleiades region",ra:"56.75",dec:"24.1167"}]},
+  dust: {kicker:"05 / COSMIC DUST",title:"Cosmic dust",description:"Cosmic dust consists of tiny solid grains between stars. It absorbs and scatters some light and can help provide material for new stars and planets.",fact:"Infrared observations can reveal thermal emission from dust and help map dusty environments across the sky.",image:"",credit:"",source:"https://science.nasa.gov/universe/",targets:[{name:"Orion Nebula",ra:"83.8221",dec:"-5.3911"},{name:"Carina Nebula",ra:"161.05",dec:"-60.266"}]},
+  "star-forming": {kicker:"06 / STAR FORMATION",title:"Star-forming regions",description:"Stars form inside dense clouds of gas and dust. Young stars can reshape their surroundings with radiation and stellar winds.",fact:"SPHEREx's all-sky infrared spectral survey helps scientists study the molecules and dusty environments associated with star formation.",image:"https://science.nasa.gov/wp-content/uploads/2023/09/web-first-images-release.png",credit:"Carina Nebula · NASA, ESA, CSA, STScI · Webb infrared image",source:"https://science.nasa.gov/image-detail/web-first-images-release/",targets:[{name:"Carina Nebula",ra:"161.05",dec:"-60.266"},{name:"Orion Nebula",ra:"83.8221",dec:"-5.3911"}]},
+  cosmology: {kicker:"07 / DEEP UNIVERSE",title:"The deep universe",description:"Distant galaxies let astronomers look back through cosmic history and trace how large-scale structure developed.",fact:"One of SPHEREx's major goals is to map millions of galaxies and investigate the history of the universe, including the physics of cosmic inflation.",image:"",credit:"",source:"https://science.nasa.gov/universe/",targets:[{name:"Andromeda Galaxy",ra:"10.6847",dec:"41.2690"}]}
 };
 const topicDialog = document.querySelector("#topic-dialog");
 if (topicDialog) {
@@ -140,17 +150,54 @@ if (topicDialog) {
   const kicker = document.querySelector("#topic-dialog-kicker");
   const description = document.querySelector("#topic-dialog-description");
   const fact = document.querySelector("#topic-dialog-fact");
+  const dialogImage = document.querySelector("#topic-dialog-image");
+  const dialogCredit = document.querySelector("#topic-dialog-credit");
+  const dialogExamples = document.querySelector("#topic-dialog-examples");
+  const nasaLink = document.querySelector("#topic-dialog-nasa");
+  let activeTopicDetail = null;
   const closeDialog = () => topicDialog.close();
   cards.forEach(card => {
     card.addEventListener("click", () => {
       const detail = topicDetails[card.dataset.category];
       if (!detail) return;
+      activeTopicDetail = detail;
       kicker.textContent = detail.kicker;
       title.textContent = detail.title;
       description.textContent = detail.description;
       fact.textContent = detail.fact;
+      dialogImage.hidden = !detail.image;
+      dialogImage.src = detail.image || "";
+      dialogImage.alt = detail.image ? detail.title + " NASA image" : "";
+      dialogCredit.hidden = !detail.credit;
+      dialogCredit.textContent = detail.credit || "";
+      nasaLink.href = detail.source;
+      dialogExamples.replaceChildren();
+      detail.targets.forEach(target => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "topic-target-chip";
+        button.textContent = target.name;
+        button.addEventListener("click", () => selectTarget(target));
+        dialogExamples.append(button);
+      });
       topicDialog.showModal();
     });
+  });
+  function selectTarget(target) {
+    document.querySelector("#ra-input").value = target.ra;
+    document.querySelector("#dec-input").value = target.dec;
+    document.querySelector("#radius-input").value = "0.1";
+    document.querySelector("#target-name").value = target.name;
+    document.querySelector("#target-ra").textContent = target.ra;
+    document.querySelector("#target-dec").textContent = target.dec;
+    document.querySelector("#target-radius").textContent = "6 arcmin";
+    closeDialog();
+    document.querySelector("#archive-form").scrollIntoView({behavior:"smooth",block:"center"});
+    document.querySelector("#archive-status").textContent = target.name + " coordinates loaded. Press Search SPHEREx to query real archive observations.";
+    document.querySelector("#archive-status").className = "archive-status";
+  }
+  document.querySelector("#topic-dialog-explore").addEventListener("click", () => {
+    if (activeTopicDetail && activeTopicDetail.targets[0]) selectTarget(activeTopicDetail.targets[0]);
   });
   document.querySelector("#topic-dialog-close").addEventListener("click", closeDialog);
   topicDialog.addEventListener("click", event => {
