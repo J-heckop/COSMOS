@@ -66,65 +66,39 @@ if (archiveForm) {
     return value && value !== "null" && value !== "undefined" ? value : fallback;
   }
 
-  archiveForm.addEventListener("submit", async event => {
-    event.preventDefault();
+  function buildExplorerUrl() {
     const ra = Number(document.querySelector("#ra-input").value);
     const dec = Number(document.querySelector("#dec-input").value);
     const radius = Number(document.querySelector("#radius-input").value);
-    const collection = document.querySelector("#collection-input")?.value || "spherex_qr3";
-    if (!Number.isFinite(ra) || ra < 0 || ra > 360 || !Number.isFinite(dec) || dec < -90 || dec > 90) {
-      setArchiveStatus("Please enter valid J2000 coordinates: RA 0–360° and Dec −90° to +90°.", "error");
+    if (!Number.isFinite(ra) || ra < 0 || ra > 360 || !Number.isFinite(dec) || dec < -90 || dec > 90 ||
+        !Number.isFinite(radius) || radius <= 0) return null;
+    const url = new URL("https://irsa.ipac.caltech.edu/applications/spherex/");
+    url.search = new URLSearchParams({
+      api: "spectral-images",
+      ra: String(ra),
+      dec: String(dec),
+      sr: radius + "d"
+    }).toString();
+    return url;
+  }
+
+  archiveForm.addEventListener("submit", event => {
+    event.preventDefault();
+    const explorerUrl = buildExplorerUrl();
+    if (!explorerUrl) {
+      setArchiveStatus("Please enter valid J2000 coordinates and a search radius.", "error");
       return;
     }
-
-    const explorerUrl = new URL("https://irsa.ipac.caltech.edu/applications/spherex/");
-    explorerUrl.search = new URLSearchParams({api:"spectral-images", ra:String(ra), dec:String(dec), sr:radius + "d"}).toString();
     fallbackLink.href = explorerUrl.href;
-    resultsBox.replaceChildren();
-    submitButton.disabled = true;
-    submitButton.textContent = "Searching archive…";
-    setArchiveStatus("Searching the selected SPHEREx release…");
+    setArchiveStatus("Opening NASA/IPAC IRSA's official SPHEREx Data Explorer with your coordinates. Choose the data release and inspect available observations there.", "success");
+    window.open(explorerUrl.href, "_blank", "noopener,noreferrer");
+  });
 
-    try {
-      const proxyUrl = new URL("/api/spherex", window.location.origin);
-      proxyUrl.search = new URLSearchParams({ra:String(ra), dec:String(dec), radius:String(radius), collection, maxrec:"12"}).toString();
-      const response = await fetch(proxyUrl, {signal: AbortSignal.timeout(23000)});
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.detail || payload.error || "Archive proxy failed");
-      const responses = (payload.results || []).map(result => ({collection:result.collection, rows:parseVOTable(result.xml)}));
-      const allRows = responses.flatMap(result => result.rows.map(row => ({...row, _collection:result.collection})));
-      if (!allRows.length) {
-        setArchiveStatus(payload.errors && payload.errors.length
-          ? "The archive search was incomplete: no rows came back from the responding collection, and another collection failed. Please retry in a moment."
-          : "No matching public observations were returned for this position and radius. Try a larger radius or open the official IRSA explorer.", payload.errors && payload.errors.length ? "error" : "success");
-      } else {
-        setArchiveStatus("Found " + allRows.length + " archive result(s). These are real archive records from IRSA SIA2; open a data link to inspect a file." + (payload.errors && payload.errors.length ? " Note: one archive collection did not respond, so these results may be partial." : ""), "success");
-        allRows.slice(0, 30).forEach((row, index) => {
-          const card = document.createElement("article");
-          card.className = "archive-result";
-          const details = document.createElement("div");
-          const title = document.createElement("strong");
-          title.textContent = safeText(row.obs_id, "SPHEREx observation " + (index + 1));
-          const meta = document.createElement("span");
-          const band = safeText(row.band, "Band not listed");
-          const date = row.t_min ? " · MJD " + row.t_min : "";
-          meta.textContent = row._collection.toUpperCase() + " · " + band + date;
-          details.append(title, meta);
-          const link = document.createElement("a");
-          link.textContent = "Open data ↗";
-          link.href = row.access_url || explorerUrl.href;
-          link.target = "_blank";
-          link.rel = "noopener noreferrer";
-          card.append(details, link);
-          resultsBox.append(card);
-        });
-      }
-    } catch (error) {
-      setArchiveStatus("The Vercel archive proxy could not complete the query (" + error.message + "). You can still run the same coordinate search in IRSA's official SPHEREx Explorer using the button below.", "error");
-    } finally {
-      submitButton.disabled = false;
-      submitButton.innerHTML = 'Search SPHEREx <span>→</span>';
-    }
+  ["ra-input","dec-input","radius-input"].forEach(id => {
+    document.querySelector("#" + id).addEventListener("change", () => {
+      const url = buildExplorerUrl();
+      if (url) fallbackLink.href = url.href;
+    });
   });
 
   exampleButton.addEventListener("click", () => {
