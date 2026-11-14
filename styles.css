@@ -252,3 +252,12 @@
 
 /* Cloudflare Pages Functions now power the archive comparison tools. */
 .archive-release-note { grid-column: 1 / -1; margin: 0; color: var(--muted, #a9a5b9); font-size: .9rem; }
+
+/* Live archive search: rotating mission facts keep the wait informative. */
+.archive-loading-facts{display:flex;align-items:center;gap:14px;margin:15px 0 2px;padding:15px 17px;border:1px solid rgba(255,202,130,.22);border-radius:14px;background:linear-gradient(115deg,rgba(255,183,76,.10),rgba(17,18,31,.86));color:#e9ddc8;min-height:82px;box-shadow:0 8px 28px rgba(0,0,0,.16)}
+.archive-loading-facts[hidden]{display:none}
+.archive-loading-spinner{flex:0 0 25px;width:25px;height:25px;border:2px solid rgba(255,210,122,.22);border-top-color:#ffd27a;border-right-color:#ffd27a;border-radius:50%;animation:archive-spin .85s linear infinite}
+.archive-loading-facts .loading-kicker{display:block;color:#ffd27a;font-size:9px;font-weight:700;letter-spacing:1.6px;margin-bottom:5px}
+.archive-loading-facts p{margin:0;color:#e9ddc8;font-size:13px;line-height:1.55;transition:opacity .18s ease}
+.archive-loading-facts p.fact-changing{opacity:0}
+@keyframes archive-spin{to{transform:rotate(360deg)}}
