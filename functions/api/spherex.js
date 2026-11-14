@@ -11,11 +11,11 @@ function json(body,status=200){
   });
 }
 const IRSA="https://irsa.ipac.caltech.edu";
-async function queryCollection(collection,ra,dec,radius,range){
+async function queryCollection(collection,ra,dec,radius,range,maxrec){
   const params=new URLSearchParams({
     COLLECTION:collection,
     POS:"circle "+ra+" "+dec+" "+radius,
-    MAXREC:"5",
+    MAXREC:String(maxrec),
     RESPONSEFORMAT:"VOTABLE"
   });
   if(range) params.set("TIME",range.start+" "+range.end);
@@ -55,6 +55,8 @@ export async function onRequest({request}){
   const ra=Number(q.get("ra")),dec=Number(q.get("dec")),radius=Number(q.get("radius"));
   if(!Number.isFinite(ra)||ra<0||ra>360||!Number.isFinite(dec)||dec< -90||dec>90||!Number.isFinite(radius)||radius<=0||radius>1)
     return json({error:"Invalid sky position or search radius."},400);
+  const maxrecRaw=Number(q.get("maxrec")||150);
+  const maxrec=Number.isFinite(maxrecRaw)?Math.max(1,Math.min(150,Math.floor(maxrecRaw))):150;
   const requestedBand=String(q.get("band")||"SPHEREx-D2");
   if(requestedBand!=="all"&&!/^SPHEREx-D[1-6]$/.test(requestedBand))
     return json({error:"Choose a valid SPHEREx spectral band."},400);
@@ -80,7 +82,7 @@ export async function onRequest({request}){
     requestedRanges.map(range=>({collection,range}))
   );
   const settled=await Promise.allSettled(jobs.map(job=>
-    queryCollection(job.collection,ra,dec,radius,job.range)
+    queryCollection(job.collection,ra,dec,radius,job.range,maxrec)
   ));
   settled.forEach((item,index)=>{
     const job=jobs[index];
