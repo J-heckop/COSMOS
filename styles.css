@@ -294,3 +294,9 @@
 
 .image-retry-button{display:inline-flex;align-items:center;justify-content:center;margin:10px 10px 0 0;padding:10px 14px;border:1px solid rgba(255,210,122,.45);border-radius:999px;background:rgba(255,190,80,.1);color:#f4d99f;font:600 12px "DM Sans";cursor:pointer}
 .image-retry-button:disabled{opacity:.6;cursor:wait}
+
+
+/* Preserve the complete native FITS frame; never crop it to a short preview box. */
+.fits-image-wrap{max-height:none;overflow:auto}
+.fits-image-wrap canvas{width:100%;height:auto;max-height:none;max-width:100%;object-fit:contain;image-rendering:auto}
+@media(max-width:600px){.fits-image-wrap canvas{max-height:none}}
