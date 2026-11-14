@@ -309,3 +309,10 @@
 .fits-image-wrap span{color:#b8aa98}
 .image-status{color:#b8aa98}
 .image-fallback-link{color:#f0c77d}
+
+
+/* Remove the remaining navy-blue comparison container; use the COSMOS warm charcoal palette. */
+.image-comparison{background:#100d0b;border-color:rgba(255,205,130,.2)}
+.image-comparison-heading h4{color:#f3e7d4}
+.image-comparison-heading p{color:#b8aa98}
+.image-pane{background:#100d0b}
