@@ -5,7 +5,7 @@ export async function onRequest({request}){
   const q=new URL(request.url).searchParams,source=new URL(String(q.get("url")||""));
   if(source.protocol!=="https:"||source.hostname!=="irsa.ipac.caltech.edu"||!source.pathname.startsWith("/ibe/data/spherex/")||!source.pathname.endsWith(".fits"))
    return json({error:"Only official SPHEREx FITS image products can be opened."},400);
-  // Default to a fast, scientifically valid 0.1-degree SPHEREx preview cutout.
+  // Default to a wider 0.5-degree SPHEREx preview cutout for more image pixels.
   // Keep the original product URL separately available in the page for full-resolution access.
   const center=String(q.get("center")||"");
   const size=Number(q.get("size")||0.1);
@@ -16,11 +16,11 @@ export async function onRequest({request}){
   source.searchParams.set("center",parts[0]+","+parts[1]);
   source.searchParams.set("size",String(size));
   source.searchParams.set("gzip","false");
-  // Retry transient IRSA failures once with a smaller cutout. Do not retry
+  // Retry transient IRSA failures once with a smaller 0.15-degree cutout. Do not retry
   // non-transient errors, and keep the total wait bounded for mobile users.
   let upstream=null,lastStatus=0,usedSize=size;
   for(let attempt=0;attempt<2;attempt++){
-   usedSize=attempt===0?size:Math.min(size,0.05);
+   usedSize=attempt===0?size:Math.min(size,0.15);
    source.searchParams.set("size",String(usedSize));
    try{
     upstream=await fetch(source.toString(),{
