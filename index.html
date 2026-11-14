@@ -98,7 +98,7 @@
         <div class="time-results-grid"><section><h4>PERIOD A <span id="period-a-label"></span></h4><div id="period-a-results" class="archive-results"></div></section><section><h4>PERIOD B <span id="period-b-label"></span></h4><div id="period-b-results" class="archive-results"></div></section></div>
         <p class="time-disclaimer">The records above link to original SPHEREx FITS products. The image previews show small cutouts when the archive provides a compatible image product.</p>
       <section class="cosmos-lab" id="sky-lab">
-        <div class="lab-heading"><span class="eyebrow">THE COSMOS DISCOVERY LAB</span><h3>Go beyond the image.</h3><p>Compare loaded observations, explore the survey timeline and inspect an educational 102-band spectrum.</p></div>
+        <div class="lab-heading"><span class="eyebrow">THE COSMOS DISCOVERY LAB</span><h3>Go beyond the image.</h3><p>Compare loaded observations and explore the survey timeline. Learn how SPHEREx divides near-infrared light into 102 wavelength bands.</p></div>
         <div class="lab-tool-grid">
           <article class="lab-tool">
             <span class="lab-kicker">01 / BLINK COMPARATOR</span><h4>Switch between two periods</h4>
@@ -120,11 +120,11 @@
             <button type="button" id="timeline-compare" class="button secondary" disabled>Use this as Period B</button>
           </article>
           <article class="lab-tool">
-            <span class="lab-kicker">04 / 102-BAND SPECTRAL EXPLORER</span><h4>Explore infrared wavelengths</h4>
-            <p>This educational spectrum illustrates how a source’s brightness can vary with wavelength. It is not measured SPHEREx flux data.</p>
-            <div class="spectrum-wrap"><canvas id="spectrum-canvas" aria-label="Illustrative 102-band spectrum chart"></canvas></div>
-            <div class="spectrum-scale"><span>0.75 μm</span><span>Near-infrared</span><span>5.0 μm</span></div>
-            <div class="lab-note">Illustrative learning model · 102 wavelength bands</div>
+            <span class="lab-kicker">04 / SPHEREX'S 102 WAVELENGTH BANDS</span><h4>How SPHEREx splits infrared light</h4>
+            <p>SPHEREx records light in 102 separate near-infrared wavelength bands, spanning about 0.75–5.0 μm. Each segment below represents one band in a simplified overview.</p>
+            <div class="spectrum-wrap"><canvas id="spectrum-canvas" aria-label="Schematic overview of 102 SPHEREx wavelength bands, not measured brightness data"></canvas></div>
+            <div class="spectrum-scale"><span>0.75 μm · shorter</span><span>Wavelength coverage</span><span>5.0 μm · longer</span></div>
+            <div class="lab-note">Schematic band map · not a measured spectrum or instrument response curve</div>
           </article>
         </div>
         <div class="lab-tool-grid lab-bottom-grid">
@@ -144,7 +144,7 @@
             <div id="discovery-list" class="discovery-list"></div>
           </article>
         </div>
-        <p class="lab-disclaimer">Scientific note: the archive images are real when successfully loaded. The spectrum is illustrative, and the discovery log records your own notes; COSMOS does not automatically identify asteroids, comets, variable stars or other anomalies.</p>
+        <p class="lab-disclaimer">Scientific note: archive images are real when successfully loaded. The wavelength-band graphic is a schematic, not measured source data or instrument response curves. The discovery log records your own notes; COSMOS does not automatically identify asteroids, comets, variable stars or other anomalies.</p>
       </section>
 
         <details class="diagnostics-panel">
@@ -198,6 +198,6 @@
   <footer><a class="brand" href="#"><span class="brand-mark">✳</span> COSMOS</a><span>Made for curious minds. Built around NASA SPHEREx.</span><span class="developer-credit">Developed by <strong>JAMES</strong></span><a href="https://www.nasa.gov/" target="_blank" rel="noreferrer">NASA ↗</a></footer>
   <script type="module" src="galaxy-bg.js"></script>
   <script src="vendor/fits.js"></script>
-  <script src="script.js?v=fits-retry-20261114"></script>
+  <script src="script.js?v=band-map-clarified-20261114"></script>
 </body>
 </html>
