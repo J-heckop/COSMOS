@@ -17,8 +17,8 @@ export async function onRequest({request}) {
   const ra=Number(q.get("ra")),dec=Number(q.get("dec")),radius=Number(q.get("radius"));
   if(!Number.isFinite(ra)||ra<0||ra>360||!Number.isFinite(dec)||dec< -90||dec>90||!Number.isFinite(radius)||radius<=0||radius>1)
     return json({error:"Invalid sky position or search radius."},400);
-  const parsed=Number.parseInt(q.get("maxrec")||"30",10);
-  const maxrec=Number.isFinite(parsed)?Math.min(100,Math.max(1,parsed)):30;
+  const parsed=Number.parseInt(q.get("maxrec")||"10",10);
+  const maxrec=Number.isFinite(parsed)?Math.min(100,Math.max(1,parsed)):10;
   const collection=String(q.get("collection")||"spherex_qr3").toLowerCase();
   if(!["spherex_qr3","spherex_dr1"].includes(collection))
     return json({error:"Choose the QR3 or DR1 SPHEREx collection."},400);
