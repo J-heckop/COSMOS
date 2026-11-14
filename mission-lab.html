@@ -145,11 +145,11 @@
    const unique=[...new Map(rows.map(row=>[[row._collection,row.obs_id||row.access_url||'',row.t_min||''].join('|'),row])).values()];
    rows=unique;
    if(!rows.length){status.textContent='No released observations were returned for this position. Try a wider radius or another target.';return}
-   status.textContent='Found '+rows.length+' observation record(s)'+(payload.partial?' · Some release queries did not respond':'')+'. Select one to load its real FITS preview.';
+   status.textContent='Found '+rows.length+' archive image records across DR1 and QR3'+(payload.partial?' · Some release queries did not respond':'')+'. These are individual archive products/planes, not that many separate planets or stars.';
    rows.forEach((row,index)=>{
     const card=document.createElement('article');card.className='rounded-xl border border-slate-700 bg-slate-950/70 p-3 flex flex-col gap-2';
-    const name=document.createElement('b');name.className='text-xs text-slate-100';name.textContent=row.obs_id||'SPHEREx observation '+(index+1);
-    const meta=document.createElement('p');meta.className='text-xs text-slate-400';meta.textContent=(row._collection||'SPHEREx').toUpperCase()+' · '+mjdDate(row.t_min)+' · '+(row.band||row.energy_bandpassname||'Band not listed');
+    const name=document.createElement('b');name.className='text-xs text-slate-100';name.textContent=row.obs_id?'SPHEREx plane '+row.obs_id:'SPHEREx archive image '+(index+1);
+    const meta=document.createElement('p');meta.className='text-xs text-slate-400';meta.textContent=(row._collection||'SPHEREx').toUpperCase()+' · '+mjdDate(row.t_min)+' · '+(row.band||row.energy_bandpassname||'Band metadata unavailable');
     const btn=document.createElement('button');btn.className='action active text-xs mt-auto';btn.textContent='Load real sky image';btn.addEventListener('click',()=>loadImage(row,btn));
     card.append(name,meta,btn);results.append(card);
    });
@@ -158,10 +158,10 @@
  });
  async function loadImage(row,button){
   if(!row.access_url){imageStatus.textContent='This record has no image URL.';return}
-  panel.classList.remove('hide');canvas.width=0;canvas.height=0;placeholder.classList.remove('hide');placeholder.textContent='Loading real SPHEREx FITS cutout…';imageStatus.textContent='Requesting a 0.3° cutout from IRSA…';title.textContent=(row.obs_id||'SPHEREx observation')+' · '+mjdDate(row.t_min);original.href=row.access_url;
+  panel.classList.remove('hide');canvas.width=0;canvas.height=0;placeholder.classList.remove('hide');placeholder.textContent='Loading real SPHEREx FITS cutout…';imageStatus.textContent='Requesting a quick 0.1° cutout from IRSA…';title.textContent=(row.obs_id||'SPHEREx observation')+' · '+mjdDate(row.t_min);original.href=row.access_url;
   button.disabled=true;button.textContent='Loading…';
   try{
-   const url=new URL('/api/spherex-image',location.origin);url.search=new URLSearchParams({url:row.access_url,center:String(Number(ra.value))+','+String(Number(dec.value)),size:'0.3'}).toString();
+   const url=new URL('/api/spherex-image',location.origin);url.search=new URLSearchParams({url:row.access_url,center:String(Number(ra.value))+','+String(Number(dec.value)),size:'0.1'}).toString();
    const response=await fetch(url,{signal:AbortSignal.timeout(45000)});if(!response.ok){const problem=await response.json().catch(()=>({}));throw new Error(problem.detail||problem.error||'Image request failed (HTTP '+response.status+')')}
    const blob=await response.blob();if(blob.size<2880)throw new Error('IRSA returned an empty FITS file.');
    if(!window.astro?.FITS)throw new Error('FITS viewer library did not load.');
@@ -178,7 +178,7 @@
         const pct=p=>sample[Math.min(sample.length-1,Math.max(0,Math.floor((sample.length-1)*p)))],median=pct(.5),dev=sample.map(v=>Math.abs(v-median)).sort((a,b)=>a-b),sigma=Math.max((dev[Math.floor(dev.length/2)]||0)*1.4826,(pct(.75)-pct(.25))/1.349,1e-12),low=median+sigma*.8,high=Math.max(pct(.998),low+sigma*5),span=high-low;
         canvas.width=w;canvas.height=h;const c=canvas.getContext('2d'),out=c.createImageData(w,h);
         for(let y=0;y<h;y++)for(let x=0;x<w;x++){const v=Number(pixels[y*w+x]),z=Number.isFinite(v)&&v>low?Math.asinh(Math.max(0,Math.min(1,(v-low)/span))*5)/Math.asinh(5):0,shade=Math.round(Math.pow(z,.9)*255),i=((h-1-y)*w+x)*4;out.data[i]=shade;out.data[i+1]=Math.round(shade*.96);out.data[i+2]=Math.round(shade*.86);out.data[i+3]=255}
-        c.putImageData(out,0,0);placeholder.classList.add('hide');imageStatus.textContent='Real SPHEREx FITS preview · '+w+' × '+h+' native pixels · automatic grayscale stretch';finish(resolve);
+        c.putImageData(out,0,0);placeholder.classList.add('hide');imageStatus.textContent='Real SPHEREx FITS preview · '+w+' × '+h+' native pixels · 0.1° cutout · automatic grayscale stretch';finish(resolve);
        }catch(e){finish(reject,e)}
       });
      }catch(e){finish(reject,e)}
