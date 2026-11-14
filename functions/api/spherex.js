@@ -69,9 +69,6 @@ export async function onRequest({request}) {
     if(!Number.isFinite(start)||!Number.isFinite(end)||start<=0||end<start)return json({error:"Invalid Period B observation time range."},400);
     ranges.push({label:"B",start,end});
   }
-  const timeFilter=ranges.length
-    ?" AND ("+ranges.map(x+"").join(" OR ")+")"
-    :"";
   const bandFilter=requestedBand==="all"?"":" AND p.energy_bandpassname = '"+requestedBand+"'";
   const dateFilter=ranges.length
     ?" AND ("+ranges.map(x=>"(p.time_bounds_lower <= "+x.end+" AND p.time_bounds_upper >= "+x.start+")").join(" OR ")+")"
