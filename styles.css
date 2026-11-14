@@ -55,3 +55,7 @@
 .fits-image-wrap span[hidden]{display:none}
 .image-fallback-link{display:inline-block;margin-top:8px;color:#8fe4ee;font-size:11px;overflow-wrap:anywhere}
 @media(max-width:600px){.image-panes{grid-template-columns:minmax(0,1fr)}.image-pane{min-width:0}.fits-image-wrap span{padding:18px}}
+
+/* Animated Three.js galaxy background */
+#galaxy-scene{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0;pointer-events:none}
+.topbar,main,footer{position:relative;z-index:1}
