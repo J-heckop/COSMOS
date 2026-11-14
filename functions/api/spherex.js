@@ -21,31 +21,50 @@ async function queryCollection(collection,ra,dec,radius,range,maxrec){
   if(range) params.set("TIME",range.start+" "+range.end);
   const host="https://irsa.ipac.caltech.edu";
   let lastError="No response from IRSA";
-  // Retry transient gateway/network failures with short backoff. Releases
-  // are queried concurrently by the caller, keeping the total bounded.
-  for(let attempt=0;attempt<3;attempt++){
-    try{
-      const response=await fetch(host+"/SIA?"+params.toString(),{
-        headers:{Accept:"application/x-votable+xml, application/xml, text/xml"},
-        signal:AbortSignal.timeout(7000)
-      });
-      const xml=await response.text();
-      if(response.status===502||response.status===503||response.status===504){
-        lastError=host+" returned HTTP "+response.status+" (attempt "+(attempt+1)+"/3)";
-        if(attempt<2){await new Promise(resolve=>setTimeout(resolve,500*(attempt+1)));continue}
-        break;
-      }
-      if(!response.ok) throw new Error(host+" returned HTTP "+response.status);
-      if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml)) throw new Error(host+" returned a non-VOTable response");
-      const error=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
-      if(error) throw new Error(error[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400)||"IRSA rejected the image query");
-      return {collection,period:range?.label||null,xml,archiveHost:host};
-    }catch(error){
-      lastError=error?.name==="TimeoutError"?host+" timed out (attempt "+(attempt+1)+"/3)":(error?.message||"IRSA request failed");
-      if(attempt<2) await new Promise(resolve=>setTimeout(resolve,500*(attempt+1)));
+  // Try the fast SIA2 service first. If its gateway is unavailable,
+  // fall back to the official TAP query demonstrated in IRSA's SPHEREx tutorial.
+  try{
+    const response=await fetch(host+"/SIA?"+params.toString(),{
+      headers:{Accept:"application/x-votable+xml, application/xml, text/xml"},
+      signal:AbortSignal.timeout(5000)
+    });
+    const xml=await response.text();
+    if(response.ok && /<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml) &&
+       !/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["']/i.test(xml)){
+      return {collection,period:range?.label||null,xml,archiveHost:host,source:"SIA2"};
     }
+    lastError=host+" SIA2 returned HTTP "+response.status;
+  }catch(error){
+    lastError=error?.name==="TimeoutError"?"IRSA SIA2 timed out":(error?.message||"IRSA SIA2 failed");
   }
-  throw new Error(lastError);
+
+  const releasePath=collection==="spherex_dr1"?"/dr1/":"/qr3/";
+  const timeClause=range
+    ?" AND (p.time_bounds_lower <= "+range.end+" AND p.time_bounds_upper >= "+range.start+")"
+    :"";
+  const tapQuery="SELECT DISTINCT TOP "+maxrec+" 'https://irsa.ipac.caltech.edu/' || a.uri AS access_url, "+
+    "p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max, a.planeid AS obs_id, p.energy_bandpassname AS band "+
+    "FROM spherex.artifact a JOIN spherex.plane p ON a.planeid = p.planeid "+
+    "WHERE 1 = CONTAINS(POINT('ICRS', "+ra+", "+dec+"), p.poly) "+
+    "AND a.uri LIKE '%"+releasePath+"%'"+timeClause+
+    " ORDER BY p.time_bounds_lower";
+  const body=new URLSearchParams({REQUEST:"doQuery",LANG:"ADQL",FORMAT:"votable",QUERY:tapQuery});
+  const tap=await fetch(host+"/TAP/sync",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/x-www-form-urlencoded",
+      "Accept":"application/x-votable+xml, application/xml, text/xml"
+    },
+    body,
+    signal:AbortSignal.timeout(20000)
+  });
+  const tapXml=await tap.text();
+  if(!tap.ok) throw new Error(lastError+"; TAP fallback returned HTTP "+tap.status);
+  if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(tapXml))
+    throw new Error(lastError+"; TAP fallback returned an unexpected response");
+  const tapError=tapXml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
+  if(tapError) throw new Error(tapError[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400)||"IRSA TAP rejected the fallback query");
+  return {collection,period:range?.label||null,xml:tapXml,archiveHost:host,source:"TAP fallback"};
 }
 export async function onRequest({request}){
   if(request.method!=="GET") return json({error:"Use GET for archive searches."},405);
