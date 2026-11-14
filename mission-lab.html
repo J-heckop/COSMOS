@@ -147,13 +147,29 @@
    rows=unique;
    if(!rows.length){status.textContent='No released observations were returned for this position. Try a wider radius or another target.';return}
    status.textContent='Found '+rows.length+' archive image records across DR1 and QR3'+(payload.partial?' · Some release queries did not respond':'')+'. These are individual archive products/planes, not that many separate planets or stars.';
+   const cards=[];
    rows.forEach((row,index)=>{
     const card=document.createElement('article');card.className='rounded-xl border border-slate-700 bg-slate-950/70 p-3 flex flex-col gap-2';
     const name=document.createElement('b');name.className='text-xs text-slate-100';name.textContent=row.obs_id?'SPHEREx plane '+row.obs_id:'SPHEREx archive image '+(index+1);
     const meta=document.createElement('p');meta.className='text-xs text-slate-400';meta.textContent=(row._collection||'SPHEREx').toUpperCase()+' · '+mjdDate(row.t_min)+' · '+(row.band||row.energy_bandpassname||'Band metadata unavailable');
     const btn=document.createElement('button');btn.className='action active text-xs mt-auto';btn.textContent='Load real sky image';btn.addEventListener('click',()=>loadImage(row,btn));
-    card.append(name,meta,btn);results.append(card);
+    card.append(name,meta,btn);
+    if(index>=4) card.hidden=true;
+    cards.push(card);results.append(card);
    });
+   if(cards.length>4){
+    const more=document.createElement('button');
+    more.type='button';more.className='action w-full text-sm mt-2';
+    more.textContent='View more observations ('+(cards.length-4)+' more)';
+    more.setAttribute('aria-expanded','false');
+    more.addEventListener('click',()=>{
+     const expanded=more.getAttribute('aria-expanded')==='true';
+     cards.slice(4).forEach(card=>{card.hidden=expanded});
+     more.setAttribute('aria-expanded',String(!expanded));
+     more.textContent=expanded?'View more observations ('+(cards.length-4)+' more)':'Show fewer observations';
+    });
+    results.append(more);
+   }
   }catch(error){status.textContent='Could not search the live archive: '+error.message}
   finally{search.disabled=false;search.textContent='⌕ Search live observations'}
  });
