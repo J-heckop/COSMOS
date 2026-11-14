@@ -431,7 +431,7 @@ if (timeForm) {
     outputA.replaceChildren(); outputB.replaceChildren();
     timeButton.disabled = true;
     timeButton.textContent = "Comparing…";
-    timeStatus.textContent = "Searching SPHEREx DR1 and QR3 for both time windows…";
+    timeStatus.textContent = "Searching the archive for both periods… Image previews will load only when you request them.";
     timeStatus.className = "archive-status";
     async function queryWindow(start, end) {
       const url = new URL("/api/spherex", window.location.origin);
@@ -455,17 +455,18 @@ if (timeForm) {
       const [a,b] = await Promise.all([queryWindow(aStart,aEnd),queryWindow(bStart,bEnd)]);
       appendTimeRecords(outputA,a.map(x=>x.row),"DR1 / QR3");
       appendTimeRecords(outputB,b.map(x=>x.row),"DR1 / QR3");
-      const radiusForImage = Number(document.querySelector("#radius-input").value);
-      if (a.length) renderSpherexImage("a", a[0].row, ra, dec, radiusForImage);
+      // Keep the comparison fast: never download or parse FITS images during metadata search.
+      // Users can request a preview with the individual "Preview image" button on any result.
+      if (a.length) setImageMessage("a", "Comparison ready. Tap Preview image on a Period A observation below to load its FITS cutout.");
       else setImageMessage("a", "No matching observation image in Period A.");
-      if (b.length) renderSpherexImage("b", b[0].row, ra, dec, radiusForImage);
+      if (b.length) setImageMessage("b", "Comparison ready. Tap Preview image on a Period B observation below to load its FITS cutout.");
       else setImageMessage("b", "No matching observation image in Period B.");
       // Replace generic collection labels with the actual release for each result row.
       [ [outputA,a], [outputB,b] ].forEach(([container,sets]) => {
         const links=[...container.querySelectorAll(".archive-result")];
         links.forEach((item,index) => { const meta=item.querySelector("span"); if(meta && sets[index]) meta.textContent=sets[index].collection.toUpperCase()+" · "+timeSafeText(sets[index].row.band || sets[index].row.energy_bandpassname,"Band not listed")+" · "+(Number.isFinite(Number(sets[index].row.t_min))?new Date((Number(sets[index].row.t_min)-40587)*86400000).toISOString().slice(0,10):"Date not listed"); });
       });
-      timeStatus.textContent = "Comparison complete: " + a.length + " observation(s) in Period A and " + b.length + " in Period B. Compare their dates and bands, then open the original FITS data to inspect each observation.";
+      timeStatus.textContent = "Comparison ready: " + a.length + " observation(s) in Period A and " + b.length + " in Period B. Image downloads are separate—tap Preview image on a record when you want to inspect it.";
       timeStatus.className = "archive-status success";
     } catch (error) {
       timeStatus.textContent = "The archive proxy could not complete the request (" + error.message + "). Try the official SPHEREx Data Explorer, which supports position and timing constraints.";
