@@ -32,3 +32,18 @@
 .diagnostics-panel .archive-status{margin-top:12px}
 .results-toggle{margin-top:9px;padding:10px 13px;border:1px solid #8c83c055;border-radius:9px;background:#171d35;color:#c9c0ff;font:600 11px "DM Sans";cursor:pointer}
 .archive-result[hidden]{display:none}
+
+/* Side-by-side real SPHEREx FITS previews */
+.image-comparison{margin:24px 0;padding:20px;background:#0c1328;border:1px solid #8b83c044;border-radius:15px}
+.image-comparison-heading h4{margin:6px 0;color:#f1f3ff;font:600 19px "Space Grotesk"}
+.image-comparison-heading p{margin:0;color:#9da8c2;font-size:12px;line-height:1.6}
+.image-panes{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:17px}
+.image-pane{min-width:0;padding:12px;background:#080e20;border:1px solid #ffffff16;border-radius:11px}
+.image-pane h5{margin:0 0 9px;color:#c6b9ff;font:700 10px "DM Sans";letter-spacing:1.4px}
+.fits-image-wrap{position:relative;display:flex;align-items:center;justify-content:center;min-height:145px;overflow:hidden;background:#050914;border-radius:8px}
+.fits-image-wrap canvas{display:block;width:100%;height:auto;max-height:260px;object-fit:contain}
+.fits-image-wrap span{padding:16px;color:#8d98b5;font-size:11px;text-align:center;line-height:1.5}
+.image-status{min-height:28px;margin:9px 0 0;color:#9ba6c2;font-size:10px;line-height:1.5;overflow-wrap:anywhere}
+.preview-image-button{display:inline-flex;margin-top:8px;padding:7px 10px;border:1px solid #8f83e966;border-radius:8px;background:#171d35;color:#cfc5ff;font:600 10px "DM Sans";cursor:pointer}
+.archive-result{flex-wrap:wrap}
+@media(max-width:600px){.image-comparison{padding:14px}.image-panes{grid-template-columns:1fr}.fits-image-wrap{min-height:180px}.fits-image-wrap canvas{max-height:300px}}
