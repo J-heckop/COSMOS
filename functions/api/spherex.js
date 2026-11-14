@@ -72,7 +72,7 @@ export async function onRequest({request}) {
         "Accept":"application/x-votable+xml, application/xml, text/xml"
       },
       body,
-      signal:AbortSignal.timeout(25000)
+      signal:AbortSignal.timeout(55000)
     });
     const xml=await response.text();
     if(!response.ok)throw new Error("IRSA TAP returned HTTP "+response.status);
