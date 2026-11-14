@@ -269,3 +269,9 @@
 .topbar nav a:last-child:hover{color:#211407;filter:brightness(1.08);transform:translateY(-1px)}
 @media(max-width:760px){.topbar{gap:10px}.topbar nav{margin-left:auto}.topbar nav a:last-child{display:inline-flex;padding:12px 17px;font-size:13px;min-height:43px}}
 @media(max-width:380px){.topbar{padding:0 12px}.topbar nav a:last-child{padding:10px 12px;font-size:12px}.brand{font-size:15px}}
+
+
+/* Give larger native SPHEREx cutouts room to display without extra blur. */
+.fits-image-wrap{min-height:220px}
+.fits-image-wrap canvas{width:100%;height:auto;max-height:380px;object-fit:contain;image-rendering:auto}
+@media(max-width:600px){.fits-image-wrap{min-height:220px}.fits-image-wrap canvas{max-height:380px}}
