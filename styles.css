@@ -220,3 +220,5 @@
 .discovery-list{display:grid;gap:7px;margin-top:10px}.discovery-entry{padding:9px;border:1px solid rgba(255,202,130,.13);border-radius:8px;color:#e9ddc8;font-size:10px;line-height:1.5}.discovery-entry small{display:block;color:#a99b83;margin-top:5px}
 .lab-disclaimer{margin:17px 0 0;color:#b6a78e;font-size:10px;line-height:1.7}
 @media(max-width:650px){.cosmos-lab{padding:16px}.lab-tool-grid{grid-template-columns:1fr}.lab-tool{padding:14px}.wipe-frame{min-height:180px}}
+
+.image-panes.blink-show-a .image-pane:nth-child(2),.image-panes.blink-show-b .image-pane:nth-child(1){display:none}.image-panes.blink-show-a,.image-panes.blink-show-b{grid-template-columns:minmax(0,1fr)}
