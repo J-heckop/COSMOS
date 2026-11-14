@@ -495,12 +495,29 @@ if (timeForm) {
       preview.type = "button";
       preview.className = "preview-image-button";
       preview.textContent = "View sky image";
-      preview.addEventListener("click", () => {
+      preview.addEventListener("click", async () => {
         const period = target.id === "period-a-results" ? "a" : "b";
         const ra = Number(document.querySelector("#ra-input").value);
         const dec = Number(document.querySelector("#dec-input").value);
         const radius = Number(document.querySelector("#radius-input").value);
-        renderSpherexImage(period, row, ra, dec, radius);
+        preview.disabled = true;
+        preview.textContent = "Loading image…";
+        try {
+          await renderSpherexImage(period, row, ra, dec, radius);
+          const canvas = document.querySelector("#image-" + period);
+          if (!canvas || !canvas.width) {
+            const alternatives = unique.filter(candidate => candidate !== row && candidate.access_url).slice(0, 2);
+            for (const alternative of alternatives) {
+              const status = document.querySelector("#image-" + period + "-status");
+              if (status) status.textContent = "Trying another observation from this date…";
+              await renderSpherexImage(period, alternative, ra, dec, radius);
+              if (canvas && canvas.width) break;
+            }
+          }
+        } finally {
+          preview.disabled = false;
+          preview.textContent = "View sky image";
+        }
       });
       const link = document.createElement("a");
       link.textContent = "Open FITS data ↗";
