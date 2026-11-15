@@ -40,7 +40,11 @@ export async function onRequest({request}) {
     // Cache successful collection responses at the edge so repeat searches
     // for the same sky position do not need another IRSA round-trip.
     const cache=typeof caches!=="undefined"&&caches.default?caches.default:null;
-    const cacheKey=new Request(url.toString(),{method:"GET"});
+    // Cloudflare Cache API keys must be on this site's zone. Use a synthetic
+    // same-origin key while preserving the complete upstream query string.
+    const cacheUrl=new URL("/__cosmos-cache/spherex",request.url);
+    cacheUrl.search=url.search;
+    const cacheKey=new Request(cacheUrl.toString(),{method:"GET"});
     let xml=null;
     if(cache){
       try{
