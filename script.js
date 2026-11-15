@@ -244,6 +244,36 @@ if (timeForm) {
   const today = new Date().toISOString().slice(0, 10);
   let discoveredDates = [];
   let discoveredPosition = "";
+  const comparisonTarget = document.querySelector("#comparison-target");
+  const comparisonTargetReadout = document.querySelector("#comparison-target-readout");
+  function updateComparisonTargetReadout() {
+    const ra = document.querySelector("#ra-input").value;
+    const dec = document.querySelector("#dec-input").value;
+    comparisonTargetReadout.textContent = ra !== "" && dec !== ""
+      ? "Current sky centre: RA " + Number(ra).toFixed(6) + "° · Dec " + Number(dec).toFixed(6) + "°"
+      : "Current sky centre: enter coordinates above";
+  }
+  comparisonTarget.addEventListener("change", () => {
+    if (comparisonTarget.value) {
+      const [coordinates, name] = comparisonTarget.value.split("|");
+      const [ra, dec] = coordinates.split(",");
+      document.querySelector("#ra-input").value = ra;
+      document.querySelector("#dec-input").value = dec;
+      document.querySelector("#target-name").value = name;
+      document.querySelector("#ra-input").dispatchEvent(new Event("input", {bubbles:true}));
+      document.querySelector("#dec-input").dispatchEvent(new Event("input", {bubbles:true}));
+      timeStatus.textContent = name + " selected. Discover dates to search this same sky location in both periods.";
+      timeStatus.className = "archive-status";
+      dateA.disabled = dateB.disabled = true;
+      timeButton.disabled = true;
+    }
+    updateComparisonTargetReadout();
+  });
+  ["ra-input","dec-input"].forEach(id => document.querySelector("#"+id).addEventListener("input", () => {
+    if (comparisonTarget.value) comparisonTarget.value = "";
+    updateComparisonTargetReadout();
+  }));
+  updateComparisonTargetReadout();
 
   function timeSafeText(value, fallback = "Not supplied") {
     return value && value !== "null" && value !== "undefined" ? value : fallback;
@@ -498,7 +528,7 @@ if (timeForm) {
                 }
                 context.putImageData(pixelsOut, 0, 0);
                 placeholder.hidden = true;
-                status.textContent = "Showing 0.3° SPHEREx preview · " + width + " × " + height + " native pixels · " + timeSafeText(row.obs_id, "SPHEREx observation");
+                status.textContent = "Same sky centre · RA " + Number(ra).toFixed(6) + "° · Dec " + Number(dec).toFixed(6) + "° · 0.3° SPHEREx cutout · " + width + " × " + height + " native pixels · " + timeSafeText(row.obs_id, "SPHEREx observation");
                 finish(resolve);
               } catch (error) { finish(reject, error); }
             });
