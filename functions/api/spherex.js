@@ -29,7 +29,7 @@ async function queryCollection(collection,ra,dec,radius,range,maxrec){
     try{
       const response=await fetch(host+"/SIA?"+params.toString(),{
         headers:{Accept:"application/x-votable+xml, application/xml, text/xml"},
-        signal:AbortSignal.timeout(3500)
+        signal:AbortSignal.timeout(6000)
       });
       const xml=await response.text();
       if(response.ok && /<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml) &&
@@ -40,7 +40,7 @@ async function queryCollection(collection,ra,dec,radius,range,maxrec){
       if(![429,500,502,503,504].includes(response.status)||attempt===1) break;
     }catch(error){
       lastError=error?.name==="TimeoutError"?"IRSA SIA2 timed out":(error?.message||"IRSA SIA2 failed");
-      if(attempt===1) break;
+      if(attempt===1 || error?.name==="TimeoutError") break;
     }
     await new Promise(resolve=>setTimeout(resolve,400));
   }
@@ -56,16 +56,23 @@ async function queryCollection(collection,ra,dec,radius,range,maxrec){
     "AND a.uri LIKE '%"+releasePath+"%'"+timeClause+
     " ORDER BY p.time_bounds_lower";
   const body=new URLSearchParams({REQUEST:"doQuery",LANG:"ADQL",FORMAT:"votable",QUERY:tapQuery});
-  const tap=await fetch(host+"/TAP/sync",{
-    method:"POST",
-    headers:{
-      "Content-Type":"application/x-www-form-urlencoded",
-      "Accept":"application/x-votable+xml, application/xml, text/xml"
-    },
-    body,
-    signal:AbortSignal.timeout(12000)
-  });
-  const tapXml=await tap.text();
+  // TAP can briefly return a gateway error while the archive is busy.
+  // Retry only HTTP gateway failures; do not repeat timed-out expensive queries.
+  let tap, tapXml="";
+  for(let attempt=0;attempt<2;attempt++){
+    tap=await fetch(host+"/TAP/sync",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/x-www-form-urlencoded",
+        "Accept":"application/x-votable+xml, application/xml, text/xml"
+      },
+      body,
+      signal:AbortSignal.timeout(10000)
+    });
+    tapXml=await tap.text();
+    if(![429,500,502,503,504].includes(tap.status)||attempt===1) break;
+    await new Promise(resolve=>setTimeout(resolve,650));
+  }
   if(!tap.ok) throw new Error(lastError+"; TAP fallback returned HTTP "+tap.status);
   if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(tapXml))
     throw new Error(lastError+"; TAP fallback returned an unexpected response");
@@ -102,7 +109,10 @@ export async function onRequest({request}){
   const results=[],errors=[];
   // Query releases in parallel so the browser does not time out while
   // waiting for one slow collection. Each collection has its own host fallback.
-  const jobs=["spherex_qr3","spherex_dr1"].flatMap(collection=>
+  const selectedCollection=String(q.get("collection")||"both");
+  const collections=selectedCollection==="spherex_qr3"||selectedCollection==="spherex_dr1"
+    ?[selectedCollection]:["spherex_qr3","spherex_dr1"];
+  const jobs=collections.flatMap(collection=>
     requestedRanges.map(range=>({collection,range}))
   );
   const settled=await Promise.allSettled(jobs.map(job=>
