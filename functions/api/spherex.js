@@ -38,9 +38,9 @@ export async function onRequest({request}) {
     });
     const xml=await response.text();
     if(!response.ok) throw new Error("IRSA SIA2 returned HTTP "+response.status+": "+xml.slice(0,300).replace(/<[^>]*>/g," ").trim());
-    const queryError=xml.match(/<INFO\\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\\s\\S]*?)<\\/INFO>/i);
-    if(queryError) throw new Error(queryError[1].replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim().slice(0,400)||"IRSA SIA2 rejected the query.");
-    if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\\b/i.test(xml))
+    const queryError=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
+    if(queryError) throw new Error(queryError[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400)||"IRSA SIA2 rejected the query.");
+    if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml))
       throw new Error("IRSA SIA2 returned an unexpected response.");
     return {collection:name,period:null,xml};
   }));
