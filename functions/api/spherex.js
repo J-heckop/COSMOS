@@ -35,12 +35,29 @@ export async function onRequest({request}) {
       RESPONSEFORMAT:"VOTABLE",
       MAXREC:String(maxrec)
     }).toString();
-    const response=await fetch(url.toString(),{
-      headers:{Accept:"application/x-votable+xml, text/xml;q=0.9, */*;q=0.1"},
-      signal:AbortSignal.timeout(25000)
-    });
-    const xml=await response.text();
-    if(!response.ok) throw new Error("IRSA SIA2 returned HTTP "+response.status+": "+xml.slice(0,300).replace(/<[^>]*>/g," ").trim());
+    const headers={Accept:"application/x-votable+xml, text/xml;q=0.9, */*;q=0.1"};
+    let response,xml,lastError;
+    // IRSA occasionally returns transient gateway errors. Retry once, then
+    // retry using SIA2's default VOTable format rather than forcing a format.
+    for(let attempt=0;attempt<3;attempt++){
+      const retryUrl=new URL(url);
+      if(attempt===2) retryUrl.searchParams.delete("RESPONSEFORMAT");
+      try{
+        response=await fetch(retryUrl.toString(),{
+          headers,
+          signal:AbortSignal.timeout(20000)
+        });
+        xml=await response.text();
+        if(response.ok) break;
+        lastError=new Error("IRSA SIA2 returned HTTP "+response.status+": "+xml.slice(0,300).replace(/<[^>]*>/g," ").trim());
+        if(![502,503,504].includes(response.status)||attempt===2) throw lastError;
+      }catch(error){
+        lastError=error;
+        if(attempt===2||(!/HTTP 502|HTTP 503|HTTP 504/.test(error.message||"")&&error.name!=="TimeoutError")) throw error;
+      }
+      await new Promise(resolve=>setTimeout(resolve,500*(attempt+1)));
+    }
+    if(!response?.ok) throw lastError||new Error("IRSA SIA2 request failed.");
     const queryError=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
     if(queryError) throw new Error(queryError[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400)||"IRSA SIA2 rejected the query.");
     if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml))
