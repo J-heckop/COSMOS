@@ -802,13 +802,11 @@ if (timeForm) {
       const url = new URL("/api/spherex", window.location.origin);
       url.search = new URLSearchParams({
         ra:String(ra), dec:String(dec), radius:String(radius),
-        startA:String(dateToMJD(aDate)), endA:String(dateToMJD(aDate,true)),
-        startB:String(dateToMJD(bDate)), endB:String(dateToMJD(bDate,true)),
         collection:document.querySelector("#collection-input")?.value || "spherex_qr3",
-        maxrec:"30"
+        maxrec:"5000"
       }).toString();
-      timeStatus.textContent = "Searching SPHEREx for both selected dates in parallel…";
-      const response = await fetch(url,{signal:AbortSignal.timeout(28000)});
+      timeStatus.textContent = "Loading archive observations for this sky position, then matching your two selected dates…";
+      const response = await fetch(url,{signal:AbortSignal.timeout(65000)});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive proxy failed");
       const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml).map(row=>({...row,_collection:result.collection,_period:result.period})));
@@ -832,7 +830,7 @@ if (timeForm) {
           if(meta&&row) meta.textContent=row._collection.toUpperCase()+" · "+timeSafeText(row.band,"Band not listed")+" · "+(Number.isFinite(Number(row.t_min))?new Date((Number(row.t_min)-40587)*86400000).toISOString().slice(0,10):"Date not listed");
         });
       });
-      timeStatus.textContent="Comparison ready: "+a.length+" observation(s) in Period A and "+b.length+" in Period B. One combined archive query was used; images load only when requested.";
+      timeStatus.textContent="Comparison ready: "+a.length+" observation(s) in Period A and "+b.length+" in Period B, matched from the returned archive observation times. Images load only when requested.";
       timeStatus.className="archive-status success";
     } catch (error) {
       timeStatus.textContent = "The archive proxy could not complete the request (" + error.message + "). Try the official SPHEREx Data Explorer, which supports position and timing constraints.";
