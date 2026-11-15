@@ -325,3 +325,11 @@
 
 /* Ensure filtered topic cards are actually removed from the grid. */
 .object-card[hidden] { display: none !important; }
+
+
+/* Same-sky location picker for date-to-date comparisons */
+.sky-location-picker{display:grid;gap:8px;margin:0 0 18px;padding:16px;border:1px solid rgba(255,202,130,.24);border-radius:13px;background:rgba(255,190,80,.055)}
+.sky-location-picker label{color:#ffd27a;font-size:12px;font-weight:700;letter-spacing:.04em}
+.sky-location-picker select{width:100%;min-height:50px;padding:12px 14px;border:1px solid rgba(255,205,130,.28);border-radius:10px;background:#100d0b;color:#f3e7d4;font:500 13px "DM Sans";color-scheme:dark}
+.sky-location-picker p{margin:0;color:#c9bba5;font-size:11px;line-height:1.6}
+#comparison-target-readout{color:#ffe0a0;font-size:11px;font-weight:600;overflow-wrap:anywhere}
