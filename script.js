@@ -407,11 +407,13 @@ if (timeForm) {
   discoverButton.addEventListener("click", async () => {
     if (!loadMoreRequested) archiveMaxRecords = 150;
     loadMoreRequested = false;
-    const ra = Number(document.querySelector("#ra-input").value);
-    const dec = Number(document.querySelector("#dec-input").value);
+    const raText = document.querySelector("#ra-input").value.trim();
+    const decText = document.querySelector("#dec-input").value.trim();
+    const ra = Number(raText);
+    const dec = Number(decText);
     const radius = Number(document.querySelector("#radius-input").value);
-    if (!Number.isFinite(ra) || ra < 0 || ra > 360 || !Number.isFinite(dec) || dec < -90 || dec > 90) {
-      timeStatus.textContent = "Enter valid RA and Dec coordinates in the archive search above first.";
+    if (!raText || !decText || !Number.isFinite(ra) || ra < 0 || ra > 360 || !Number.isFinite(dec) || dec < -90 || dec > 90) {
+      timeStatus.textContent = "Enter RA and Dec coordinates in the archive search above before discovering dates.";
       timeStatus.className = "archive-status error";
       return;
     }
