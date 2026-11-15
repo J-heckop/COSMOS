@@ -11,6 +11,41 @@ function json(body,status=200,extra={}) {
   });
 }
 
+async function queryTapFallback({ra,dec,radius,collection,maxrec,band}){
+  const bandFilter=band&&band!=="all"
+    ? " AND p.energy_bandpassname = '"+String(band).replace(/[^A-Za-z0-9_-]/g,"")+"'"
+    : "";
+  const adql=`SELECT TOP ${maxrec}
+    '${"https://irsa.ipac.caltech.edu/"}' || a.uri || '?center=${ra},${dec}d&size=${radius}' AS access_url,
+    p.time_bounds_lower AS t_min,
+    p.time_bounds_upper AS t_max,
+    p.energy_bandpassname AS band,
+    p.planeid AS obs_id
+  FROM spherex.artifact a
+  JOIN spherex.plane p ON a.planeid = p.planeid
+  JOIN spherex.observation o ON o.obsid = p.obsid
+  WHERE 1 = CONTAINS(POINT('ICRS', ${ra}, ${dec}), p.poly)
+    AND o.collection = '${collection}'${bandFilter}
+  ORDER BY p.time_bounds_lower`;
+  const body=new URLSearchParams({
+    REQUEST:"doQuery",
+    LANG:"ADQL",
+    FORMAT:"votable",
+    QUERY:adql
+  });
+  const response=await fetch("https://irsa.ipac.caltech.edu/TAP/sync",{
+    method:"POST",
+    headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},
+    body:body.toString(),
+    signal:AbortSignal.timeout(45000)
+  });
+  const xml=await response.text();
+  if(!response.ok) throw new Error("IRSA TAP fallback returned HTTP "+response.status+": "+xml.slice(0,250).replace(/<[^>]*>/g," ").trim());
+  if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\\b/i.test(xml))
+    throw new Error("IRSA TAP fallback returned an unexpected response.");
+  return xml;
+}
+
 export async function onRequest({request}) {
   if(request.method!=="GET") return json({error:"Use GET for archive searches."},405,{Allow:"GET"});
   const q=new URL(request.url).searchParams;
@@ -23,6 +58,7 @@ export async function onRequest({request}) {
   const parsed=Number.parseInt(q.get("maxrec")||"150",10);
   const maxrec=Number.isFinite(parsed)?Math.min(5000,Math.max(1,parsed)):150;
   const collection=String(q.get("collection")||"both").toLowerCase();
+  const band=String(q.get("band")||"all");
   const collections=collection==="both"?["spherex_dr1","spherex_qr3"]:[collection];
   if(!collections.every(name=>["spherex_qr3","spherex_dr1"].includes(name)))
     return json({error:"Choose DR1, QR3, or both SPHEREx collections."},400);
@@ -55,17 +91,29 @@ export async function onRequest({request}) {
     if(xml===null){
       let response;
       // Retry transient gateway responses with short exponential backoff.
+      let siaFailure=null;
       for(let attempt=0;attempt<3;attempt++){
-        response=await fetch(url.toString(),{
-          signal:AbortSignal.timeout(25000)
-        });
-        xml=await response.text();
-        if(response.ok) break;
-        if(![502,503,504].includes(response.status)||attempt===2)
-          throw new Error("IRSA SIA2 returned HTTP "+response.status+": "+xml.slice(0,300).replace(/<[^>]*>/g," ").trim());
+        try{
+          response=await fetch(url.toString(),{
+            signal:AbortSignal.timeout(25000)
+          });
+          xml=await response.text();
+          if(response.ok) break;
+          siaFailure=new Error("IRSA SIA2 returned HTTP "+response.status+": "+xml.slice(0,300).replace(/<[^>]*>/g," ").trim());
+          if(![502,503,504].includes(response.status)||attempt===2) break;
+        }catch(error){
+          siaFailure=error;
+          if(attempt===2) break;
+        }
         await new Promise(resolve=>setTimeout(resolve,500*Math.pow(2,attempt)));
       }
-      if(!response?.ok) throw new Error("IRSA SIA2 request failed.");
+      if(!response?.ok){
+        try{
+          xml=await queryTapFallback({ra,dec,radius,collection:task.name,maxrec,band});
+        }catch(tapError){
+          throw new Error((siaFailure?.message||"IRSA SIA2 failed.")+"; TAP fallback: "+tapError.message);
+        }
+      }
     }
     const queryError=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
     if(queryError) throw new Error(queryError[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400)||"IRSA SIA2 rejected the query.");
