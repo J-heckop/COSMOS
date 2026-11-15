@@ -27,13 +27,23 @@ export async function onRequest({request}) {
   if(!collections.every(name=>["spherex_qr3","spherex_dr1"].includes(name)))
     return json({error:"Choose DR1, QR3, or both SPHEREx collections."},400);
 
-  const jobs=await Promise.allSettled(collections.map(async name=>{
+  // Date discovery keeps the original unfiltered SIA2 request. Comparisons
+  // issue separate TIME-constrained requests for each selected period.
+  const startA=q.get("startA"),endA=q.get("endA"),startB=q.get("startB"),endB=q.get("endB");
+  const comparing=[startA,endA,startB,endB].every(value=>value!==null&&Number.isFinite(Number(value)));
+  const periods=comparing
+    ?[{period:"a",start:startA,end:endA},{period:"b",start:startB,end:endB}]
+    :[{period:null,start:null,end:null}];
+  const tasks=collections.flatMap(name=>periods.map(period=>({name,...period})));
+  const jobs=await Promise.allSettled(tasks.map(async task=>{
     const url=new URL("https://irsa.ipac.caltech.edu/SIA");
-    url.search=new URLSearchParams({
-      COLLECTION:name,
+    const params=new URLSearchParams({
+      COLLECTION:task.name,
       POS:"CIRCLE "+ra+" "+dec+" "+radius,
       MAXREC:String(maxrec)
-    }).toString();
+    });
+    if(task.period) params.set("TIME",task.start+"/"+task.end);
+    url.search=params.toString();
     const response=await fetch(url.toString(),{
       signal:AbortSignal.timeout(25000)
     });
@@ -43,12 +53,12 @@ export async function onRequest({request}) {
     if(queryError) throw new Error(queryError[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400)||"IRSA SIA2 rejected the query.");
     if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml))
       throw new Error("IRSA SIA2 returned an unexpected response.");
-    return {collection:name,period:null,xml};
+    return {collection:task.name,period:task.period,xml};
   }));
 
   const results=jobs.filter(x=>x.status==="fulfilled").map(x=>x.value);
   const errors=jobs.map((x,i)=>x.status==="rejected"
-    ?{collection:collections[i],error:x.reason?.name==="TimeoutError"?"IRSA SIA2 request timed out":x.reason?.message||"Archive query failed."}
+    ?{collection:tasks[i].name,period:tasks[i].period,error:x.reason?.name==="TimeoutError"?"IRSA SIA2 request timed out":x.reason?.message||"Archive query failed."}
     :null).filter(Boolean);
   if(!results.length){
     return json({
