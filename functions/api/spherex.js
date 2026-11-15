@@ -147,8 +147,11 @@ export async function onRequest({request}){
   // Query releases in parallel so the browser does not time out while
   // waiting for one slow collection. Each collection has its own host fallback.
   const selectedCollection=String(q.get("collection")||"both");
-  const collections=selectedCollection==="spherex_qr3"||selectedCollection==="spherex_dr1"
-    ?[selectedCollection]:["spherex_qr3","spherex_dr1"];
+  const collections=selectedCollection==="spherex_qr3"
+    ?["spherex_qr3","spherex_qr3_deep"]
+    :selectedCollection==="spherex_dr1"
+      ?["spherex_dr1","spherex_dr1_deep"]
+      :["spherex_qr3","spherex_qr3_deep","spherex_dr1","spherex_dr1_deep"];
   const jobs=collections.flatMap(collection=>
     requestedRanges.map(range=>({collection,range}))
   );
