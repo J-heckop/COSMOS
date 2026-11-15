@@ -8,9 +8,9 @@ function send(res, status, body) {
 }
 
 function xmlTag(xml, name) {
-  const escaped = name.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&");
-  const match = xml.match(new RegExp("<(?:[A-Za-z0-9_]+:)?" + escaped + "\\b[^>]*>([\\s\\S]*?)</(?:[A-Za-z0-9_]+:)?" + escaped + ">", "i"));
-  return match ? match[1].replace(/<!\\[CDATA\\[|\\]\\]>/g, "").replace(/<[^>]*>/g, "").trim() : "";
+  const pattern = "<(?:[A-Za-z0-9_]+:)?" + name + "[^>]*>([\\s\\S]*?)</(?:[A-Za-z0-9_]+:)?" + name + ">";
+  const match = xml.match(new RegExp(pattern, "i"));
+  return match ? match[1].replace(/<!\[CDATA\[|\]\]>/g, "").replace(/<[^>]*>/g, "").trim() : "";
 }
 
 module.exports = async function handler(req, res) {
@@ -21,7 +21,7 @@ module.exports = async function handler(req, res) {
 
   const rawName = req.query && req.query.name;
   const name = (Array.isArray(rawName) ? rawName[0] : String(rawName || "")).trim();
-  if (!name || name.length > 100 || /[<>\\u0000-\\u001f]/.test(name)) {
+  if (!name || name.length > 100 || /[<>\u0000-\u001f]/.test(name)) {
     return send(res, 400, { error: "Enter an astronomical object name (up to 100 characters)." });
   }
 
@@ -47,7 +47,6 @@ module.exports = async function handler(req, res) {
       const raText = xmlTag(xml, "jradeg");
       const decText = xmlTag(xml, "jdedeg");
       const resolvedName = xmlTag(xml, "oname") || xmlTag(xml, "name");
-
       if (!raText || !decText || !resolvedName) {
         lastError = "No confirmed coordinates were found for “" + name + "”. Try a more specific object name.";
         continue;
@@ -60,7 +59,6 @@ module.exports = async function handler(req, res) {
         lastError = "The resolver returned invalid coordinates. Try another object designation.";
         continue;
       }
-
       return send(res, 200, { name: resolvedName, ra, dec, source: "CDS Sesame" });
     } catch (error) {
       lastError = error && error.name === "TimeoutError"
@@ -68,6 +66,5 @@ module.exports = async function handler(req, res) {
         : (error && error.message ? error.message : lastError);
     }
   }
-
   return send(res, 502, { error: lastError });
 };
