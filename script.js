@@ -811,15 +811,15 @@ if (timeForm) {
       const response = await fetch(url,{signal:AbortSignal.timeout(28000)});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive proxy failed");
-      const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml).map(row=>({...row,_collection:result.collection})));
+      const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml).map(row=>({...row,_collection:result.collection,_period:result.period})));
       const overlaps = (row,date) => {
         const lower=Number(row.t_min), upper=Number(row.t_max || row.t_min);
         const lo=dateToMJD(date), hi=dateToMJD(date,true);
         return Number.isFinite(lower) && lower<=hi && Number.isFinite(upper) && upper>=lo;
       };
       const uniqueRows = rows => [...new Map(rows.map(row=>[[row._collection,row.obs_id||"",row.access_url||"",row.t_min||""].join("|"),row])).values()];
-      const a=uniqueRows(records.filter(row=>overlaps(row,aDate)));
-      const b=uniqueRows(records.filter(row=>overlaps(row,bDate)));
+      const a=uniqueRows(records.filter(row=>row._period==="a" || (!row._period && overlaps(row,aDate))));
+      const b=uniqueRows(records.filter(row=>row._period==="b" || (!row._period && overlaps(row,bDate))));
       appendTimeRecords(outputA,a,"SPHEREx archive");
       appendTimeRecords(outputB,b,"SPHEREx archive");
       if (a.length) setImageMessage("a", "Comparison ready. Tap View sky image on a Period A observation below to load its FITS cutout.");
