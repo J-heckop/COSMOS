@@ -247,11 +247,20 @@ if (timeForm) {
   const comparisonTarget = document.querySelector("#comparison-target");
   const comparisonTargetReadout = document.querySelector("#comparison-target-readout");
   function updateComparisonTargetReadout() {
-    const ra = document.querySelector("#ra-input").value;
-    const dec = document.querySelector("#dec-input").value;
+    const raField = document.querySelector("#ra-input");
+    const decField = document.querySelector("#dec-input");
+    const radiusField = document.querySelector("#radius-input");
+    const ra = raField.value;
+    const dec = decField.value;
     comparisonTargetReadout.textContent = ra !== "" && dec !== ""
       ? "Current sky centre: RA " + Number(ra).toFixed(6) + "° · Dec " + Number(dec).toFixed(6) + "°"
       : "Current sky centre: enter coordinates above";
+    const telemetryRa = document.querySelector("#target-ra");
+    const telemetryDec = document.querySelector("#target-dec");
+    const telemetryRadius = document.querySelector("#target-radius");
+    if (telemetryRa) telemetryRa.textContent = ra || "—";
+    if (telemetryDec) telemetryDec.textContent = dec || "—";
+    if (telemetryRadius) telemetryRadius.textContent = radiusField?.selectedOptions?.[0]?.textContent || "—";
   }
   let applyingSkyPreset = false;
   comparisonTarget.addEventListener("change", () => {
