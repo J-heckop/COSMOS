@@ -23,19 +23,26 @@ async function queryCollection(collection,ra,dec,radius,range,maxrec){
   let lastError="No response from IRSA";
   // Try the fast SIA2 service first. If its gateway is unavailable,
   // fall back to the official TAP query demonstrated in IRSA's SPHEREx tutorial.
-  try{
-    const response=await fetch(host+"/SIA?"+params.toString(),{
-      headers:{Accept:"application/x-votable+xml, application/xml, text/xml"},
-      signal:AbortSignal.timeout(5000)
-    });
-    const xml=await response.text();
-    if(response.ok && /<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml) &&
-       !/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["']/i.test(xml)){
-      return {collection,period:range?.label||null,xml,archiveHost:host,source:"SIA2"};
+  // Retry one transient gateway failure before switching to TAP. Keep the
+  // total request bounded so the browser does not give up before the proxy.
+  for(let attempt=0;attempt<2;attempt++){
+    try{
+      const response=await fetch(host+"/SIA?"+params.toString(),{
+        headers:{Accept:"application/x-votable+xml, application/xml, text/xml"},
+        signal:AbortSignal.timeout(3500)
+      });
+      const xml=await response.text();
+      if(response.ok && /<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml) &&
+         !/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["']/i.test(xml)){
+        return {collection,period:range?.label||null,xml,archiveHost:host,source:"SIA2"};
+      }
+      lastError=host+" SIA2 returned HTTP "+response.status;
+      if(![429,500,502,503,504].includes(response.status)||attempt===1) break;
+    }catch(error){
+      lastError=error?.name==="TimeoutError"?"IRSA SIA2 timed out":(error?.message||"IRSA SIA2 failed");
+      if(attempt===1) break;
     }
-    lastError=host+" SIA2 returned HTTP "+response.status;
-  }catch(error){
-    lastError=error?.name==="TimeoutError"?"IRSA SIA2 timed out":(error?.message||"IRSA SIA2 failed");
+    await new Promise(resolve=>setTimeout(resolve,400));
   }
 
   const releasePath=collection==="spherex_dr1"?"/dr1/":"/qr3/";
@@ -56,7 +63,7 @@ async function queryCollection(collection,ra,dec,radius,range,maxrec){
       "Accept":"application/x-votable+xml, application/xml, text/xml"
     },
     body,
-    signal:AbortSignal.timeout(20000)
+    signal:AbortSignal.timeout(12000)
   });
   const tapXml=await tap.text();
   if(!tap.ok) throw new Error(lastError+"; TAP fallback returned HTTP "+tap.status);
