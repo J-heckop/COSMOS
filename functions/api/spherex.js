@@ -110,9 +110,9 @@ async function queryTAP(ra, dec, radius, range, maxrec, band, selectedRelease) {
   if (!validVOTable(xml)) {
     throw new Error("IRSA TAP returned an invalid VOTable response: " + shortBody(xml));
   }
-  const tapError = xml.match(/<INFO\\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\\s\\S]*?)<\\/INFO>/i);
+  const tapError = xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
   if (tapError) {
-    throw new Error(tapError[1].replace(/<[^>]*>/g, " ").replace(/\\s+/g, " ").trim().slice(0, 300) || "IRSA rejected the TAP query.");
+    throw new Error(tapError[1].replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 300) || "IRSA rejected the TAP query.");
   }
   return {
     collection: selectedRelease || "spherex_dr1+qr3",
