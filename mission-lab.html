@@ -192,7 +192,7 @@
   try{
    const params=new URLSearchParams({ra:String(r),dec:String(d),radius:String(rad),band:selectedBand,maxrec:'150'});
    const url=new URL('/api/spherex',location.origin);url.search=params.toString();
-   let response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(65000)});let payload=await response.json();
+   let response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(27000)});let payload=await response.json();
    if(!response.ok)throw new Error(payload.detail||payload.errors?.map(x=>x.collection+': '+x.error).join('; ')||payload.error||'Could not start the archive search.');
    if(payload.jobId){
     search.textContent='Checking IRSA job…';
