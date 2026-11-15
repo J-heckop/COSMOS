@@ -75,19 +75,19 @@ export async function onRequest({request}) {
     });
     const xml=await response.text();
     if(!response.ok) throw new Error("IRSA TAP returned HTTP "+response.status);
-    const queryError=xml.match(/<INFO\\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\\s\\S]*?)<\\/INFO>/i);
+    const queryError=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
     if(queryError){
-      const detail=queryError[1].replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim().slice(0,500);
+      const detail=queryError[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,500);
       throw new Error(detail||"IRSA TAP rejected the query.");
     }
-    if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\\b/i.test(xml))
+    if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml))
       throw new Error("IRSA TAP returned an unexpected response.");
     return {collection:"spherex_tap",period:range.label,xml};
   }));
 
   const results=jobs.filter(x=>x.status==="fulfilled").map(x=>x.value);
   const errors=jobs.map((x,i)=>x.status==="rejected"
-    ?{period:requestedRanges[i].label,error:x.reason?.name==="TimeoutError"?"IRSA TAP request timed out":x.reason?.message||"Archive query failed."
+    ?{period:requestedRanges[i].label,error:x.reason?.name==="TimeoutError"?"IRSA TAP request timed out":x.reason?.message||"Archive query failed."}
     :null).filter(Boolean);
   if(!results.length){
     return json({
