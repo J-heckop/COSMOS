@@ -14,7 +14,10 @@ function json(body,status=200,extra={}) {
 export async function onRequest({request}) {
   if(request.method!=="GET") return json({error:"Use GET for archive searches."},405,{Allow:"GET"});
   const q=new URL(request.url).searchParams;
-  const ra=Number(q.get("ra")),dec=Number(q.get("dec")),radius=Number(q.get("radius"));
+  const raText=q.get("ra"),decText=q.get("dec"),radiusText=q.get("radius");
+  if(raText===null||decText===null||radiusText===null||!raText.trim()||!decText.trim()||!radiusText.trim())
+    return json({error:"Enter RA, Dec, and search radius before searching the SPHEREx archive."},400);
+  const ra=Number(raText),dec=Number(decText),radius=Number(radiusText);
   if(!Number.isFinite(ra)||ra<0||ra>360||!Number.isFinite(dec)||dec< -90||dec>90||!Number.isFinite(radius)||radius<=0||radius>1)
     return json({error:"Invalid sky position or search radius."},400);
   const parsed=Number.parseInt(q.get("maxrec")||"100",10);
