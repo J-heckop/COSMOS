@@ -95,6 +95,33 @@ if (archiveForm) {
   const submitButton = document.querySelector("#archive-submit");
   const fallbackLink = document.querySelector("#archive-fallback");
   const exampleButton = document.querySelector("#example-coords");
+  const missionLabButton = document.querySelector("#mission-lab-submit");
+  const raField = document.querySelector("#ra-input");
+  const decField = document.querySelector("#dec-input");
+  const radiusField = document.querySelector("#radius-input");
+
+  function updateMissionLabButton() {
+    const ra = Number(raField.value);
+    const dec = Number(decField.value);
+    const radius = Number(radiusField.value);
+    missionLabButton.disabled = !Number.isFinite(ra) || ra < 0 || ra > 360 || !Number.isFinite(dec) || dec < -90 || dec > 90 || !Number.isFinite(radius) || radius <= 0;
+  }
+  [raField, decField, radiusField].forEach(field => {
+    field.addEventListener("input", updateMissionLabButton);
+    field.addEventListener("change", updateMissionLabButton);
+  });
+  updateMissionLabButton();
+  missionLabButton.addEventListener("click", () => {
+    updateMissionLabButton();
+    if (missionLabButton.disabled) return;
+    const params = new URLSearchParams({
+      ra: raField.value,
+      dec: decField.value,
+      radius: radiusField.value,
+      target: document.querySelector("#object-name-input").value.trim()
+    });
+    window.location.href = "mission-lab.html?" + params.toString();
+  });
 
   function setArchiveStatus(message, type = "") {
     statusBox.textContent = message;
