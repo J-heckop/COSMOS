@@ -7,7 +7,10 @@ export async function onRequest({request}){
  if(request.method!=="GET")return json({error:"Use GET for object lookups."},405);
  const name=(new URL(request.url).searchParams.get("name")||"").trim();
  if(!name||name.length>100||/[<>\u0000-\u001f]/.test(name))return json({error:"Enter an astronomical object name (up to 100 characters)."},400);
+ // Use the primary CDS Sesame service first, then independent mirrors.
+ // Sesame's documented -ox endpoint returns XML containing jradeg/jdedeg.
  const mirrors=[
+  "https://cds.unistra.fr/cgi-bin/nph-sesame/-ox/?",
   "https://vizier.idia.ac.za/viz-bin/nph-sesame/-ox/?",
   "https://vizier.cfa.harvard.edu/viz-bin/nph-sesame/-ox/?"
  ];
