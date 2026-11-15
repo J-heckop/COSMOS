@@ -35,7 +35,6 @@ export async function onRequest({request}) {
       MAXREC:String(maxrec)
     }).toString();
     const response=await fetch(url.toString(),{
-      headers:{Accept:"application/x-votable+xml, application/xml, text/xml"},
       signal:AbortSignal.timeout(25000)
     });
     const xml=await response.text();
