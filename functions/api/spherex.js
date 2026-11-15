@@ -74,7 +74,7 @@ export async function onRequest({request}) {
       signal:AbortSignal.timeout(22000)
     });
     const xml=await response.text();
-    if(!response.ok) throw new Error("IRSA TAP returned HTTP "+response.status);
+    if(!response.ok) throw new Error("IRSA TAP returned HTTP "+response.status+": "+xml.slice(0,300).replace(/<[^>]*>/g," ").trim());
     const queryError=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
     if(queryError){
       const detail=queryError[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,500);
