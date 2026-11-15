@@ -49,29 +49,35 @@ async function queryCollection(collection,ra,dec,radius,range,maxrec){
   const timeClause=range
     ?" AND (p.time_bounds_lower <= "+range.end+" AND p.time_bounds_upper >= "+range.start+")"
     :"";
-  const tapQuery="SELECT DISTINCT TOP "+maxrec+" 'https://irsa.ipac.caltech.edu/' || a.uri AS access_url, "+
-    "p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max, a.planeid AS obs_id, p.energy_bandpassname AS band "+
+  // Match IRSA's published cutout-notebook query shape: artifact/plane join,
+  // polygon containment, time ordering, and the release's documented URI path.
+  const tapQuery="SELECT TOP "+maxrec+" "+
+    "'https://irsa.ipac.caltech.edu/' || a.uri AS access_url, "+
+    "p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max, "+
+    "a.planeid AS obs_id, p.energy_bandpassname AS band "+
     "FROM spherex.artifact a JOIN spherex.plane p ON a.planeid = p.planeid "+
     "WHERE 1 = CONTAINS(POINT('ICRS', "+ra+", "+dec+"), p.poly) "+
     "AND a.uri LIKE '%"+releasePath+"%'"+timeClause+
     " ORDER BY p.time_bounds_lower";
-  const body=new URLSearchParams({REQUEST:"doQuery",LANG:"ADQL",FORMAT:"votable",QUERY:tapQuery});
-  // TAP can briefly return a gateway error while the archive is busy.
-  // Retry only HTTP gateway failures; do not repeat timed-out expensive queries.
-  let tap, tapXml="";
+  const tapParams=new URLSearchParams({
+    REQUEST:"doQuery",
+    LANG:"ADQL",
+    FORMAT:"votable",
+    QUERY:tapQuery
+  });
+  // Try TAP sync via GET as a second transport path. Some gateways reject
+  // POST bodies even when the TAP service itself is healthy.
+  let tap,tapXml="";
   for(let attempt=0;attempt<2;attempt++){
-    tap=await fetch(host+"/TAP/sync",{
-      method:"POST",
+    tap=await fetch(host+"/TAP/sync?"+tapParams.toString(),{
       headers:{
-        "Content-Type":"application/x-www-form-urlencoded",
         "Accept":"application/x-votable+xml, application/xml, text/xml"
       },
-      body,
-      signal:AbortSignal.timeout(10000)
+      signal:AbortSignal.timeout(12000)
     });
     tapXml=await tap.text();
     if(![429,500,502,503,504].includes(tap.status)||attempt===1) break;
-    await new Promise(resolve=>setTimeout(resolve,650));
+    await new Promise(resolve=>setTimeout(resolve,700));
   }
   if(!tap.ok) throw new Error(lastError+"; TAP fallback returned HTTP "+tap.status);
   if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(tapXml))
