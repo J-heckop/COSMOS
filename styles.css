@@ -333,3 +333,61 @@
 .sky-location-picker select{width:100%;min-height:50px;padding:12px 14px;border:1px solid rgba(255,205,130,.28);border-radius:10px;background:#100d0b;color:#f3e7d4;font:500 13px "DM Sans";color-scheme:dark}
 .sky-location-picker p{margin:0;color:#c9bba5;font-size:11px;line-height:1.6}
 #comparison-target-readout{color:#ffe0a0;font-size:11px;font-weight:600;overflow-wrap:anywhere}
+
+
+/* COSMOS desktop-first workspace: use wide Windows displays without changing mobile layout. */
+@media (min-width: 1100px) {
+  .topbar { max-width: 1540px; height: 88px; padding-left: 48px; padding-right: 48px; }
+  .topbar nav { gap: 38px; }
+  .topbar nav a, .nav-cta { font-size: 14px; }
+  .hero { max-width: 1540px; min-height: 660px; padding: 88px 58px 72px; gap: 72px; grid-template-columns: minmax(0,1.05fr) minmax(480px,.95fr); }
+  .hero h1 { font-size: clamp(72px,5.4vw,96px); }
+  .hero-text { max-width: 610px; font-size: 18px; }
+  .hero-art { height: 500px; transform: scale(1.08); }
+  .stats { max-width: 1440px; padding: 34px 28px; }
+  .stats div { padding: 8px 34px; }
+  .stats strong { font-size: 32px; }
+  .stats span { font-size: 13px; }
+  .section { max-width: 1480px; padding: 132px 42px; }
+  .section-heading { margin-bottom: 44px; }
+  .section-heading h2 { font-size: 58px; }
+  .section-heading > p { max-width: 430px; font-size: 15px; }
+  .live-search-panel { padding: 34px; margin-top: 34px; border-radius: 20px; }
+  .live-heading h3 { font-size: 31px; }
+  .live-heading p { max-width: 760px; font-size: 14px; }
+  .coordinate-form { grid-template-columns: minmax(180px,1fr) minmax(180px,1fr) minmax(180px,1fr) auto; gap: 18px; }
+  .coordinate-form input, .coordinate-form select { min-height: 52px; font-size: 15px; }
+  .archive-submit { min-height: 52px; padding-left: 25px; padding-right: 25px; }
+  .time-machine-panel { padding: 34px; margin-top: 28px; }
+  .time-form { grid-template-columns: minmax(0,1fr) minmax(0,1fr) auto; gap: 20px; }
+  .time-side { padding: 20px; gap: 14px; }
+  .time-side input { min-height: 48px; font-size: 13px; }
+  .time-submit { min-height: 52px; padding-left: 25px; padding-right: 25px; }
+  .time-results-grid { gap: 22px; }
+  .archive-result { padding: 17px 19px; }
+  .archive-result strong { font-size: 14px; }
+  .archive-result span, .archive-result a { font-size: 12px; }
+  .image-comparison { padding: 30px; margin: 32px 0; }
+  .image-comparison-heading h4 { font-size: 25px; }
+  .image-comparison-heading p { font-size: 14px; }
+  .image-panes { gap: 22px; margin-top: 24px; }
+  .image-pane { padding: 20px; }
+  .image-pane h5 { font-size: 12px; }
+  .fits-image-wrap { min-height: 340px; }
+  .fits-image-wrap canvas { max-width: 100%; }
+  .image-status { font-size: 12px; }
+  .mission { max-width: 1440px; margin-bottom: 125px; padding: 82px 80px; gap: 90px; }
+  .mission-visual { height: 340px; }
+  .compare { max-width: 1400px; padding: 0 42px 130px; gap: 90px; }
+  footer { max-width: 1440px; padding: 34px 42px 42px; }
+}
+
+/* Extra-wide monitors get a calmer, less stretched reading measure. */
+@media (min-width: 1600px) {
+  .topbar { max-width: 1680px; }
+  .hero { max-width: 1680px; }
+  .section { max-width: 1600px; }
+  .stats, .mission, footer { max-width: 1540px; }
+  .live-search-panel { padding: 40px; }
+  .fits-image-wrap { min-height: 400px; }
+}
