@@ -783,7 +783,7 @@ if (timeForm) {
         maxrec:"30"
       }).toString();
       timeStatus.textContent = "Searching SPHEREx for both selected dates in parallel…";
-      const response = await fetch(url,{signal:AbortSignal.timeout(23000)});
+      const response = await fetch(url,{signal:AbortSignal.timeout(28000)});
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive proxy failed");
       const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml).map(row=>({...row,_collection:result.collection})));
