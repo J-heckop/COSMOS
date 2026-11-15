@@ -1,78 +1,320 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#080912">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#070b14">
 <title>Mission Lab | COSMOS</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{color-scheme:dark;--bg:#080912;--panel:#12111a;--line:rgba(255,207,139,.2);--gold:#ffd27a;--muted:#c4bdc0;--white:#f5eee4}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse at 75% 0%,rgba(111,66,45,.2),transparent 35%),var(--bg);color:var(--white);font-family:"DM Sans",sans-serif;line-height:1.65}
-a{color:inherit}.top{position:sticky;top:0;z-index:5;background:rgba(8,9,18,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}.topin{max-width:1120px;margin:auto;padding:13px 22px;display:flex;align-items:center;justify-content:space-between;gap:14px}.brand{text-decoration:none;font:700 18px "Space Grotesk";letter-spacing:.13em}.brand span{color:var(--gold)}.nav{display:flex;gap:10px;flex-wrap:wrap}.nav a,.button{border:1px solid var(--line);border-radius:999px;padding:9px 15px;text-decoration:none;font-size:13px;color:#f0d9b0}.nav a:hover,.button:hover{background:rgba(255,210,122,.1)}
-main{max-width:1120px;margin:auto;padding:28px 22px 70px}.hero{padding:52px 0 36px;max-width:850px}.eyebrow,.kicker{font-size:11px;letter-spacing:.2em;font-weight:700;color:var(--gold)}h1,h2,h3{font-family:"Space Grotesk";line-height:1.13}h1{font-size:clamp(38px,7vw,68px);margin:14px 0}h2{font-size:clamp(25px,4vw,36px);margin:8px 0 12px}h3{font-size:20px;margin:8px 0}.hero p{font-size:17px;color:var(--muted);max-width:720px}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.primary{background:linear-gradient(100deg,#ffbf42,#ffe09a);color:#21170b;border:0;font-weight:700}
-.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0 54px}.metric,.card,.band{background:rgba(18,17,26,.9);border:1px solid var(--line);border-radius:18px;padding:20px}.metric strong{display:block;font:700 30px "Space Grotesk";color:var(--gold)}.metric span{font-size:12px;color:var(--muted)}
-.section{margin:54px 0}.section-intro{max-width:720px;color:var(--muted)}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-top:20px}.card p,.band p{font-size:14px;color:var(--muted);margin-bottom:0}.number{color:var(--gold);font:700 12px "Space Grotesk";letter-spacing:.12em}.band-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:18px}.band{padding:14px 10px;text-align:center}.band strong{display:block;font:700 18px "Space Grotesk";color:var(--gold)}.band span{font-size:11px;color:var(--muted)}
-.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:20px}.step{border-left:2px solid var(--gold);padding:5px 13px}.step b{display:block;font:600 15px "Space Grotesk"}.step span{font-size:12px;color:var(--muted)}
-.note{border:1px solid var(--line);background:rgba(255,210,122,.06);border-radius:16px;padding:18px;color:var(--muted);margin-top:20px}.note strong{color:var(--gold)}
-footer{border-top:1px solid var(--line);padding:24px 0;color:#a9a0a2;font-size:12px}
-@media(max-width:700px){.topin{align-items:flex-start;flex-direction:column}.metrics{grid-template-columns:1fr 1fr}.cards{grid-template-columns:1fr}.band-grid{grid-template-columns:repeat(3,1fr)}.flow{grid-template-columns:1fr 1fr}.hero{padding-top:35px}}
+*{box-sizing:border-box}body{margin:0;background:#070b14;color:#e2e8f0;font-family:Inter,sans-serif}button,select,input{font:inherit}button,select{cursor:pointer}.mono{font-family:"JetBrains Mono",monospace}.panel{background:rgba(12,18,32,.91);border:1px solid rgba(56,189,248,.17);backdrop-filter:blur(12px)}.tab{border:1px solid transparent;color:#94a3b8}.tab.active{background:rgba(0,229,255,.13);border-color:rgba(0,229,255,.4);color:#a5f3fc}.control{background:#070b14;border:1px solid #26364f;border-radius:11px;color:#cbd5e1;padding:9px 11px}.action{border:1px solid #334155;background:#172338;color:#dbeafe;border-radius:11px;padding:9px 13px}.action.active{background:#0e4855;border-color:#06b6d4;color:#a5f3fc}.sky-wrap{height:min(64vh,620px);min-height:390px;position:relative;overflow:hidden;background:radial-gradient(ellipse at 24% 32%,rgba(91,55,117,.28),transparent 34%),radial-gradient(ellipse at 72% 64%,rgba(30,91,116,.22),transparent 38%),radial-gradient(ellipse at 52% 46%,#101a2d 0%,#070d19 55%,#02050b 100%);border:1px solid #26364f;border-radius:18px;box-shadow:inset 0 0 90px rgba(0,0,0,.55)}.sky-wrap canvas{width:100%;height:100%;display:block}.hud{position:absolute;top:12px;left:12px;right:12px;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none}.hud span{background:#0b1422df;border:1px solid #334155;border-radius:9px;padding:7px 9px;font:10px "JetBrains Mono",monospace;color:#a5f3fc}.sky-toast{position:absolute;left:12px;right:12px;bottom:12px;background:#0b1422e8;border:1px solid #334155;border-radius:10px;padding:10px;font-size:12px;color:#cbd5e1}.range{accent-color:#00e5ff;width:100%}.small-label{font:10px "JetBrains Mono",monospace;letter-spacing:.13em;color:#94a3b8}.metric{color:#67e8f9}.hide{display:none!important}@media(max-width:700px){.sky-wrap{height:440px;min-height:360px}.header-inner{align-items:flex-start;flex-direction:column}.top-controls{width:100%}.mode-tabs{overflow-x:auto}.epoch-row{display:grid;grid-template-columns:1fr}.epoch-row select{width:100%}.band-labels span:nth-child(2),.band-labels span:nth-child(4){display:none}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 </style>
 </head>
-<body>
-<header class="top"><div class="topin"><a class="brand" href="index.html">✳ COSMOS <span>/ MISSION LAB</span></a><nav class="nav"><a href="index.html">Home</a><a href="index.html#sky-lab">Discovery Lab ↗</a></nav></div></header>
-<main>
-<section class="hero">
- <div class="eyebrow">LEARN THE MISSION · NASA SPHEREx</div>
- <h1>How SPHEREx<br>sees the <span style="color:var(--gold)">hidden universe.</span></h1>
- <p>Before exploring archive images, understand the telescope behind them. This is the learning space for SPHEREx: its infrared vision, spectral bands, survey strategy and the science questions it was built to investigate.</p>
- <div class="actions"><a class="button primary" href="#how-it-works">Explore the mission ↓</a><a class="button" href="index.html#sky-lab">Open Discovery Lab ↗</a></div>
-</section>
-<section class="metrics" aria-label="Mission overview">
- <div class="metric"><strong>102</strong><span>near-infrared spectral bands</span></div>
- <div class="metric"><strong>0.75–5 µm</strong><span>wavelength coverage</span></div>
- <div class="metric"><strong>All-sky</strong><span>survey of the entire sky</span></div>
-</section>
-<section class="section" id="how-it-works">
- <div class="kicker">01 / THE BASICS</div><h2>What is SPHEREx?</h2>
- <p class="section-intro">SPHEREx is a NASA space telescope designed to survey the entire sky in near-infrared light. Instead of recording just one broad image colour, it measures the sky in 102 wavelength bands, giving scientists information about the light coming from stars, galaxies and interstellar material.</p>
- <div class="cards">
-  <article class="card"><div class="number">01 · INFRARED VISION</div><h3>See beyond visible light</h3><p>Infrared light has wavelengths longer than the human eye can see. Observing it helps scientists study objects and regions that are difficult to investigate using visible light alone.</p></article>
-  <article class="card"><div class="number">02 · SPECTRAL MAP</div><h3>102 bands, not 102 cameras</h3><p>Each band measures a different part of the near-infrared spectrum. Together, these measurements help reveal clues about the materials and sources producing the light.</p></article>
-  <article class="card"><div class="number">03 · WHOLE-SKY SURVEY</div><h3>Build a map of the sky</h3><p>SPHEREx repeatedly surveys the whole sky. Repeated coverage builds a broad, consistent dataset that researchers can use to study the universe on large scales.</p></article>
+<body class="min-h-screen">
+<header class="panel sticky top-0 z-30 border-x-0 border-t-0 px-4 py-3">
+ <div class="header-inner max-w-7xl mx-auto flex justify-between gap-4">
+  <a href="index.html" class="flex items-center gap-3 no-underline text-white">
+   <span class="w-10 h-10 rounded-xl border border-cyan-400/40 bg-cyan-500/10 grid place-items-center text-cyan-300 text-xl">✳</span>
+   <span><b class="text-sm tracking-widest">COSMOS</b><span class="block text-xs text-slate-400">MISSION LAB</span></span>
+  </a>
+  <div class="top-controls flex flex-wrap items-center gap-2">
+   <label class="small-label">SKY SECTOR</label>
+   <select id="sectorSelect" class="control text-xs"><option value="ecliptic">SEC-04 · Ecliptic Plane</option><option value="galactic">SEC-19 · Taurus Molecular Cloud</option><option value="deepfield">SEC-42 · South Ecliptic Pole</option></select><span class="text-[10px] text-slate-500 w-full sm:w-auto" id="sectorHint">Sector selection sets an approximate search centre</span>
+   <button id="guideBtn" class="action text-xs">ⓘ Mission guide</button>
+   <a href="index.html#explore" class="action text-xs no-underline">← Back to COSMOS</a>
+  </div>
  </div>
-</section>
-<section class="section" id="bands">
- <div class="kicker">02 / SPECTRAL COVERAGE</div><h2>One sky, 102 infrared bands.</h2>
- <p class="section-intro">The bands span approximately 0.75 to 5 micrometres. The six ranges below are broad guide bands for understanding the instrument's coverage, not a complete list of all 102 individual channels.</p>
- <div class="band-grid">
-  <div class="band"><strong>D1</strong><span>0.75–1.11 µm</span></div><div class="band"><strong>D2</strong><span>1.11–1.64 µm</span></div><div class="band"><strong>D3</strong><span>1.64–2.42 µm</span></div><div class="band"><strong>D4</strong><span>2.42–3.82 µm</span></div><div class="band"><strong>D5</strong><span>3.82–4.42 µm</span></div><div class="band"><strong>D6</strong><span>4.42–5.00 µm</span></div>
- </div>
- <div class="note"><strong>Quick clarification:</strong> These are infrared wavelengths, not ordinary visible colours. The images shown by COSMOS are display renderings of archive data; their colours or brightness can be adjusted to make image structure easier to see.</div>
-</section>
-<section class="section" id="science">
- <div class="kicker">03 / SCIENCE GOALS</div><h2>What questions can it help answer?</h2>
- <p class="section-intro">SPHEREx was designed to create a wide-field spectral map that supports research into several major questions.</p>
- <div class="cards">
-  <article class="card"><div class="number">COSMIC HISTORY</div><h3>How did the universe evolve?</h3><p>Large-scale measurements of galaxies help researchers investigate the history and distribution of matter across the universe.</p></article>
-  <article class="card"><div class="number">GALAXIES</div><h3>How do galaxies form and change?</h3><p>Spectral information across the sky helps scientists study populations of galaxies and their properties over cosmic time.</p></article>
-  <article class="card"><div class="number">OUR GALAXY</div><h3>What are the ingredients for life?</h3><p>Infrared observations of our Milky Way can help researchers map water ice and other molecules in interstellar clouds.</p></article>
- </div>
-</section>
-<section class="section">
- <div class="kicker">04 / FROM MISSION TO DATA</div><h2>How COSMOS fits in.</h2>
- <p class="section-intro">Mission Lab explains the instrument and its science. Discovery Lab is where you work with actual released observations.</p>
- <div class="flow">
-  <div class="step"><b>SPHEREx observes</b><span>The telescope collects infrared measurements.</span></div>
-  <div class="step"><b>Data is archived</b><span>Released observation products become available through IRSA.</span></div>
-  <div class="step"><b>COSMOS retrieves</b><span>Search by sky coordinates and inspect available dates.</span></div>
-  <div class="step"><b>You explore</b><span>Compare real images and record what you notice.</span></div>
- </div>
- <div class="actions"><a class="button primary" href="index.html#sky-lab">Go to Discovery Lab ↗</a><a class="button" href="https://irsa.ipac.caltech.edu/applications/spherex/" target="_blank" rel="noopener noreferrer">Official SPHEREx archive ↗</a></div>
-</section>
-<footer><p><strong style="color:var(--gold)">COSMOS · MISSION LAB</strong></p><p>Educational overview of NASA's SPHEREx mission. For scientific interpretation, consult the official mission and archive documentation.</p></footer>
-</main>
-</body>
-</html>
+</header>
+<main class="max-w-7xl mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-3">
+
+ <section class="lg:col-span-12 panel rounded-2xl p-4 sm:p-5 flex flex-col gap-3" id="liveArchive">
+  <div class="flex flex-wrap items-start justify-between gap-2">
+   <div><div class="small-label">LIVE SPHEREX ARCHIVE · IRSA</div><h2 class="text-xl font-semibold mt-1">Explore real observations</h2><p class="text-sm text-slate-400 mt-1">Search a sky position in public DR1 and QR3 archive records, then load a real FITS preview.</p></div>
+   <span class="small-label text-emerald-300">LIVE ARCHIVE QUERY</span>
+  </div>
+  <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+   <label class="text-xs text-slate-400">Target preset<select id="liveTarget" class="control block w-full mt-1"><option value="10.6847,41.2690">Andromeda Galaxy</option><option value="83.8221,-5.3911">Orion Nebula</option><option value="56.75,24.1167">Pleiades</option><option value="266.4168,-29.0078">Galactic Centre</option><option value="custom">Custom coordinates</option></select></label>
+   <label class="text-xs text-slate-400">Right ascension (°)<input id="liveRA" class="control block w-full mt-1" type="number" min="0" max="360" step="0.0001" value="10.6847"></label>
+   <label class="text-xs text-slate-400">Declination (°)<input id="liveDec" class="control block w-full mt-1" type="number" min="-90" max="90" step="0.0001" value="41.2690"></label>
+   <label class="text-xs text-slate-400">Search radius<select id="liveRadius" class="control block w-full mt-1"><option value="0.05" selected>3 arcmin · balanced</option><option value="0.01">0.6 arcmin</option><option value="0.025">1.5 arcmin</option><option value="0.1">6 arcmin</option></select></label>
+   <label class="text-xs text-slate-400">Spectral band<select id="liveBand" class="control block w-full mt-1"><option value="SPHEREx-D1">Band 1 · 0.75–1.11 µm</option><option value="SPHEREx-D2" selected>Band 2 · 1.11–1.64 µm</option><option value="SPHEREx-D3">Band 3 · 1.64–2.42 µm</option><option value="SPHEREx-D4">Band 4 · 2.42–3.82 µm</option><option value="SPHEREx-D5">Band 5 · 3.82–4.42 µm</option><option value="SPHEREx-D6">Band 6 · 4.42–5.00 µm</option><option value="all">All bands · slower</option></select></label>
+  </div>
+  <div class="flex flex-wrap items-center gap-2"><button id="liveSearch" class="action active text-sm">⌕ Search live observations</button><span id="liveStatus" class="text-xs text-slate-400" role="status" aria-live="polite">Choose a target, spectral band and search the official IRSA archive.</span></div>
+  <div id="liveTimelapse" class="hide flex flex-wrap items-center gap-2 rounded-xl border border-cyan-900/60 bg-slate-950/70 p-3">
+   <button id="liveTimelapsePlay" class="action active text-xs" type="button">▶ Play real-data time-lapse</button>
+   <button id="liveTimelapseStop" class="action text-xs" type="button" disabled>■ Stop</button>
+   <label class="text-xs text-slate-400">Frame interval <select id="liveTimelapseSpeed" class="control ml-1"><option value="2500">2.5 sec</option><option value="4000" selected>4 sec</option><option value="6000">6 sec</option></select></label>
+   <span id="liveTimelapseStatus" class="text-xs text-slate-400" aria-live="polite">Loads actual archive images in observation-date order.</span>
+  </div>
+  <div id="liveImagePanel" class="hide rounded-xl border border-slate-700 bg-slate-950 p-3">
+   <div class="flex flex-wrap justify-between gap-2"><b id="liveImageTitle" class="text-sm text-cyan-200">Selected SPHEREx observation</b><div class="flex items-center gap-3"><button id="liveRetry" type="button" class="text-xs text-cyan-200 underline">Retry preview</button><a id="liveOriginal" class="text-xs text-amber-300 underline" target="_blank" rel="noopener noreferrer">Open original FITS ↗</a></div></div>
+   <div class="mt-3 bg-black rounded-lg min-h-48 grid place-items-center overflow-auto"><canvas id="liveFitsCanvas" class="max-w-full h-auto"></canvas><p id="liveImagePlaceholder" class="text-xs text-slate-400 p-6">Choose an observation to load its image.</p></div>
+   <p id="liveImageStatus" class="text-xs text-slate-400 mt-2" aria-live="polite"></p>
+  </div>
+  <div id="liveResults" class="hide max-h-[28rem] overflow-y-auto overscroll-contain rounded-xl border border-slate-700 bg-slate-950/70 p-2 grid grid-cols-1 gap-2" aria-label="Scrollable SPHEREx observations"></div>
+
+  <p class="text-xs text-slate-500">Archive metadata and FITS previews are live IRSA data. The preview uses an automatic display stretch; it is not a calibrated change-detection result. Coverage depends on the selected coordinates and released data.</p>
+ </section>
+ <section class="lg:col-span-8 flex flex-col gap-3">
+   <div class="panel rounded-2xl p-4 flex flex-col gap-3">
+    <div class="flex flex-wrap justify-between items-center gap-2">
+     <div><div class="small-label">REAL SPHEREX DATA VIEWER</div><h2 class="font-semibold mt-1">Sky observation</h2></div>
+     <span class="text-xs mono text-cyan-300" id="realViewerState">WAITING FOR OBSERVATION</span>
+    </div>
+    <p class="text-sm text-slate-400">Search the archive above and select “Load real sky image”. COSMOS displays the actual FITS observation here, with its archive date and coordinates.</p>
+   </div>
+   <div class="sky-wrap" id="skyWrap" style="background:#02050b">
+    <canvas id="realSkyCanvas" aria-label="Real SPHEREx FITS observation preview" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#02050b"></canvas>
+    <div class="hud"><span id="hudSector">SPHEREx · NO IMAGE LOADED</span><span id="hudBand">WAITING FOR ARCHIVE DATA</span><span id="hudDataLabel">REAL DATA VIEWER</span></div>
+    <div class="absolute right-3 top-16 flex flex-col gap-2"><button id="zoomIn" class="action w-10 h-10 text-lg" aria-label="Zoom in">+</button><button id="zoomOut" class="action w-10 h-10 text-lg" aria-label="Zoom out">−</button><button id="reset" class="action w-10 h-10" aria-label="Reset zoom">↻</button></div>
+    <div id="toast" class="sky-toast">No observation loaded yet. Search the live archive above, then load a real FITS image to view it here.</div>
+   </div>
+   <div class="panel rounded-2xl p-4">
+    <h2 class="font-semibold">How to explore real observations</h2>
+    <ol class="list-decimal pl-5 mt-2 space-y-2 text-sm text-slate-400 leading-6">
+     <li>Choose a sky target or enter its RA and Dec above.</li><li>Search the live SPHEREx archive.</li><li>Load an observation from the results list.</li><li>Read its actual observation date, release, band and coordinates above.</li>
+    </ol>
+    <p class="text-xs text-slate-500 mt-3">The displayed image is an actual archive FITS cutout with an automatic display stretch. It is not a live video feed or a calibrated change-detection product.</p>
+   </div>
+  </section>
+  <aside class="lg:col-span-4 flex flex-col gap-3">
+   <div class="panel rounded-2xl p-4">
+    <div class="small-label">MISSION GUIDE</div><h2 class="text-lg font-semibold mt-2">Explore the real infrared sky</h2>
+    <p class="text-sm text-slate-400 leading-6 mt-2">COSMOS retrieves released SPHEREx observation records from the public IRSA archive. Each loaded preview comes from the selected FITS product.</p>
+    <div class="grid grid-cols-2 gap-2 mt-4"><div class="bg-slate-950 rounded-xl p-3"><b class="metric text-xl">102</b><p class="text-xs text-slate-500 mt-1">SPHEREx spectral bands</p></div><div class="bg-slate-950 rounded-xl p-3"><b class="text-amber-300 text-xl">0.75–5</b><p class="text-xs text-slate-500 mt-1">micrometres</p></div></div>
+    <p class="text-xs text-slate-500 mt-3">These are mission specifications. The selected archive record determines the actual observation date and available image data.</p>
+   </div>
+   <div class="panel rounded-2xl p-4">
+    <div class="small-label">OBSERVATION DETAILS</div><p class="text-sm text-slate-400 leading-6 mt-2">After loading an image, check the title and metadata in the selected-observation panel. They identify the archive product and its recorded observation time.</p>
+    <a class="text-cyan-300 underline text-sm mt-3 inline-block" href="https://irsa.ipac.caltech.edu/applications/spherex/" target="_blank" rel="noopener">Open official SPHEREx Data Explorer ↗</a>
+   </div>
+   <div class="panel rounded-2xl p-4">
+    <div class="small-label">DISCOVERY NOTES</div><h2 class="font-semibold mt-2">Record what you notice</h2>
+    <textarea id="note" rows="3" maxlength="240" placeholder="Write a note about the real observation…" class="control w-full mt-3 text-sm"></textarea>
+    <button id="saveNote" class="action active w-full mt-2 text-sm">Save local note</button><p id="noteStatus" class="text-xs text-slate-500 mt-2">Notes stay in this browser session.</p>
+   </div>
+  </aside>
+  <div class="lg:col-span-12 panel rounded-xl p-3 text-xs text-slate-400 leading-6"><b class="text-cyan-300">Data integrity:</b> The main viewer displays real SPHEREx FITS data only after an archive observation is loaded. No generated star field or simulated source movement is presented as mission imagery. For scientific analysis, use the calibrated products and documentation from the official <a class="text-cyan-300 underline" href="https://irsa.ipac.caltech.edu/applications/spherex/" target="_blank" rel="noopener">SPHEREx Data Explorer</a>.</div>
+ </main>
+
+<script src="vendor/fits.js"></script>
+<script>
+(()=> {
+ const $=id=>document.getElementById(id);
+ const target=$('liveTarget'),ra=$('liveRA'),dec=$('liveDec'),radius=$('liveRadius'),band=$('liveBand'),search=$('liveSearch'),status=$('liveStatus'),results=$('liveResults');
+ const panel=$('liveImagePanel'),canvas=$('liveFitsCanvas'),placeholder=$('liveImagePlaceholder'),imageStatus=$('liveImageStatus'),title=$('liveImageTitle'),original=$('liveOriginal'),retry=$('liveRetry');
+ const mainSkyCanvas=$('realSkyCanvas'),hudDataLabel=$('hudDataLabel'),hudSector=$('hudSector'),hudBand=$('hudBand'),skyToast=$('toast'),realViewerState=$('realViewerState');
+ const lapsePanel=$('liveTimelapse'),lapsePlay=$('liveTimelapsePlay'),lapseStop=$('liveTimelapseStop'),lapseSpeed=$('liveTimelapseSpeed'),lapseStatus=$('liveTimelapseStatus');
+ let rows=[],selectedRow=null,selectedButton=null,lapseRunning=false,lapseIndex=0,lapseTimer=null;
+ function parseVOTable(xmlText){
+  const doc=new DOMParser().parseFromString(xmlText,'application/xml');
+  if(doc.querySelector('parsererror'))throw new Error('IRSA returned an unreadable observation table.');
+  return [...doc.getElementsByTagNameNS('*','TR')].filter(row=>row.parentElement?.localName.toLowerCase()==='tabledata').map(row=>{
+   let table=row.parentElement;while(table&&table.localName.toLowerCase()!=='table')table=table.parentElement;
+   const fields=table?[...table.getElementsByTagNameNS('*','FIELD')].map(f=>(f.getAttribute('name')||f.getAttribute('ID')||'').toLowerCase()):[];
+   const values=[...row.children].map(cell=>cell.textContent.trim());
+   return Object.fromEntries(fields.map((field,i)=>[field,values[i]||'']));
+  });
+ }
+ function mjdDate(value){const n=Number(value);return Number.isFinite(n)?new Date((n-40587)*86400000).toISOString().slice(0,10):'Date not listed'}
+ const sector=$('sectorSelect'),savedControls=['liveTarget','liveRA','liveDec','liveRadius','liveBand','liveTimelapseSpeed','sectorSelect'];
+  function saveControls(){
+   try{const state={};savedControls.forEach(id=>{const el=$(id);if(el)state[id]=el.value});localStorage.setItem('cosmosMissionLabControls',JSON.stringify(state))}catch(error){}
+  }
+  function restoreControls(){
+   try{const state=JSON.parse(localStorage.getItem('cosmosMissionLabControls')||'{}');savedControls.forEach(id=>{
+    const el=$(id),value=state[id];if(!el||value===undefined)return;
+    if(el.tagName==='SELECT'){if([...el.options].some(option=>option.value===value))el.value=value}
+    else if(el.tagName==='INPUT'&&Number.isFinite(Number(value)))el.value=value;
+   })}catch(error){}
+  }
+  restoreControls();
+  function selectSector(value,announce=true){
+   const centres={ecliptic:{ra:90,dec:0,label:'Ecliptic Plane'},galactic:{ra:67.5,dec:24.1,label:'Taurus Molecular Cloud'},deepfield:{ra:90,dec:-66.56,label:'South Ecliptic Pole'}};
+   const centre=centres[value];if(!centre)return;
+   ra.value=centre.ra.toFixed(4);dec.value=centre.dec.toFixed(4);target.value='custom';saveControls();
+   if(announce)status.textContent=centre.label+' selected. Approximate centre coordinates filled in; tap Search live observations to query this region.';
+  }
+  sector.addEventListener('change',()=>selectSector(sector.value));
+  target.addEventListener('change',()=>{
+   if(target.value!=='custom'){const [a,d]=target.value.split(',');ra.value=a;dec.value=d;}
+   saveControls();
+  });
+  [ra,dec,radius,band,lapseSpeed].forEach(el=>{el.addEventListener('input',saveControls);el.addEventListener('change',saveControls)});
+  sector.addEventListener('change',saveControls);
+  if(sector.value)$('sectorHint').textContent='Approximate sector centre · tap Search to load its archive records';
+ function stopTimelapse(message='Time-lapse stopped.'){
+  lapseRunning=false;if(lapseTimer)clearTimeout(lapseTimer);lapseTimer=null;
+  lapsePlay.disabled=rows.length<2;lapsePlay.textContent='▶ Play real-data time-lapse';
+  lapseStop.disabled=true;if(message)lapseStatus.textContent=message;
+ }
+ lapseStop.addEventListener('click',()=>stopTimelapse());
+ lapsePlay.addEventListener('click',()=>{
+  if(rows.length<2)return;
+  if(lapseRunning){stopTimelapse('Time-lapse paused. Press play to resume.');return}
+  lapseRunning=true;lapseIndex=0;lapsePlay.textContent='Ⅱ Pause';lapseStop.disabled=false;
+  async function nextFrame(){
+   if(!lapseRunning)return;
+   const row=rows[lapseIndex%rows.length];
+   lapseStatus.textContent='Frame '+(lapseIndex%rows.length+1)+' / '+rows.length+' · '+mjdDate(row.t_min);
+   const ok=await loadImage(row,null,false,true);
+   if(!lapseRunning)return;
+   if(!ok){stopTimelapse('Stopped because an archive image could not be loaded.');return}
+   lapseIndex++;
+   lapseTimer=setTimeout(nextFrame,Number(lapseSpeed.value)||4000);
+  }
+  nextFrame();
+ });
+ search.addEventListener('click',async()=>{
+  const r=Number(ra.value),d=Number(dec.value),rad=Number(radius.value),selectedBand=band.value;
+  if(!Number.isFinite(r)||r<0||r>360||!Number.isFinite(d)||d< -90||d>90){status.textContent='Enter valid RA (0–360°) and Dec (−90–90°).';return}
+  stopTimelapse('Waiting for archive observations…');
+  const hadPreviousResults=rows.length>0;
+  search.disabled=true;search.textContent='Searching IRSA…';
+  status.textContent=hadPreviousResults?'Searching new coordinates… Previous successful results are being kept until the new search finishes.':'Searching the official SPHEREx image archive…';
+  try{
+   const params=new URLSearchParams({ra:String(r),dec:String(d),radius:String(rad),band:selectedBand,maxrec:'150'});
+   const url=new URL('/api/spherex',location.origin);url.search=params.toString();
+   let response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(27000)});let payload=await response.json();
+   if(!response.ok)throw new Error(payload.detail||payload.errors?.map(x=>x.collection+': '+x.error).join('; ')||payload.error||'Could not start the archive search.');
+   if(payload.jobId){
+    search.textContent='Checking IRSA job…';
+    let complete=false;
+    for(let attempt=0;attempt<180;attempt++){
+     await new Promise(resolve=>setTimeout(resolve,2000));
+     const pollUrl=new URL('/api/spherex',location.origin);pollUrl.search=new URLSearchParams({job:String(payload.jobId)}).toString();
+     response=await fetch(pollUrl,{signal:AbortSignal.timeout(18000)});payload=await response.json();
+     if(response.status===202){status.textContent='IRSA background job: '+(payload.phase||'RUNNING')+' · still searching…';continue}
+     if(!response.ok)throw new Error(payload.error||'IRSA background job failed.');
+     complete=!!payload.done;break;
+    }
+    if(!complete)throw new Error('The IRSA background job is still running. Search again shortly to check for results.');
+   }
+   rows=(payload.results||[]).flatMap(set=>parseVOTable(set.xml).map(row=>({...row,_collection:set.collection,_queryRa:r,_queryDec:d})));
+   const bandLimits={
+    'SPHEREx-D1':[0.75e-6,1.11e-6],
+    'SPHEREx-D2':[1.11e-6,1.64e-6],
+    'SPHEREx-D3':[1.64e-6,2.42e-6],
+    'SPHEREx-D4':[2.42e-6,3.82e-6],
+    'SPHEREx-D5':[3.82e-6,4.42e-6],
+    'SPHEREx-D6':[4.42e-6,5.00e-6]
+   };
+   if(selectedBand!=='all'&&bandLimits[selectedBand]){
+    const [wantedLo,wantedHi]=bandLimits[selectedBand];
+    const known=rows.some(row=>Number.isFinite(Number(row.em_min))&&Number.isFinite(Number(row.em_max)));
+    if(known)rows=rows.filter(row=>!Number.isFinite(Number(row.em_min))||!Number.isFinite(Number(row.em_max))||(Number(row.em_min)<wantedHi&&Number(row.em_max)>wantedLo));
+   }
+   rows.sort((a,b)=>Number(a.t_min)-Number(b.t_min));
+   const unique=[...new Map(rows.map(row=>[row.access_url||[row.obs_id||'',row.t_min||''].join('|'),row])).values()];
+   rows=unique;
+   if(!rows.length){results.replaceChildren();results.classList.add('hide');panel.classList.add('hide');lapsePanel.classList.add('hide');status.textContent='No released observations were returned for these coordinates and band. Previous results are cleared because this search completed successfully with zero matches.';return}
+   results.replaceChildren();results.classList.remove('hide');panel.classList.add('hide');lapsePanel.classList.add('hide');
+   status.textContent='Found '+rows.length+' real archive image records for RA '+r.toFixed(4)+'°, Dec '+d.toFixed(4)+'° · '+selectedBand+' · sorted oldest to newest.'+(payload.partial?' (Some archive releases were unavailable.)':'');
+   const cards=[];
+   rows.forEach((row,index)=>{
+    const card=document.createElement('article');card.className='rounded-xl border border-slate-700 bg-slate-950/70 p-3 flex flex-col gap-2';
+    const name=document.createElement('b');name.className='text-xs text-slate-100';name.textContent=row.obs_id?'SPHEREx plane '+row.obs_id:'SPHEREx archive image '+(index+1);
+    const meta=document.createElement('p');meta.className='text-xs text-slate-400';meta.textContent=(row._collection||'SPHEREx').toUpperCase()+' · '+mjdDate(row.t_min)+' · '+(row.band||row.energy_bandpassname||selectedBand);
+    const btn=document.createElement('button');btn.className='action active text-xs mt-auto';btn.textContent='Load real sky image';btn.addEventListener('click',()=>loadImage(row,btn));
+    card.append(name,meta,btn);card.hidden=index>=10;cards.push(card);results.append(card);
+   });
+   if(cards.length>5){
+    let visibleCount=10;
+    const more=document.createElement('button');more.type='button';more.className='action w-full text-sm mt-2';
+    const updateMore=()=>{const remaining=cards.length-visibleCount;more.textContent=remaining>0?'Load 10 more observations ('+remaining+' remaining)':'All '+cards.length+' observations shown';more.disabled=remaining===0};
+    more.addEventListener('click',()=>{const next=Math.min(cards.length,visibleCount+10);cards.slice(visibleCount,next).forEach(card=>card.hidden=false);visibleCount=next;updateMore()});
+    updateMore();results.append(more);
+   }
+   if(rows.length>1){lapsePanel.classList.remove('hide');lapsePlay.disabled=false;lapseStatus.textContent='Play the real FITS observations chronologically.'}
+  }catch(error){
+   status.replaceChildren();
+   const message=document.createElement('span');
+   message.textContent='COSMOS could not retrieve the archive automatically: '+error.message+(hadPreviousResults?' Previous successful results are still shown below. ':' ')+' ';
+   const official=document.createElement('a');
+   const officialUrl=new URL('https://irsa.ipac.caltech.edu/applications/spherex/');
+   officialUrl.search=new URLSearchParams({
+    api:'spectral-images',
+    ra:String(r),
+    dec:String(d),
+    sr:(rad*60)+'m'
+   }).toString();
+   official.href=officialUrl.toString();
+   official.target='_blank';
+   official.rel='noopener noreferrer';
+   official.className='inline-flex mt-2 rounded-lg border border-cyan-700 bg-cyan-950/60 px-3 py-2 text-sm text-cyan-200 underline';
+   official.textContent='Open this exact search in the official SPHEREx Data Explorer ↗';
+   status.append(message,official);
+  }
+  finally{search.disabled=false;search.textContent='⌕ Search live observations'}
+ });
+ retry.addEventListener('click',()=>{if(selectedRow)loadImage(selectedRow,selectedButton,true)});
+ async function loadImage(row,button,isRetry=false,quiet=false){
+  if(!row.access_url){if(!quiet)status.textContent='This record has no FITS product URL.';return false}
+  selectedRow=row;selectedButton=button;
+  panel.classList.remove('hide');
+  if(!quiet)panel.scrollIntoView({behavior:'smooth',block:'start'});canvas.width=0;canvas.height=0;placeholder.classList.remove('hide');placeholder.textContent=isRetry?'Retrying real SPHEREx FITS preview…':'Loading real SPHEREx FITS cutout…';imageStatus.textContent=isRetry?'Retrying the IRSA image request…':'Requesting a quick 0.1° cutout from IRSA…';title.textContent=(row.obs_id||'SPHEREx observation')+' · '+mjdDate(row.t_min);original.href=row.access_url;
+  if(button){button.disabled=true;button.textContent='Loading…'}
+  try{
+   const imageRa=Number.isFinite(Number(row._queryRa))?Number(row._queryRa):Number(ra.value),imageDec=Number.isFinite(Number(row._queryDec))?Number(row._queryDec):Number(dec.value);const url=new URL('/api/spherex-image',location.origin);url.search=new URLSearchParams({url:row.access_url,center:String(imageRa)+','+String(imageDec),size:'0.1'}).toString();
+   const response=await fetch(url,{signal:AbortSignal.timeout(45000)});if(!response.ok){const problem=await response.json().catch(()=>({}));throw new Error(problem.detail||problem.error||'Image request failed (HTTP '+response.status+')')}
+   const blob=await response.blob();if(blob.size<2880)throw new Error('IRSA returned an empty FITS file.');
+   if(!window.astro?.FITS)throw new Error('FITS viewer library did not load.');
+   await new Promise((resolve,reject)=>{
+    let done=false;const finish=(fn,v)=>{if(!done){done=true;fn(v)}};
+    const fits=new astro.FITS(blob,function(){
+     try{
+      const hdu=(this.hdus||[]).find(x=>x.data instanceof astro.FITS.Image&&String(x.header?.get?.('EXTNAME')||'').trim().toUpperCase()==='IMAGE')||(this.hdus||[]).find(x=>x.data instanceof astro.FITS.Image);
+      if(!hdu)throw new Error('No image plane in this FITS file.');
+      hdu.data.getFrame(0,pixels=>{
+       try{
+        const w=hdu.data.width,h=hdu.data.height;if(!w||!h||!pixels?.length)throw new Error('FITS image has no pixels.');
+        const sample=[];const stride=Math.max(1,Math.floor(pixels.length/24000));for(let i=0;i<pixels.length;i+=stride){const v=Number(pixels[i]);if(Number.isFinite(v))sample.push(v)}sample.sort((a,b)=>a-b);
+        const pct=p=>sample[Math.min(sample.length-1,Math.max(0,Math.floor((sample.length-1)*p)))],median=pct(.5),dev=sample.map(v=>Math.abs(v-median)).sort((a,b)=>a-b),sigma=Math.max((dev[Math.floor(dev.length/2)]||0)*1.4826,(pct(.75)-pct(.25))/1.349,1e-12),low=median+sigma*.8,high=Math.max(pct(.998),low+sigma*5),span=high-low;
+        canvas.width=w;canvas.height=h;const c=canvas.getContext('2d'),out=c.createImageData(w,h);
+        for(let y=0;y<h;y++)for(let x=0;x<w;x++){const v=Number(pixels[y*w+x]),z=Number.isFinite(v)&&v>low?Math.asinh(Math.max(0,Math.min(1,(v-low)/span))*5)/Math.asinh(5):0,shade=Math.round(Math.pow(z,.9)*255),i=((h-1-y)*w+x)*4;out.data[i]=shade;out.data[i+1]=Math.round(shade*.96);out.data[i+2]=Math.round(shade*.86);out.data[i+3]=255}
+        c.putImageData(out,0,0);
+        // Promote the exact same decoded FITS pixels into the large primary sky viewer.
+        mainSkyCanvas.width=w;mainSkyCanvas.height=h;
+        mainSkyCanvas.getContext('2d').drawImage(canvas,0,0);
+        mainSkyCanvas.classList.remove('hide');
+        if(realViewerState)realViewerState.textContent='REAL OBSERVATION LOADED';
+        const observedDate=mjdDate(row.t_min);
+        hudSector.textContent='REAL SPHEREx OBSERVATION';
+        hudBand.textContent=(row.band||row.energy_bandpassname||selectedBand)+' · '+w+' × '+h;
+        hudDataLabel.textContent='OBSERVED '+observedDate+' · FITS DATA';
+        skyToast.textContent='Real SPHEREx observation · '+observedDate+' · '+(row.obs_id||'archive image')+' · RA '+imageRa.toFixed(4)+'°, Dec '+imageDec.toFixed(4)+'°. Display stretch is automatic; this is not a calibrated change-detection map.';
+        placeholder.classList.add('hide');
+        imageStatus.textContent='Real SPHEREx FITS preview · '+w+' × '+h+' native pixels · 0.1° cutout · observation date '+observedDate+' · automatic grayscale stretch';
+        finish(resolve);
+       }catch(e){finish(reject,e)}
+      });
+     }catch(e){finish(reject,e)}
+    });
+    setTimeout(()=>finish(reject,new Error('FITS parsing timed out.')),55000);
+   });
+   return true;
+  }catch(error){placeholder.classList.remove('hide');placeholder.textContent='Preview unavailable. You can retry or open the original FITS product.';if(realViewerState)realViewerState.textContent='IMAGE UNAVAILABLE';imageStatus.textContent=error.message+' If IRSA keeps returning 503, its image service may be temporarily unavailable.';return false}
+  finally{if(button){button.disabled=false;button.textContent='Load real sky image'}}
+ }
+})();
+</script>
+<script>
+(()=> {
+ const image=document.getElementById('realSkyCanvas');
+ if(!image)return;
+ let zoom=1;
+ function applyZoom(){image.style.transform='scale('+zoom+')';image.style.transformOrigin='center center'}
+ document.getElementById('zoomIn')?.addEventListener('click',()=>{zoom=Math.min(zoom*1.2,4);applyZoom()});
+ document.getElementById('zoomOut')?.addEventListener('click',()=>{zoom=Math.max(zoom/1.2,1);applyZoom()});
+ document.getElementById('reset')?.addEventListener('click',()=>{zoom=1;applyZoom()});
+ document.getElementById('saveNote')?.addEventListener('click',()=>{
+  const note=document.getElementById('note'),status=document.getElementById('noteStatus'),value=note.value.trim();
+  if(!value){status.textContent='Write a short note first.';return}
+  try{const notes=JSON.parse(sessionStorage.getItem('cosmosMissionNotes')||'[]');notes.unshift(value);sessionStorage.setItem('cosmosMissionNotes',JSON.stringify(notes.slice(0,10)));note.value='';status.textContent='Saved in this browser session.'}
+  catch(error){status.textContent='Could not save this note in this browser.'}
+ });
+})();
+</script>
+</body></html>
