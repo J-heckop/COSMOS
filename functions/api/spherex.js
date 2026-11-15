@@ -44,11 +44,19 @@ export async function onRequest({request}) {
     });
     if(task.period) params.set("TIME",task.start+"/"+task.end);
     url.search=params.toString();
-    const response=await fetch(url.toString(),{
-      signal:AbortSignal.timeout(25000)
-    });
-    const xml=await response.text();
-    if(!response.ok) throw new Error("IRSA SIA2 returned HTTP "+response.status+": "+xml.slice(0,300).replace(/<[^>]*>/g," ").trim());
+    let response,xml;
+    // Retry only transient IRSA gateway failures, using the exact same
+    // working SIA request parameters and response format.
+    for(let attempt=0;attempt<2;attempt++){
+      response=await fetch(url.toString(),{
+        signal:AbortSignal.timeout(25000)
+      });
+      xml=await response.text();
+      if(response.ok) break;
+      if(![502,503,504].includes(response.status)||attempt===1)
+        throw new Error("IRSA SIA2 returned HTTP "+response.status+": "+xml.slice(0,300).replace(/<[^>]*>/g," ").trim());
+      await new Promise(resolve=>setTimeout(resolve,500));
+    }
     const queryError=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
     if(queryError) throw new Error(queryError[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400)||"IRSA SIA2 rejected the query.");
     if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml))
