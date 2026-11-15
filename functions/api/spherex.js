@@ -58,19 +58,32 @@ async function querySIA(collection, ra, dec, radius, range, maxrec) {
   return { error: lastError, collection, period: range?.label || null };
 }
 
-async function queryTAP(release, ra, dec, range, maxrec) {
-  const timeClause = range
-    ? " AND p.time_bounds_lower <= " + range.end + " AND p.time_bounds_upper >= " + range.start
-    : "";
-  // This follows the official IRSA SPHEREx cutout notebook's metadata-table
-  // join and polygon-intersection query.
+async function queryTAP(ra, dec, radius, range, maxrec, band, selectedRelease) {
+  // Mirrors the exact metadata-table join and spatial predicate in IRSA's
+  // published SPHEREx cutout tutorial. DR1 and QR3 live in the same tables.
+  const clauses = [
+    "1 = CONTAINS(POINT('ICRS', " + ra + ", " + dec + "), p.poly)"
+  ];
+  if (band && band !== "all") {
+    clauses.push("p.energy_bandpassname = '" + band + "'");
+  }
+  if (selectedRelease === "spherex_dr1") clauses.push("a.uri LIKE '%/dr1/%'");
+  if (selectedRelease === "spherex_qr3") clauses.push("a.uri LIKE '%/qr3/%'");
+  if (range) {
+    clauses.push("p.time_bounds_lower <= " + range.end);
+    clauses.push("p.time_bounds_upper >= " + range.start);
+  }
+
+  const size = Math.min(0.5, Math.max(0.01, radius * 2));
   const query = "SELECT TOP " + maxrec + " " +
     "'https://irsa.ipac.caltech.edu/' || a.uri AS access_url, " +
-    "p.time_bounds_lower AS t_min, p.time_bounds_upper AS t_max, " +
-    "a.planeid AS obs_id, p.energy_bandpassname AS band, p.em_min, p.em_max " +
-    "FROM spherex.artifact a JOIN spherex.plane p ON a.planeid = p.planeid " +
-    "WHERE 1 = CONTAINS(POINT('ICRS', " + ra + ", " + dec + "), p.poly) " +
-    "AND a.uri LIKE '%" + RELEASES[release].path + "%'" + timeClause +
+    "p.time_bounds_lower AS t_min, " +
+    "p.time_bounds_upper AS t_max, " +
+    "a.planeid AS obs_id, " +
+    "p.energy_bandpassname AS band " +
+    "FROM spherex.artifact a " +
+    "JOIN spherex.plane p ON a.planeid = p.planeid " +
+    "WHERE " + clauses.join(" AND ") +
     " ORDER BY p.time_bounds_lower";
 
   const body = new URLSearchParams({
@@ -81,31 +94,32 @@ async function queryTAP(release, ra, dec, range, maxrec) {
     MAXREC: String(maxrec)
   });
 
-  let lastError = "TAP request failed";
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const response = await fetch(IRSA + "/TAP/sync", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Accept: "application/x-votable+xml, application/xml, text/xml"
-        },
-        body: body.toString(),
-        signal: AbortSignal.timeout(25000)
-      });
-      const xml = await response.text();
-      if (response.ok && validVOTable(xml)) {
-        return { collection: release, period: range?.label || null, xml, source: "TAP fallback" };
-      }
-      lastError = "TAP HTTP " + response.status + (shortBody(xml) ? ": " + shortBody(xml) : "");
-      if (![429, 500, 502, 503, 504].includes(response.status)) break;
-    } catch (error) {
-      lastError = error?.name === "TimeoutError" ? "TAP request timed out" : (error?.message || "TAP request failed");
-      if (error?.name === "TimeoutError") break;
-    }
-    if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 900));
+  const response = await fetch(IRSA + "/TAP/sync", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/x-votable+xml, application/xml, text/xml"
+    },
+    body: body.toString(),
+    signal: AbortSignal.timeout(15000)
+  });
+  const xml = await response.text();
+  if (!response.ok) {
+    throw new Error("IRSA TAP HTTP " + response.status + (shortBody(xml) ? ": " + shortBody(xml) : ""));
   }
-  throw new Error(lastError);
+  if (!validVOTable(xml)) {
+    throw new Error("IRSA TAP returned an invalid VOTable response: " + shortBody(xml));
+  }
+  const tapError = xml.match(/<INFO\\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\\s\\S]*?)<\\/INFO>/i);
+  if (tapError) {
+    throw new Error(tapError[1].replace(/<[^>]*>/g, " ").replace(/\\s+/g, " ").trim().slice(0, 300) || "IRSA rejected the TAP query.");
+  }
+  return {
+    collection: selectedRelease || "spherex_dr1+qr3",
+    period: range?.label || null,
+    xml,
+    source: "IRSA TAP"
+  };
 }
 
 export async function onRequest({ request }) {
@@ -157,52 +171,36 @@ export async function onRequest({ request }) {
   const results = [];
   const errors = [];
 
-  // Search all requested wide/deep SIA collections in parallel. If either
-  // collection for a release fails, use one official TAP query for that release.
+  // SIA2 is the preferred fast image search. Keep the four official wide/deep
+  // collections in parallel, but cap retries so a gateway outage does not
+  // exhaust the browser's request timeout.
   for (const range of requestedRanges) {
-    const siaJobs = releases.flatMap(release =>
+    const jobs = releases.flatMap(release =>
       RELEASES[release].collections.map(collection =>
         querySIA(collection, ra, dec, radius, range, maxrec)
       )
     );
-    const siaSettled = await Promise.all(siaJobs);
-    const byRelease = new Map(releases.map(release => [release, []]));
-    const failed = new Set();
-
-    for (const item of siaSettled) {
-      const release = item.collection.includes("dr1") ? "spherex_dr1" : "spherex_qr3";
-      if (item.xml) byRelease.get(release).push(item);
-      else {
-        failed.add(release);
-        errors.push({
-          collection: item.collection,
-          period: item.period,
-          error: item.error
-        });
-      }
+    const settled = await Promise.all(jobs);
+    for (const item of settled) {
+      if (item.xml) results.push(item);
+      else errors.push({
+        collection: item.collection,
+        period: item.period,
+        error: item.error
+      });
     }
 
-    for (const release of releases) {
-      const releaseResults = byRelease.get(release);
-      if (releaseResults.length) results.push(...releaseResults);
-
-      // TAP provides one complete release-wide query, including deep-field
-      // products, so use it only when the SIA collection pair both failed.
-      const releaseCollections = RELEASES[release].collections;
-      const failedBoth = releaseCollections.every(collection =>
-        failed.has(release) && siaSettled.some(item => item.collection === collection && !item.xml)
-      );
-      if (!releaseResults.length && failedBoth) {
-        try {
-          const fallback = await queryTAP(release, ra, dec, range, maxrec);
-          results.push(fallback);
-        } catch (error) {
-          errors.push({
-            collection: release,
-            period: range?.label || null,
-            error: "SIA2 and TAP unavailable: " + (error?.message || "archive query failed")
-          });
-        }
+    // If SIA2 returned nothing, use the exact TAP pattern published by IRSA.
+    // TAP searches both releases together unless the user selected one release.
+    if (!settled.some(item => item.xml)) {
+      try {
+        results.push(await queryTAP(ra, dec, radius, range, maxrec, requestedBand, selected));
+      } catch (error) {
+        errors.push({
+          collection: selected || "spherex_dr1+qr3",
+          period: range?.label || null,
+          error: "TAP fallback: " + (error?.message || "archive query failed")
+        });
       }
     }
   }
