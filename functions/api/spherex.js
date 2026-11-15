@@ -32,9 +32,11 @@ export async function onRequest({request}) {
     url.search=new URLSearchParams({
       COLLECTION:name,
       POS:"CIRCLE "+ra+" "+dec+" "+radius,
+      RESPONSEFORMAT:"VOTABLE",
       MAXREC:String(maxrec)
     }).toString();
     const response=await fetch(url.toString(),{
+      headers:{Accept:"application/x-votable+xml, text/xml;q=0.9, */*;q=0.1"},
       signal:AbortSignal.timeout(25000)
     });
     const xml=await response.text();
