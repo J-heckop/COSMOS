@@ -19,12 +19,12 @@ const RELEASES = {
 };
 
 function validVOTable(xml) {
-  return /<(?:[A-Za-z0-9_]+:)?VOTABLE\\b/i.test(xml) &&
-    !/<INFO\\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["']/i.test(xml);
+  return /<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml) &&
+    !/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["']/i.test(xml);
 }
 
 function shortBody(value) {
-  return String(value || "").replace(/<[^>]*>/g, " ").replace(/\\s+/g, " ").trim().slice(0, 220);
+  return String(value || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 220);
 }
 
 async function querySIA(collection, ra, dec, radius, range, maxrec) {
