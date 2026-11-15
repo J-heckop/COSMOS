@@ -131,6 +131,21 @@
    })}catch(error){}
   }
   restoreControls();
+  // A handoff from the main COSMOS explorer takes priority over saved Mission Lab controls.
+  const incoming = new URLSearchParams(location.search);
+  const incomingRa = Number(incoming.get("ra"));
+  const incomingDec = Number(incoming.get("dec"));
+  const incomingRadius = Number(incoming.get("radius"));
+  if (incoming.has("ra") && incoming.has("dec") && Number.isFinite(incomingRa) && incomingRa >= 0 && incomingRa <= 360 && Number.isFinite(incomingDec) && incomingDec >= -90 && incomingDec <= 90) {
+   ra.value = incomingRa.toFixed(6);
+   dec.value = incomingDec.toFixed(6);
+   target.value = "custom";
+   if (Number.isFinite(incomingRadius) && [...radius.options].some(option => Number(option.value) === incomingRadius)) radius.value = String(incomingRadius);
+   const incomingTarget = (incoming.get("target") || "").trim();
+   status.textContent = (incomingTarget ? incomingTarget + " · " : "") + "Coordinates received from the COSMOS object finder. Review the position, choose a band, then search live observations.";
+   document.getElementById("liveArchive").scrollIntoView({behavior:"smooth",block:"start"});
+   saveControls();
+  }
   function selectSector(value,announce=true){
    const centres={ecliptic:{ra:90,dec:0,label:'Ecliptic Plane'},galactic:{ra:67.5,dec:24.1,label:'Taurus Molecular Cloud'},deepfield:{ra:90,dec:-66.56,label:'South Ecliptic Pole'}};
    const centre=centres[value];if(!centre)return;
