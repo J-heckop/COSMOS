@@ -6,6 +6,9 @@
     },
     "api/spherex-image.js": {
       "maxDuration": 60
+    },
+    "api/resolve-object.js": {
+      "maxDuration": 60
     }
   }
 }
