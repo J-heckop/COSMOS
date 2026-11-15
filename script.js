@@ -803,7 +803,7 @@ if (timeForm) {
       url.search = new URLSearchParams({
         ra:String(ra), dec:String(dec), radius:String(radius),
         collection:document.querySelector("#collection-input")?.value || "spherex_qr3",
-        maxrec:"5000"
+        maxrec:"150"
       }).toString();
       timeStatus.textContent = "Loading archive observations for this sky position, then matching your two selected dates…";
       const response = await fetch(url,{signal:AbortSignal.timeout(65000)});
