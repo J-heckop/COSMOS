@@ -32,7 +32,6 @@ export async function onRequest({request}) {
     url.search=new URLSearchParams({
       COLLECTION:name,
       POS:"CIRCLE "+ra+" "+dec+" "+radius,
-      RESPONSEFORMAT:"application/x-votable+xml",
       MAXREC:String(maxrec)
     }).toString();
     const response=await fetch(url.toString(),{
