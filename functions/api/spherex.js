@@ -37,23 +37,46 @@ export async function onRequest({request}) {
       POS:"CIRCLE "+ra+" "+dec+" "+radius,
       MAXREC:String(maxrec)
     }).toString();
-    let response,xml;
-    // Retry only transient IRSA gateway failures, using the exact same
-    // working SIA request parameters and response format.
-    for(let attempt=0;attempt<2;attempt++){
-      response=await fetch(url.toString(),{
-        signal:AbortSignal.timeout(25000)
-      });
-      xml=await response.text();
-      if(response.ok) break;
-      if(![502,503,504].includes(response.status)||attempt===1)
-        throw new Error("IRSA SIA2 returned HTTP "+response.status+": "+xml.slice(0,300).replace(/<[^>]*>/g," ").trim());
-      await new Promise(resolve=>setTimeout(resolve,500));
+    // Cache successful collection responses at the edge so repeat searches
+    // for the same sky position do not need another IRSA round-trip.
+    const cache=typeof caches!=="undefined"&&caches.default?caches.default:null;
+    const cacheKey=new Request(url.toString(),{method:"GET"});
+    let xml=null;
+    if(cache){
+      try{
+        const cached=await cache.match(cacheKey);
+        if(cached) xml=await cached.text();
+      }catch(_){}
+    }
+    if(xml===null){
+      let response;
+      // Retry transient gateway responses with short exponential backoff.
+      for(let attempt=0;attempt<3;attempt++){
+        response=await fetch(url.toString(),{
+          signal:AbortSignal.timeout(25000)
+        });
+        xml=await response.text();
+        if(response.ok) break;
+        if(![502,503,504].includes(response.status)||attempt===2)
+          throw new Error("IRSA SIA2 returned HTTP "+response.status+": "+xml.slice(0,300).replace(/<[^>]*>/g," ").trim());
+        await new Promise(resolve=>setTimeout(resolve,500*Math.pow(2,attempt)));
+      }
+      if(!response?.ok) throw new Error("IRSA SIA2 request failed.");
     }
     const queryError=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
     if(queryError) throw new Error(queryError[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400)||"IRSA SIA2 rejected the query.");
     if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml))
       throw new Error("IRSA SIA2 returned an unexpected response.");
+    if(cache){
+      try{
+        await cache.put(cacheKey,new Response(xml,{
+          headers:{
+            "Content-Type":"application/x-votable+xml; charset=utf-8",
+            "Cache-Control":"public, max-age=600"
+          }
+        }));
+      }catch(_){}
+    }
     return {collection:task.name,period:null,xml};
   }));
 
