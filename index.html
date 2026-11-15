@@ -83,6 +83,20 @@
       <div class="time-machine-panel">
         <div class="live-heading"><div><span class="eyebrow">COSMIC TIME MACHINE</span><h3>Did the sky change?</h3><p>Search the same sky position in two different date windows. COSMOS compares real SPHEREx archive observations and links each result to its original data.</p></div><span class="live-tag"><i></i> TIME COMPARISON</span></div>
         <div class="time-discovery">
+          <div class="sky-location-picker">
+            <label for="comparison-target">Choose sky location</label>
+            <select id="comparison-target">
+              <option value="">Use custom coordinates entered above</option>
+              <option value="10.6847,41.2690|Andromeda Galaxy">Andromeda Galaxy</option>
+              <option value="83.8221,-5.3911|Orion Nebula">Orion Nebula</option>
+              <option value="56.75,24.1167|Pleiades">Pleiades</option>
+              <option value="101.2872,-16.7161|Sirius">Sirius</option>
+              <option value="266.4168,-29.0078|Galactic Centre">Galactic Centre</option>
+              <option value="161.05,-60.266|Carina Nebula">Carina Nebula</option>
+            </select>
+            <p>Both dates will be searched and imaged around the exact same RA/Dec centre. Choose a preset or enter custom coordinates in the fields above.</p>
+            <div id="comparison-target-readout" aria-live="polite">Current sky centre: waiting for coordinates</div>
+          </div>
           <label class="release-picker-label" for="collection-input">SPHEREx data releases
             <select id="collection-input">
               <option value="both" selected>DR1 + QR3 · Combined (recommended)</option>
