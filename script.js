@@ -469,7 +469,18 @@ if (timeForm) {
       }
     } catch (error) {
       if (loadMoreDatesButton) loadMoreDatesButton.disabled = false;
-      timeStatus.textContent = error.name === "TimeoutError" || error.name === "AbortError" ? "The SPHEREx archive is taking too long to respond. Try again in a moment; this is not a zero-observation result." : "Could not discover observation dates: " + error.message;
+      const archiveError = String(error.message || "Archive query failed.");
+      const isIrsa502 = /HTTP 502|returned 502|Bad Gateway/i.test(archiveError);
+      const isIrsaFailure = /IRSA|SIA2|TAP/i.test(archiveError);
+      if (error.name === "TimeoutError" || error.name === "AbortError") {
+        timeStatus.textContent = "The IRSA SPHEREx archive did not respond before the search timed out. This is an archive/network response problem, not proof that this sky position has no observations. Please try again shortly.";
+      } else if (isIrsa502) {
+        timeStatus.textContent = "IRSA ARCHIVE ERROR · HTTP 502. The official SPHEREx archive returned Bad Gateway while COSMOS was requesting observation dates. COSMOS received the server error; no dates could be loaded. Please retry later.";
+      } else if (isIrsaFailure) {
+        timeStatus.textContent = "IRSA ARCHIVE RESPONSE ERROR. COSMOS reached the archive search, but IRSA did not return usable observation data: " + archiveError + ". Please retry later.";
+      } else {
+        timeStatus.textContent = "Could not discover observation dates: " + archiveError;
+      }
       timeStatus.className = "archive-status error";
     } finally {
       stopArchiveLoadingFacts();
