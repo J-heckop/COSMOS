@@ -36,10 +36,14 @@ async function queryCollection(selected,ra,dec,radius,maxrec) {
     "AND 1 = CONTAINS(POINT('ICRS', "+ra+", "+dec+"), p.poly) "+
     "AND p.time_bounds_lower IS NOT NULL "+
     "ORDER BY FLOOR(p.time_bounds_lower)";
-  const form=new URLSearchParams({REQUEST:"doQuery",LANG:"ADQL",FORMAT:"votable",QUERY:query});
-  const submitted=await fetch(TAP+"/async",{
-    method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded","Accept":"application/xml,text/xml"},
-    body:form,redirect:"manual",signal:AbortSignal.timeout(12000)
+  // IRSA's own TAP examples submit asynchronous jobs as a GET request
+  // with QUERY and FORMAT in the URL. Use that documented form rather than
+  // POSTing a form body, which can be rejected by the archive gateway.
+  const submitUrl=new URL(TAP+"/async");
+  submitUrl.search=new URLSearchParams({REQUEST:"doQuery",LANG:"ADQL",FORMAT:"votable",QUERY:query}).toString();
+  const submitted=await fetch(submitUrl.toString(),{
+    method:"GET",headers:{"Accept":"application/xml,text/xml"},
+    redirect:"manual",signal:AbortSignal.timeout(18000)
   });
   const location=submitted.headers.get("location");
   if(![200,201,303,302].includes(submitted.status)||!location) {
