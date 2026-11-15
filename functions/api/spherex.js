@@ -21,14 +21,14 @@ function parseCsv(text){
       else cell+=ch;
     }else if(ch==='"')quoted=true;
     else if(ch===','){row.push(cell);cell="";}
-    else if(ch==="\\n"){row.push(cell);rows.push(row);row=[];cell="";}
-    else if(ch!=="\\r")cell+=ch;
+    else if(ch==="\n"){row.push(cell);rows.push(row);row=[];cell="";}
+    else if(ch!=="\r")cell+=ch;
   }
   if(cell.length||row.length){row.push(cell);rows.push(row);}
   return rows.filter(r=>r.some(v=>String(v).trim()!==""));
 }
 function csvAsVOTable(csv){
-  const rows=parseCsv(csv.replace(/^\\uFEFF/,""));
+  const rows=parseCsv(csv.replace(/^\uFEFF/,""));
   if(rows.length<2)throw new Error("IRSA CSV response contained no observation rows.");
   const headers=rows.shift().map((h,i)=>String(h||("column_"+i)).trim());
   const esc=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
@@ -63,14 +63,14 @@ async function queryCollection(collection,ra,dec,radius,range,maxrec){
         if(response.ok){
           try{
             const xml=format==="VOTABLE"?body:csvAsVOTable(body);
-            if(/<(?:[A-Za-z0-9_]+:)?VOTABLE\\b/i.test(xml) &&
-               !/<INFO\\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["']/i.test(xml)){
+            if(/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml) &&
+               !/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["']/i.test(xml)){
               return {collection,period:range?.label||null,xml,archiveHost:host,source:"SIA2 "+format};
             }
             lastError="SIA2 "+format+" returned an invalid observation table";
           }catch(error){lastError="SIA2 "+format+": "+(error?.message||"invalid response");}
         }else{
-          lastError="SIA2 "+format+" HTTP "+response.status+(body.trim()?" · "+body.replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim().slice(0,160):"");
+          lastError="SIA2 "+format+" HTTP "+response.status+(body.trim()?" · "+body.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,160):"");
         }
         if(![429,500,502,503,504].includes(response.status))break;
       }catch(error){
@@ -111,10 +111,10 @@ async function queryCollection(collection,ra,dec,radius,range,maxrec){
     await new Promise(resolve=>setTimeout(resolve,700));
   }
   if(!tap.ok)throw new Error(lastError+"; TAP fallback HTTP "+tap.status);
-  if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\\b/i.test(tapXml))
+  if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(tapXml))
     throw new Error(lastError+"; TAP fallback returned an unexpected response");
-  const tapError=tapXml.match(/<INFO\\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\\s\\S]*?)<\\/INFO>/i);
-  if(tapError)throw new Error(tapError[1].replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim().slice(0,400)||"IRSA TAP rejected the query");
+  const tapError=tapXml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
+  if(tapError)throw new Error(tapError[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400)||"IRSA TAP rejected the query");
   return {collection,period:range?.label||null,xml:tapXml,archiveHost:host,source:"TAP fallback"};
 }
 export async function onRequest({request}){
