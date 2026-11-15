@@ -58,7 +58,19 @@ document.querySelectorAll(".popular-searches [data-query]").forEach(button => bu
     status.className = "archive-status";
     try {
       const response = await fetch("/api/resolve-object?name=" + encodeURIComponent(name), {signal: AbortSignal.timeout(22000)});
-      const result = await response.json();
+      const responseText = await response.text();
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch {
+        const preview = responseText.replace(/<[^>]*>/g, " ").replace(/\\s+/g, " ").trim().slice(0, 120);
+        throw new Error(response.ok
+          ? "The coordinate service returned an unreadable response. Please try again shortly."
+          : "Coordinate lookup is temporarily unavailable (HTTP " + response.status + "). Please retry, or enter RA and Dec manually." + (preview ? " " + preview : ""));
+      }
+      if (!result || typeof result !== "object") {
+        throw new Error("The coordinate service returned an invalid response. Please try again.");
+      }
       if (!response.ok) throw new Error(result.error || "Could not resolve that object name.");
       raInput.value = Number(result.ra).toFixed(6);
       decInput.value = Number(result.dec).toFixed(6);
