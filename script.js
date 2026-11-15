@@ -253,15 +253,20 @@ if (timeForm) {
       ? "Current sky centre: RA " + Number(ra).toFixed(6) + "° · Dec " + Number(dec).toFixed(6) + "°"
       : "Current sky centre: enter coordinates above";
   }
+  let applyingSkyPreset = false;
   comparisonTarget.addEventListener("change", () => {
     if (comparisonTarget.value) {
-      const [coordinates, name] = comparisonTarget.value.split("|");
+      const selectedPreset = comparisonTarget.value;
+      const [coordinates, name] = selectedPreset.split("|");
       const [ra, dec] = coordinates.split(",");
+      applyingSkyPreset = true;
       document.querySelector("#ra-input").value = ra;
       document.querySelector("#dec-input").value = dec;
       document.querySelector("#target-name").value = name;
       document.querySelector("#ra-input").dispatchEvent(new Event("input", {bubbles:true}));
       document.querySelector("#dec-input").dispatchEvent(new Event("input", {bubbles:true}));
+      comparisonTarget.value = selectedPreset;
+      applyingSkyPreset = false;
       timeStatus.textContent = name + " selected. Discover dates to search this same sky location in both periods.";
       timeStatus.className = "archive-status";
       dateA.disabled = dateB.disabled = true;
@@ -270,7 +275,7 @@ if (timeForm) {
     updateComparisonTargetReadout();
   });
   ["ra-input","dec-input"].forEach(id => document.querySelector("#"+id).addEventListener("input", () => {
-    if (comparisonTarget.value) comparisonTarget.value = "";
+    if (!applyingSkyPreset && comparisonTarget.value) comparisonTarget.value = "";
     updateComparisonTargetReadout();
   }));
   updateComparisonTargetReadout();
