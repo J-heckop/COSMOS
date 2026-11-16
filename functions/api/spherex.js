@@ -23,7 +23,7 @@ async function querySiaFallback({ra,dec,radius,collection,maxrec}){
   const response=await fetch("https://irsa.ipac.caltech.edu/SIA?"+params.toString(),{
     method:"GET",
     headers:{Accept:"application/x-votable+xml, application/xml;q=0.9"},
-    signal:AbortSignal.timeout(12000)
+    signal:AbortSignal.timeout(10000)
   });
   const xml=await response.text();
   if(!response.ok) throw new Error("IRSA SIA2 returned HTTP "+response.status+": "+xml.slice(0,250).replace(/<[^>]*>/g," ").trim());
@@ -64,7 +64,7 @@ async function queryTapFallback({ra,dec,radius,collection,maxrec,band}){
     method:"POST",
     headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},
     body:body.toString(),
-    signal:AbortSignal.timeout(16000)
+    signal:AbortSignal.timeout(10000)
   });
   const xml=await response.text();
   if(!response.ok) throw new Error("IRSA TAP returned HTTP "+response.status+": "+xml.slice(0,300).replace(/<[^>]*>/g," ").trim());
