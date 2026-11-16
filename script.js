@@ -394,18 +394,18 @@ if (timeForm) {
   }
 
   const loadMoreDatesButton = document.querySelector("#load-more-dates");
-  let archiveMaxRecords = 150;
+  let archiveMaxRecords = 5000;
   let loadMoreRequested = false;
   if (loadMoreDatesButton) {
     loadMoreDatesButton.addEventListener("click", () => {
-      archiveMaxRecords = 150;
+      archiveMaxRecords = 5000;
       loadMoreRequested = true;
       loadMoreDatesButton.disabled = true;
       discoverButton.click();
     });
   }
   discoverButton.addEventListener("click", async () => {
-    if (!loadMoreRequested) archiveMaxRecords = 150;
+    if (!loadMoreRequested) archiveMaxRecords = 5000;
     loadMoreRequested = false;
     const raText = document.querySelector("#ra-input").value.trim();
     const decText = document.querySelector("#dec-input").value.trim();
@@ -429,7 +429,7 @@ if (timeForm) {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || payload.error || "Archive query failed.");
       const records = (payload.results || []).flatMap(result => timeParseVOTable(result.xml));      if (loadMoreDatesButton) {
-        loadMoreDatesButton.hidden = records.length < archiveMaxRecords || archiveMaxRecords >= 150;
+        loadMoreDatesButton.hidden = true;
         loadMoreDatesButton.disabled = false;
       }
       const unique = new Map();
@@ -803,7 +803,7 @@ if (timeForm) {
       url.search = new URLSearchParams({
         ra:String(ra), dec:String(dec), radius:String(radius),
         collection:document.querySelector("#collection-input")?.value || "spherex_qr3",
-        maxrec:"150"
+        maxrec:"5000"
       }).toString();
       timeStatus.textContent = "Loading archive observations for this sky position, then matching your two selected dates…";
       const response = await fetch(url,{signal:AbortSignal.timeout(65000)});
