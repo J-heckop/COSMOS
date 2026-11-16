@@ -394,18 +394,18 @@ if (timeForm) {
   }
 
   const loadMoreDatesButton = document.querySelector("#load-more-dates");
-  let archiveMaxRecords = 5000;
+  let archiveMaxRecords = 300;
   let loadMoreRequested = false;
   if (loadMoreDatesButton) {
     loadMoreDatesButton.addEventListener("click", () => {
-      archiveMaxRecords = 5000;
+      archiveMaxRecords = 500;
       loadMoreRequested = true;
       loadMoreDatesButton.disabled = true;
       discoverButton.click();
     });
   }
   discoverButton.addEventListener("click", async () => {
-    if (!loadMoreRequested) archiveMaxRecords = 5000;
+    if (!loadMoreRequested) archiveMaxRecords = 300;
     loadMoreRequested = false;
     const raText = document.querySelector("#ra-input").value.trim();
     const decText = document.querySelector("#dec-input").value.trim();
