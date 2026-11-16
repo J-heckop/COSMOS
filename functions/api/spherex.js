@@ -45,10 +45,10 @@ async function queryTapFallback({ra,dec,radius,collection,maxrec,band}){
   });
   const xml=await response.text();
   if(!response.ok) throw new Error("IRSA TAP returned HTTP "+response.status+": "+xml.slice(0,300).replace(/<[^>]*>/g," ").trim());
-  if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\\b/i.test(xml))
+  if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\b/i.test(xml))
     throw new Error("IRSA TAP returned an unexpected response.");
-  const queryError=xml.match(/<INFO\\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\\s\\S]*?)<\\/INFO>/i);
-  if(queryError) throw new Error(queryError[1].replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim().slice(0,400)||"IRSA TAP rejected the query.");
+  const queryError=xml.match(/<INFO\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\s\S]*?)<\/INFO>/i);
+  if(queryError) throw new Error(queryError[1].replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400)||"IRSA TAP rejected the query.");
   return xml;
 }
 
