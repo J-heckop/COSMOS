@@ -11,6 +11,29 @@ function json(body,status=200,extra={}) {
   });
 }
 
+async function querySiaFallback({ra,dec,radius,collection,maxrec}){
+  // SIA2 is IRSA's documented image-discovery API and provides t_min,
+  // t_max, and access_url fields used by COSMOS' date picker and image viewer.
+  const params=new URLSearchParams({
+    COLLECTION:collection,
+    POS:`circle ${ra} ${dec} ${radius}`,
+    MAXREC:String(maxrec),
+    RESPONSEFORMAT:"application/x-votable+xml"
+  });
+  const response=await fetch("https://irsa.ipac.caltech.edu/SIA?"+params.toString(),{
+    method:"GET",
+    headers:{Accept:"application/x-votable+xml, application/xml;q=0.9"},
+    signal:AbortSignal.timeout(25000)
+  });
+  const xml=await response.text();
+  if(!response.ok) throw new Error("IRSA SIA2 returned HTTP "+response.status+": "+xml.slice(0,250).replace(/<[^>]*>/g," ").trim());
+  if(!/<(?:[A-Za-z0-9_]+:)?VOTABLE\\b/i.test(xml))
+    throw new Error("IRSA SIA2 returned an unexpected response.");
+  const queryError=xml.match(/<INFO\\b[^>]*name=["']QUERY_STATUS["'][^>]*value=["']ERROR["'][^>]*>([\\s\\S]*?)<\\/INFO>/i);
+  if(queryError) throw new Error(queryError[1].replace(/<[^>]*>/g," ").replace(/\\s+/g," ").trim().slice(0,300)||"IRSA SIA2 rejected the query.");
+  return xml;
+}
+
 async function queryTapFallback({ra,dec,radius,collection,maxrec,band}){
   const bandFilter=band&&band!=="all"
     ? " AND p.energy_bandpassname = '"+String(band).replace(/[^A-Za-z0-9_-]/g,"")+"'"
@@ -41,7 +64,7 @@ async function queryTapFallback({ra,dec,radius,collection,maxrec,band}){
     method:"POST",
     headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},
     body:body.toString(),
-    signal:AbortSignal.timeout(90000)
+    signal:AbortSignal.timeout(20000)
   });
   const xml=await response.text();
   if(!response.ok) throw new Error("IRSA TAP returned HTTP "+response.status+": "+xml.slice(0,300).replace(/<[^>]*>/g," ").trim());
@@ -89,8 +112,16 @@ export async function onRequest({request}) {
         if(cached) xml=await cached.text();
       }catch(_){}
     }
+    let source="IRSA TAP";
     if(xml===null){
-      xml=await queryTapFallback({ra,dec,radius,collection:task.name,maxrec,band});
+      try{
+        xml=await queryTapFallback({ra,dec,radius,collection:task.name,maxrec,band});
+      }catch(tapError){
+        // TAP can temporarily return 502. Fall back to IRSA's documented SIA2
+        // endpoint so users can still discover dates and open the real images.
+        source="IRSA SIA2";
+        xml=await querySiaFallback({ra,dec,radius,collection:task.name,maxrec});
+      }
       if(cache){
         try{
           await cache.put(cacheKey,new Response(xml,{
@@ -103,7 +134,7 @@ export async function onRequest({request}) {
       }
     }
     
-    return {collection:task.name,period:null,xml};
+    return {collection:task.name,period:null,xml,source};
   }));
 
   const results=jobs.filter(x=>x.status==="fulfilled").map(x=>x.value);
@@ -114,11 +145,11 @@ export async function onRequest({request}) {
     return json({
       error:"The SPHEREx metadata query could not be completed.",
       detail:errors.map(x=>x.collection+": "+x.error).join("; "),
-      errors,source:"IRSA TAP",mode:"dates"
+      errors,source:"IRSA TAP/SIA2",mode:"dates"
     },502);
   }
   return json({
-    results,errors,source:"IRSA TAP",mode:"dates",
+    results,errors,source:"IRSA TAP/SIA2",mode:"dates",
     partial:errors.length>0,collections
   });
 }
