@@ -18,12 +18,12 @@ async function querySiaFallback({ra,dec,radius,collection,maxrec}){
     COLLECTION:collection,
     POS:`circle ${ra} ${dec} ${radius}`,
     MAXREC:String(maxrec),
-    RESPONSEFORMAT:"application/x-votable+xml"
+    RESPONSEFORMAT:"VOTABLE"
   });
   const response=await fetch("https://irsa.ipac.caltech.edu/SIA?"+params.toString(),{
     method:"GET",
     headers:{Accept:"application/x-votable+xml, application/xml;q=0.9"},
-    signal:AbortSignal.timeout(25000)
+    signal:AbortSignal.timeout(12000)
   });
   const xml=await response.text();
   if(!response.ok) throw new Error("IRSA SIA2 returned HTTP "+response.status+": "+xml.slice(0,250).replace(/<[^>]*>/g," ").trim());
@@ -64,7 +64,7 @@ async function queryTapFallback({ra,dec,radius,collection,maxrec,band}){
     method:"POST",
     headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},
     body:body.toString(),
-    signal:AbortSignal.timeout(20000)
+    signal:AbortSignal.timeout(16000)
   });
   const xml=await response.text();
   if(!response.ok) throw new Error("IRSA TAP returned HTTP "+response.status+": "+xml.slice(0,300).replace(/<[^>]*>/g," ").trim());
@@ -112,15 +112,15 @@ export async function onRequest({request}) {
         if(cached) xml=await cached.text();
       }catch(_){}
     }
-    let source="IRSA TAP";
+    let source="IRSA SIA2";
     if(xml===null){
       try{
-        xml=await queryTapFallback({ra,dec,radius,collection:task.name,maxrec,band});
-      }catch(tapError){
-        // TAP can temporarily return 502. Fall back to IRSA's documented SIA2
-        // endpoint so users can still discover dates and open the real images.
-        source="IRSA SIA2";
+        // SIA2 is purpose-built for spatial image discovery. Try it first;
+        // TAP's polygon join is retained only as a fallback.
         xml=await querySiaFallback({ra,dec,radius,collection:task.name,maxrec});
+      }catch(siaError){
+        source="IRSA TAP";
+        xml=await queryTapFallback({ra,dec,radius,collection:task.name,maxrec,band});
       }
       if(cache){
         try{
@@ -139,7 +139,7 @@ export async function onRequest({request}) {
 
   const results=jobs.filter(x=>x.status==="fulfilled").map(x=>x.value);
   const errors=jobs.map((x,i)=>x.status==="rejected"
-    ?{collection:tasks[i].name,error:x.reason?.name==="TimeoutError"?"IRSA TAP request timed out":x.reason?.message||"Archive query failed."}
+    ?{collection:tasks[i].name,error:x.reason?.name==="TimeoutError"?"IRSA archive request timed out":x.reason?.message||"Archive query failed."}
     :null).filter(Boolean);
   if(!results.length){
     return json({
