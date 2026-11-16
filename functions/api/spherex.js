@@ -17,13 +17,12 @@ async function querySiaFallback({ra,dec,radius,collection,maxrec}){
   const params=new URLSearchParams({
     COLLECTION:collection,
     POS:`circle ${ra} ${dec} ${radius}`,
-    MAXREC:String(maxrec),
-    RESPONSEFORMAT:"VOTABLE"
+    MAXREC:String(maxrec)
   });
   const response=await fetch("https://irsa.ipac.caltech.edu/SIA?"+params.toString(),{
     method:"GET",
     headers:{Accept:"application/x-votable+xml, application/xml;q=0.9"},
-    signal:AbortSignal.timeout(10000)
+    signal:AbortSignal.timeout(25000)
   });
   const xml=await response.text();
   if(!response.ok) throw new Error("IRSA SIA2 returned HTTP "+response.status+": "+xml.slice(0,250).replace(/<[^>]*>/g," ").trim());
@@ -84,8 +83,9 @@ export async function onRequest({request}) {
   const ra=Number(raText),dec=Number(decText),radius=Number(radiusText);
   if(!Number.isFinite(ra)||ra<0||ra>360||!Number.isFinite(dec)||dec< -90||dec>90||!Number.isFinite(radius)||radius<=0||radius>1)
     return json({error:"Invalid sky position or search radius."},400);
-  const parsed=Number.parseInt(q.get("maxrec")||"150",10);
-  const maxrec=Number.isFinite(parsed)?Math.min(5000,Math.max(1,parsed)):150;
+  const parsed=Number.parseInt(q.get("maxrec")||"300",10);
+  // Date discovery needs a modest metadata page, not thousands of image records.
+  const maxrec=Number.isFinite(parsed)?Math.min(500,Math.max(1,parsed)):300;
   const collection=String(q.get("collection")||"both").toLowerCase();
   const band=String(q.get("band")||"all");
   const collections=collection==="both"?["spherex_dr1","spherex_qr3"]:[collection];
@@ -114,14 +114,9 @@ export async function onRequest({request}) {
     }
     let source="IRSA SIA2";
     if(xml===null){
-      try{
-        // SIA2 is purpose-built for spatial image discovery. Try it first;
-        // TAP's polygon join is retained only as a fallback.
-        xml=await querySiaFallback({ra,dec,radius,collection:task.name,maxrec});
-      }catch(siaError){
-        source="IRSA TAP";
-        xml=await queryTapFallback({ra,dec,radius,collection:task.name,maxrec,band});
-      }
+      // Use the documented SIA2 spatial search only. The TAP polygon join
+      // can be substantially slower and is unnecessary for date discovery.
+      xml=await querySiaFallback({ra,dec,radius,collection:task.name,maxrec});
       if(cache){
         try{
           await cache.put(cacheKey,new Response(xml,{
